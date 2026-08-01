@@ -37,10 +37,10 @@ interface SourceDoc {
 const sources: SourceDoc[] = [];
 
 if (fs.existsSync(path.join(repoRoot, 'README.md'))) {
-  sources.push({ slug: 'readme', absPath: path.join(repoRoot, 'README.md'), section: 'Overview', category: 'Getting Started' });
+  sources.push({ slug: 'readme', absPath: path.join(repoRoot, 'README.md'), section: 'User Guides', category: 'Onboarding' });
 }
 if (fs.existsSync(path.join(repoRoot, 'AGENTS.md'))) {
-  sources.push({ slug: 'agents', absPath: path.join(repoRoot, 'AGENTS.md'), section: 'Overview', category: 'Getting Started' });
+  sources.push({ slug: 'agents', absPath: path.join(repoRoot, 'AGENTS.md'), section: 'Development', category: 'Framework' });
 }
 
 const walkMd = (dir: string, section: string, category: string) => {
@@ -55,10 +55,15 @@ const walkMd = (dir: string, section: string, category: string) => {
   }
 };
 
-walkMd(path.join(repoRoot, 'docs'), 'Documentation', 'Guides');
-walkMd(path.join(repoRoot, 'knowledge'), 'Knowledge', 'Reference');
-walkMd(path.join(repoRoot, 'knowledge', 'adr'), 'Knowledge', 'Decisions');
-walkMd(path.join(repoRoot, 'planning', 'backlog'), 'Planning', 'Backlog');
+// Section/category here mirror sanjeev-ai's portal taxonomy (User Guides /
+// Specs / Development / Support). These are per-root DEFAULTS; a file whose
+// own frontmatter sets `section`/`category` overrides them (used where a
+// folder splits across sections — e.g. docs/ holds both User Guides and a
+// Support runbook; knowledge/ holds both an Operations map and a Spec).
+walkMd(path.join(repoRoot, 'docs'), 'User Guides', 'Onboarding');
+walkMd(path.join(repoRoot, 'knowledge'), 'Development', 'Operations');
+walkMd(path.join(repoRoot, 'knowledge', 'adr'), 'Development', 'Architecture Decisions');
+walkMd(path.join(repoRoot, 'planning', 'backlog'), 'Development', 'Planning');
 
 // .agents/skills/<name>/SKILL.md — slug drops the .agents/ prefix and the
 // redundant /SKILL.md filename in favor of the skill's own directory name.
@@ -67,7 +72,7 @@ if (fs.existsSync(skillsDir)) {
   for (const skillName of fs.readdirSync(skillsDir)) {
     const skillPath = path.join(skillsDir, skillName, 'SKILL.md');
     if (fs.existsSync(skillPath)) {
-      sources.push({ slug: `skills/${skillName}`, absPath: skillPath, section: 'Skills', category: 'Workflows' });
+      sources.push({ slug: `skills/${skillName}`, absPath: skillPath, section: 'Development', category: 'Framework' });
     }
   }
 }

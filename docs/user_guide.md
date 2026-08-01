@@ -1,7 +1,7 @@
 ---
 title: User Guide
-section: Documentation
-category: Guides
+section: User Guides
+category: Onboarding
 requiresLogin: false
 ---
 # User Guide

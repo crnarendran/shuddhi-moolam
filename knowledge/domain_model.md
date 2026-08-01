@@ -2,6 +2,8 @@
 type: concept
 tags: [shuddhi-moolam, core-domain, architecture, extraction]
 status: filled
+section: Specs
+category: Specifications
 ---
 # Shuddhi-Moolam Domain Model
 

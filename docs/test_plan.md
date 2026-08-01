@@ -1,7 +1,7 @@
 ---
 title: Test Plan
-section: Documentation
-category: Guides
+section: Development
+category: Testing
 requiresLogin: false
 ---
 # Test Plan (English)

@@ -1,7 +1,7 @@
 ---
 title: Support & Operations Runbook
-section: Documentation
-category: Guides
+section: Support
+category: General Support
 requiresLogin: true
 isInternal: true
 ---

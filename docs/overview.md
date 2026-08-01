@@ -1,7 +1,7 @@
 ---
 title: Shuddhi-Moolam Overview
-section: Documentation
-category: Guides
+section: User Guides
+category: Onboarding
 requiresLogin: false
 ---
 # Shuddhi-Moolam — Overview
