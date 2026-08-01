@@ -34,10 +34,13 @@ flowchart LR
   DL -->|PDF bytes| GEM[Gemini Flash<br/>structured output]
   GEM -->|validated JSON| RT[Year routing +<br/>Sheets append]
   RT -->|append row| SHEET[(Master Google Sheet<br/>Data_YYYY tabs)]
-  WH <--> FS[(Firestore:<br/>channel + dedup state)]
+  WH <--> FS[(Firestore:<br/>channel state + pipeline_runs)]
   RT <--> FS
   RENEW[Scheduled Function:<br/>channel renewal] --> DRV
   RENEW <--> FS
+  FS -->|onSnapshot read| DASH[Monitoring dashboard<br/>Hosting + Auth allowlist]
+  OP[Operator] --> DASH
+  DASH -->|reprocess callable| WH
 ```
 
 ## 3. Components
@@ -50,7 +53,8 @@ flowchart LR
 | C4 | **Extraction engine** | Call Gemini Flash with the PDF + prompt + structured-output schema; validate with Zod; retry/backoff; log cost. | SM-05 |
 | C5 | **Router + appender** | Parse the year, ensure `Data_<year>` exists (create with headers if not), map the record to a row, append idempotently. | SM-06, SM-07 |
 | C6 | **Observability + resilience** | Structured logging with a `fileId` correlation id, failure alerting, dead-letter + reprocess, cost tracking. | SM-08 |
-| — | **State store (Firestore)** | Drive channel state (`channelId`, `resourceId`, expiry) and a processed-file dedup store. | SM-02, SM-03 |
+| C7 | **Monitoring dashboard** | Read-side web app: live per-file status table, per-file stage timeline, health metrics, and a reprocess action. Reads `pipeline_runs` via the Firestore client SDK (real-time), gated by Firebase Auth + an email allowlist. | SM-11–SM-14 |
+| — | **State store (Firestore)** | Drive channel state (`channelId`, `resourceId`, expiry) and the `pipeline_runs` telemetry/dedup store the dashboard reads. | SM-02, SM-03, SM-11 |
 
 ## 4. End-to-end flow
 

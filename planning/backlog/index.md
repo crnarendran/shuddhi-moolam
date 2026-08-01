@@ -21,8 +21,13 @@ SM-01 (foundation)
         └─ SM-05 (extraction)
               └─ SM-06, SM-07 (routing + append)
                     └─ SM-08 (observability)
+                          └─ SM-11 (run telemetry model)
+                                └─ SM-12 → SM-13 → SM-14 (dashboard)
 SM-09 (deploy CI)  ·  SM-10 (docs)  — cross-cutting
 ```
+
+**Pipeline epic:** SM-01 … SM-10 (get PDFs into the sheet).
+**Dashboard epic:** SM-11 … SM-14 (monitor every file's progress).
 
 ## Tickets
 
@@ -38,7 +43,12 @@ SM-09 (deploy CI)  ·  SM-10 (docs)  — cross-cutting
 | [SM-08](SM-08-observability-resilience.md) | Observability, alerting, dead-letter/reprocess | 3 | SM-05, SM-07 |
 | [SM-09](SM-09-deploy-ci.md) | Deploy CI for dev/staging/main (guarded) | 3 | SM-01 |
 | [SM-10](SM-10-docs.md) | User/support/test docs + portal-sync verification | 2 | SM-07 |
+| [SM-11](SM-11-run-telemetry-model.md) | Pipeline run telemetry / status model (Firestore) | 3 | SM-03 |
+| [SM-12](SM-12-dashboard-app-shell.md) | Dashboard — app shell, hosting & auth | 5 | SM-11 |
+| [SM-13](SM-13-dashboard-file-monitor.md) | Dashboard — live file monitor & detail | 5 | SM-12 |
+| [SM-14](SM-14-dashboard-metrics-actions.md) | Dashboard — metrics & reprocess actions | 3 | SM-13, SM-08 |
 
-**Total: 34 points.** Blocked on the human-only prerequisites in
-`knowledge/infrastructure.md` → Known Gaps before anything can run live; the
-code can still be built and unit-tested (mocked APIs) without them.
+**Total: 50 points** (pipeline SM-01…SM-10 = 34, dashboard SM-11…SM-14 = 16).
+Blocked on the human-only prerequisites in `knowledge/infrastructure.md` → Known
+Gaps before anything can run live; the code can still be built and unit-tested
+(mocked APIs) without them.

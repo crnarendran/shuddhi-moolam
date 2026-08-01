@@ -26,10 +26,12 @@ exists today; the staging/dev topology is an **open decision** (see Known Gaps).
 Once provisioned, each environment's Firebase project runs:
 - **Cloud Functions** (Node.js + TypeScript) — the Drive webhook handler, the
   extraction/routing logic, and a scheduled Drive-channel renewal function.
-- **Firestore** — channel/watch state (`channelId`, `resourceId`, expiry) and a
-  processed-file dedup store.
-- **No hosting / no end-user auth** — the pipeline runs as a service identity,
-  not a signed-in user.
+- **Firestore** — channel/watch state (`channelId`, `resourceId`, expiry) and
+  the `pipeline_runs` telemetry/dedup store (SM-11) the dashboard reads.
+- **Firebase Hosting + Auth** — serve the monitoring dashboard (SM-12) and
+  gate it with Google sign-in + an email allowlist enforced in Firestore
+  security rules. (The *pipeline* itself still runs as a service identity; auth
+  is only for the dashboard's human viewers.)
 
 External Google APIs (enabled per project):
 - **Google Drive API** — `changes.watch` push notifications + file retrieval.
@@ -114,3 +116,6 @@ must not perform:
    existing page still appear live without a redeploy. Follow-up: add the
    `repository_dispatch` call to `sync-docs.yml` (needs a token with access to
    the docs-portal repo).
+8. **Dashboard auth (SM-12):** enable **Firebase Hosting + Firebase Auth
+   (Google)** on the project, and seed the first admin email into the dashboard
+   allowlist (`dashboard_admins`). Access-control decision → human step.
