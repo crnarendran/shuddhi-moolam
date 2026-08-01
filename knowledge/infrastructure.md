@@ -84,5 +84,15 @@ must not perform:
    Firebase projects (recommended for isolation) or all three branches deploy to
    `sai-shuddhi-moolam` with per-env config. Fill the Environments table once
    decided.
-6. **Docs-portal first-run redeploy:** after the first `staging` docs sync,
-   redeploy the portal once so `/shuddhi-moolam/...` routes generate.
+6. **Docs-portal first-run redeploy:** ✅ done 2026-08-01 — 26 docs synced to
+   `portal_docs` and the portal was redeployed, so `/shuddhi-moolam/...` routes
+   are live at `https://docs-portal-staging.web.app/shuddhi-moolam/readme`.
+7. **No auto-rebuild on sync (open):** the portal's `deploy-staging.yml` rebuilds
+   on a `repository_dispatch: docs-synced-staging` event that `sanjeev-ai`/
+   `swarmkit`/`keystar` fire at the end of their sync workflows — this repo's
+   `sync-docs.yml` does **not** yet fire it. So a brand-new doc *page* (new slug)
+   won't get a live route until the portal is redeployed manually
+   (`gh workflow run "Deploy (Staging)" -R crnarendran/docs-portal`). Edits to an
+   existing page still appear live without a redeploy. Follow-up: add the
+   `repository_dispatch` call to `sync-docs.yml` (needs a token with access to
+   the docs-portal repo).
