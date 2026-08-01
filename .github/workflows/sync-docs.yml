@@ -78,3 +78,30 @@ jobs:
           fi
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
           npm run sync:docs -- --env=$ENV --project-id=$PROJECT_ID
+      
+      - name: Trigger Portal Rebuild
+        if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_PORTAL_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Skipping portal rebuild: DOCS_PORTAL_DISPATCH_TOKEN not set."
+            exit 0
+          fi
+          
+          if [ "${{ github.event.inputs.target }}" = "prod" ]; then
+            PORTAL_REF="main"
+          elif [ "${{ github.ref_name }}" = "dev" ]; then
+            PORTAL_REF="dev"
+          else
+            PORTAL_REF="staging"
+          fi
+          
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/crnarendran/docs-portal/dispatches \
+            -f "event_type=docs-updated" \
+            -f "client_payload[project]=shuddhi-moolam" \
+            -f "client_payload[ref]=$PORTAL_REF"

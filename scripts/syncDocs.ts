@@ -64,6 +64,7 @@ walkMd(path.join(repoRoot, 'docs'), 'User Guides', 'Onboarding');
 walkMd(path.join(repoRoot, 'knowledge'), 'Development', 'Operations');
 walkMd(path.join(repoRoot, 'knowledge', 'adr'), 'Development', 'Architecture Decisions');
 walkMd(path.join(repoRoot, 'planning', 'backlog'), 'Development', 'Planning');
+walkMd(path.join(repoRoot, 'planning', 'archive'), 'Development', 'Changelog');
 
 // .agents/skills/<name>/SKILL.md — slug drops the .agents/ prefix and the
 // redundant /SKILL.md filename in favor of the skill's own directory name.
@@ -101,11 +102,15 @@ const syncDocs = async () => {
   console.log(`Syncing ${sources.length} Shuddhi-Moolam docs to ${firebaseProjectId}/${collectionName} (env=${targetEnv})...`);
 
   let count = 0;
+  const syncedIds = new Set<string>();
+
   for (const source of sources) {
     const fileContents = fs.readFileSync(source.absPath, 'utf8');
     const { data, content } = matter(fileContents);
 
     const docId = `${PROJECT}_${source.slug.replace(/\//g, '_')}`;
+    syncedIds.add(docId);
+    
     const docRef = db.collection(collectionName).doc(docId);
 
     await docRef.set({
@@ -125,6 +130,23 @@ const syncDocs = async () => {
     });
 
     count++;
+  }
+
+  console.log(`Checking for stale documents to prune...`);
+  const snapshot = await db.collection(collectionName).where('project', '==', PROJECT).get();
+  let pruneCount = 0;
+  const batch = db.batch();
+  for (const doc of snapshot.docs) {
+    if (!syncedIds.has(doc.id)) {
+      batch.delete(doc.ref);
+      pruneCount++;
+      console.log(`Pruning stale doc: ${doc.id}`);
+    }
+  }
+  
+  if (pruneCount > 0) {
+    await batch.commit();
+    console.log(`Successfully pruned ${pruneCount} stale documents.`);
   }
 
   console.log(`Successfully synced ${count} Shuddhi-Moolam docs to '${collectionName}'.`);
