@@ -13,6 +13,10 @@ tags: [backlog, ingestion, drive, scheduled]
 Establish and keep alive the Google Drive push-notification channel that fires
 the pipeline when a PDF is uploaded to the target folder (or any subfolder).
 
+**Target folder:** `1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb` (root; watch all
+subfolders) — see `knowledge/infrastructure.md` → Monitored resources. Read from
+config (`DRIVE_ROOT_FOLDER_ID`), not hardcoded.
+
 ## Scope
 - A callable/HTTP admin function to **register** a `changes.watch` channel for
   the target folder tree, persisting `channelId`, `resourceId`, and `expiration`

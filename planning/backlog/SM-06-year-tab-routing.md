@@ -12,6 +12,10 @@ tags: [backlog, routing, sheets]
 ## Goal
 Determine the correct year tab for an extracted record and ensure it exists.
 
+**Master sheet:** `1DNB8wkqGiVZ1fED4tSVI43PdNY6cY9NdYO6HsZJ-hoY` — see
+`knowledge/infrastructure.md` → Monitored resources. Read from config
+(`MASTER_SHEET_ID`), not hardcoded. Shared with SM-07.
+
 ## Scope
 - Derive the routing year from the record's `year` field (from the schema, not
   from "today" — a January issue can belong to the prior year's range; see

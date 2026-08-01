@@ -36,6 +36,22 @@ External Google APIs (enabled per project):
 - **Google Sheets API** — tab management + row append on the master sheet.
 - **Generative Language API** — Gemini (Flash) structured extraction.
 
+## Monitored resources (production targets)
+
+These are the concrete Drive folder and Sheet the pipeline operates on. IDs are
+identifiers, not secrets, so they live here in the repo. Access is granted by
+**sharing** each resource with the pipeline's service-account email (Editor) —
+a human step (see Known Gaps #3).
+
+| Resource | ID | Notes |
+|---|---|---|
+| **Source Drive folder (root)** | `1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb` | Watch this **and all subfolders** for new PDFs. [Open](https://drive.google.com/drive/folders/1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb) |
+| **Master spreadsheet** | `1DNB8wkqGiVZ1fED4tSVI43PdNY6cY9NdYO6HsZJ-hoY` | Append extracted rows to per-year `Data_<year>` tabs. [Open](https://docs.google.com/spreadsheets/d/1DNB8wkqGiVZ1fED4tSVI43PdNY6cY9NdYO6HsZJ-hoY/edit) |
+
+Wire these into Functions config (e.g. `DRIVE_ROOT_FOLDER_ID`,
+`MASTER_SHEET_ID`) rather than hardcoding, so dev/staging can point at test
+copies if desired.
+
 ## Secrets & credentials (target)
 
 | Secret name | Store | Authenticates / grants | Used by |
@@ -73,8 +89,10 @@ must not perform:
 2. **APIs:** enable **Google Drive API**, **Google Sheets API**, and
    **Generative Language API** on the project(s).
 3. **Service account + IAM:** create a dedicated service account and grant it
-   **Editor** access to the target Drive folder and the master Google Sheet;
-   store its key as the Functions runtime identity / GitHub secret.
+   **Editor** access by **sharing** the source Drive folder
+   (`1RgArYZYgmR-...`) and the master Sheet (`1DNB8wkqGiVZ1...`) with the SA's
+   email (see Monitored resources above); store its key as the Functions
+   runtime identity / GitHub secret.
 4. **Secrets:** add `GEMINI_API_KEY`, the SA JSON, and the two docs-portal
    `FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_*` secrets to the GitHub repo. (The
    docs-portal secrets are copies of the docs-portal service-account keys also
