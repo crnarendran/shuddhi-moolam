@@ -58,6 +58,7 @@ const walkMd = (dir: string, section: string, category: string) => {
 walkMd(path.join(repoRoot, 'docs'), 'Documentation', 'Guides');
 walkMd(path.join(repoRoot, 'knowledge'), 'Knowledge', 'Reference');
 walkMd(path.join(repoRoot, 'knowledge', 'adr'), 'Knowledge', 'Decisions');
+walkMd(path.join(repoRoot, 'planning', 'backlog'), 'Planning', 'Backlog');
 
 // .agents/skills/<name>/SKILL.md — slug drops the .agents/ prefix and the
 // redundant /SKILL.md filename in favor of the skill's own directory name.

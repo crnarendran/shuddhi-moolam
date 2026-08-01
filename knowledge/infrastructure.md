@@ -77,9 +77,9 @@ must not perform:
    store its key as the Functions runtime identity / GitHub secret.
 4. **Secrets:** add `GEMINI_API_KEY`, the SA JSON, and the two docs-portal
    `FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_*` secrets to the GitHub repo. (The
-   docs-portal secrets are literal copies of the same-named secrets in
-   `sanjeev-ai` — GitHub has no cross-repo secret sharing for personal-account
-   repos.)
+   docs-portal secrets are copies of the docs-portal service-account keys also
+   held by `sanjeev-ai` — GitHub has no cross-repo secret sharing for
+   personal-account repos. Docs-portal secrets provisioned 2026-08-01.)
 5. **Env topology decision:** decide whether `staging`/`dev` get their own
    Firebase projects (recommended for isolation) or all three branches deploy to
    `sai-shuddhi-moolam` with per-env config. Fill the Environments table once

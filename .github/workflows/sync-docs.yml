@@ -24,6 +24,7 @@ on:
       - 'AGENTS.md'
       - 'docs/**'
       - 'knowledge/**'
+      - 'planning/**'
       - '.agents/skills/**'
       - 'scripts/syncDocs.ts'
       - '.github/workflows/sync-docs.yml'
