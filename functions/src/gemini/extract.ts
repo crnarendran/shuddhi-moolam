@@ -63,7 +63,8 @@ export async function extractPricesFromPdf(
     '- cu_domestic: Domestic / MMR Landed price for Copper\n' +
     '- fe_cr_mumbai: Ferro Chromium (High or Low Carbon), Mumbai market\n' +
     '- pig_iron_foundry_gr_pune: Pig Iron Foundry Grade - A (Pune)\n' +
-    '- source_pages: A comma-separated string mapping each extracted column name to its page number, e.g. "crca_bundle_mumbai: 4, cu_lme: 1"\n\n' +
+    '- source_pages: A comma-separated string mapping each extracted column ' +
+    'name to its page number, e.g. "crca_bundle_mumbai: 4, cu_lme: 1"\n\n' +
     'Return ONLY valid JSON matching this schema exactly.';
 
   const inlineData = {
