@@ -67,7 +67,7 @@ const _renewWatch = onSchedule('every 24 hours', async () => {
   }
 });
 
-const env = process.env.ENV || 'dev';
+const env = process.env.APP_ENV || 'dev';
 const isProd = env === 'main' || env === 'prod';
 const suffix = isProd ? '' : `_${env}`;
 
