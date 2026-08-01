@@ -16,13 +16,24 @@ field contract (`knowledge/domain_model.md`). Read those for the "why" and the
 
 ## 1. Purpose & scope
 
-**In scope:** automatically extracting a fixed set of commodity prices from
-weekly PDF newsletters that land in Google Drive, and appending one row per
-issue to a year-partitioned master Google Sheet, with no human in the loop.
+**In scope:**
+- The core pipeline — automatically extracting a fixed set of commodity prices
+  from weekly PDF newsletters that land in Google Drive and appending one row
+  per issue to a year-partitioned master Google Sheet, with no human in the loop
+  (SM-01–SM-10).
+- A **monitoring dashboard** for per-file processing status (SM-11–SM-14).
+- **Historical / bulk backfill** of files already in the folder or missed during
+  a watch outage (SM-15).
+- **Analytics / reporting** on the extracted price data — planned, lower
+  priority (SM-16).
 
-**Out of scope (for now):** a UI, historical backfill of old PDFs, multi-tenant
-support, and analytics on the extracted data. These are potential future work,
-not part of the core pipeline.
+**Non-goals (deliberate — not accidental gaps):**
+- **Multi-tenant support.** This is a single-owner back-office tool: one watched
+  folder → one master sheet → one admin allowlist. Supporting multiple
+  independent tenants (separate folders/sheets/orgs) is intentionally not built.
+  Revisit only if a second independent owner actually appears; it would touch
+  config, routing, auth, and the data model, so it is a re-architecture, not a
+  toggle.
 
 ## 2. System context
 
