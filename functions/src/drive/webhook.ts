@@ -2,109 +2,114 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
 import { getWatchState, updatePageToken, drive } from './watch';
+import { defineSecret } from 'firebase-functions/params';
+
+const driveRootFolderIdSecret = defineSecret('DRIVE_ROOT_FOLDER_ID');
 
 const DRIVE_ROOT_FOLDER_ID =
   process.env.DRIVE_ROOT_FOLDER_ID || '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb';
 
-export const driveWebhook = onRequest(async (req, res) => {
-  const channelId = req.headers['x-goog-channel-id'] as string;
-  const resourceId = req.headers['x-goog-resource-id'] as string;
-  const resourceState = req.headers['x-goog-resource-state'] as string;
+export const driveWebhook = onRequest(
+  { secrets: [driveRootFolderIdSecret] },
+  async (req, res) => {
+    const channelId = req.headers['x-goog-channel-id'] as string;
+    const resourceId = req.headers['x-goog-resource-id'] as string;
+    const resourceState = req.headers['x-goog-resource-state'] as string;
 
-  if (!channelId || !resourceId) {
-    logger.warn('Missing Google Drive headers in webhook.');
-    res.status(400).send('Bad Request');
-    return;
-  }
-
-  const state = await getWatchState();
-  if (
-    !state ||
-    state.channelId !== channelId ||
-    state.resourceId !== resourceId
-  ) {
-    logger.warn('Webhook channel mismatch or unknown channel.', {
-      received: { channelId, resourceId },
-      expected: state
-        ? { channelId: state.channelId, resourceId: state.resourceId }
-        : null,
-    });
-    res.status(403).send('Forbidden');
-    return;
-  }
-
-  if (resourceState === 'sync') {
-    logger.info('Received sync notification. Returning 200.');
-    res.status(200).send('OK');
-    return;
-  }
-
-  logger.info('Processing Drive changes notification.');
-
-  try {
-    let pageToken = state.pageToken;
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await drive.changes.list({
-        pageToken,
-        spaces: 'drive',
-      });
-
-      const changes = response.data.changes || [];
-      for (const change of changes) {
-        if (!change.file || change.removed || change.file.trashed) continue;
-
-        const file = change.file;
-        if (file.mimeType !== 'application/pdf') continue;
-
-        const fileId = change.fileId!;
-
-        // Ancestry check
-        const inScope = await checkAncestry(fileId);
-        if (!inScope) {
-          logger.debug(`File ${fileId} is not in target folder tree.`);
-          continue;
-        }
-
-        // Dedup check
-        const db = getFirestore();
-        const pipelineDoc = db.doc(`pipeline_runs/${fileId}`);
-
-        const pipelineSnap = await pipelineDoc.get();
-
-        if (pipelineSnap.exists) {
-          logger.info(`File ${fileId} already processed or pending.`);
-          continue;
-        }
-
-        // Handoff to async extraction
-        logger.info(`Enqueuing file ${fileId} for extraction.`);
-        await pipelineDoc.set({
-          fileId,
-          status: 'detected',
-          detectedAt: Date.now(),
-          attempts: 0,
-        });
-      }
-
-      if (response.data.newStartPageToken) {
-        pageToken = response.data.newStartPageToken;
-        hasMore = false;
-      } else if (response.data.nextPageToken) {
-        pageToken = response.data.nextPageToken;
-      } else {
-        hasMore = false;
-      }
+    if (!channelId || !resourceId) {
+      logger.warn('Missing Google Drive headers in webhook.');
+      res.status(400).send('Bad Request');
+      return;
     }
 
-    await updatePageToken(pageToken);
-    res.status(200).send('OK');
-  } catch (error) {
-    logger.error('Error processing Drive changes', { error });
-    res.status(500).send('Internal Error');
-  }
-});
+    const state = await getWatchState();
+    if (
+      !state ||
+    state.channelId !== channelId ||
+    state.resourceId !== resourceId
+    ) {
+      logger.warn('Webhook channel mismatch or unknown channel.', {
+        received: { channelId, resourceId },
+        expected: state
+          ? { channelId: state.channelId, resourceId: state.resourceId }
+          : null,
+      });
+      res.status(403).send('Forbidden');
+      return;
+    }
+
+    if (resourceState === 'sync') {
+      logger.info('Received sync notification. Returning 200.');
+      res.status(200).send('OK');
+      return;
+    }
+
+    logger.info('Processing Drive changes notification.');
+
+    try {
+      let pageToken = state.pageToken;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await drive.changes.list({
+          pageToken,
+          spaces: 'drive',
+        });
+
+        const changes = response.data.changes || [];
+        for (const change of changes) {
+          if (!change.file || change.removed || change.file.trashed) continue;
+
+          const file = change.file;
+          if (file.mimeType !== 'application/pdf') continue;
+
+          const fileId = change.fileId!;
+
+          // Ancestry check
+          const inScope = await checkAncestry(fileId);
+          if (!inScope) {
+            logger.debug(`File ${fileId} is not in target folder tree.`);
+            continue;
+          }
+
+          // Dedup check
+          const db = getFirestore();
+          const pipelineDoc = db.doc(`pipeline_runs/${fileId}`);
+
+          const pipelineSnap = await pipelineDoc.get();
+
+          if (pipelineSnap.exists) {
+            logger.info(`File ${fileId} already processed or pending.`);
+            continue;
+          }
+
+          // Handoff to async extraction
+          logger.info(`Enqueuing file ${fileId} for extraction.`);
+          await pipelineDoc.set({
+            fileId,
+            status: 'detected',
+            detectedAt: Date.now(),
+            attempts: 0,
+          });
+        }
+
+        if (response.data.newStartPageToken) {
+          pageToken = response.data.newStartPageToken;
+          hasMore = false;
+        } else if (response.data.nextPageToken) {
+          pageToken = response.data.nextPageToken;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      await updatePageToken(pageToken);
+      res.status(200).send('OK');
+    } catch (error) {
+      logger.error('Error processing Drive changes', { error });
+      res.status(500).send('Internal Error');
+    }
+  });
 
 /**
  * Checks if a file is within the target folder tree.

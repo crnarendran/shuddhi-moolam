@@ -8,10 +8,10 @@ const auth = new google.auth.GoogleAuth({
 export const sheetsClient = google.sheets({ version: 'v4', auth });
 
 /**
- * Ensures that a tab named Data_<year> exists in the master sheet.
- * If it doesn't exist, it creates the tab and writes the canonical headers.
- * @param {number} year - The 4-digit year from the extraction record.
- * @returns {Promise<string>} The title of the tab (e.g. "Data_2026").
+ * Ensures that a tab named <year> exists in the master sheet.
+ * If it does not exist, it creates it using a predefined template.
+ * @param {number} year - The year to check/create.
+ * @returns {Promise<string>} The title of the tab (e.g. "2026").
  */
 export async function ensureYearTab(year: number): Promise<string> {
   const masterSheetId = process.env.MASTER_SHEET_ID;
@@ -19,7 +19,7 @@ export async function ensureYearTab(year: number): Promise<string> {
     throw new Error('MASTER_SHEET_ID environment variable not set.');
   }
 
-  const tabTitle = `Data_${year}`;
+  const tabTitle = `${year}`;
   logger.info(`Checking for tab ${tabTitle} in sheet ${masterSheetId}`);
 
   const doc = await sheetsClient.spreadsheets.get({
@@ -52,12 +52,20 @@ export async function ensureYearTab(year: number): Promise<string> {
     },
   });
 
+  const userFriendlyHeaders = SHEET_HEADERS.map((header) =>
+    header
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  );
+
+  // Initialize the headers
   await sheetsClient.spreadsheets.values.update({
     spreadsheetId: masterSheetId,
     range: `${tabTitle}!A1`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [SHEET_HEADERS],
+      values: [userFriendlyHeaders],
     },
   });
 

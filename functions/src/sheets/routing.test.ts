@@ -3,18 +3,21 @@ import { ensureYearTab, sheetsClient } from './routing';
 jest.mock('googleapis', () => {
   return {
     google: {
-      auth: {
-        GoogleAuth: jest.fn(),
-      },
       sheets: jest.fn().mockReturnValue({
         spreadsheets: {
           get: jest.fn(),
           batchUpdate: jest.fn(),
           values: {
             update: jest.fn(),
+            append: jest.fn(),
           },
         },
       }),
+      auth: {
+        GoogleAuth: jest.fn().mockImplementation(() => ({
+          getClient: jest.fn().mockResolvedValue({}),
+        })),
+      },
     },
   };
 });
@@ -39,12 +42,12 @@ describe('Sheets Routing Logic', () => {
   it('should reuse existing tab if found', async () => {
     (sheetsClient.spreadsheets.get as jest.Mock).mockResolvedValueOnce({
       data: {
-        sheets: [{ properties: { title: 'Data_2026' } }],
+        sheets: [{ properties: { title: '2026' } }],
       },
     });
 
     const title = await ensureYearTab(2026);
-    expect(title).toBe('Data_2026');
+    expect(title).toBe('2026');
     expect(sheetsClient.spreadsheets.get).toHaveBeenCalledWith({
       spreadsheetId: 'test-sheet-id',
     });
@@ -67,20 +70,21 @@ describe('Sheets Routing Logic', () => {
     ).mockResolvedValueOnce({});
 
     const title = await ensureYearTab(2026);
-    expect(title).toBe('Data_2026');
+    expect(title).toBe('2026');
 
     expect(sheetsClient.spreadsheets.batchUpdate).toHaveBeenCalledWith({
       spreadsheetId: 'test-sheet-id',
       requestBody: expect.objectContaining({
         requests: [
-          { addSheet: { properties: { title: 'Data_2026' } } },
+          { addSheet: { properties: { title: '2026' } } },
         ],
       }),
     });
 
+    // Writes headers
     expect(sheetsClient.spreadsheets.values.update).toHaveBeenCalledWith({
       spreadsheetId: 'test-sheet-id',
-      range: 'Data_2026!A1',
+      range: '2026!A1',
       valueInputOption: 'USER_ENTERED',
       requestBody: expect.objectContaining({
         values: expect.any(Array),

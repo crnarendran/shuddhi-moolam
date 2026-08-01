@@ -1,5 +1,6 @@
 export const SHEET_HEADERS = [
   'newsletter_issue_date',
+  'month',
   'year',
   'crca_bundle_mumbai',
   'crca_bundle_chennai',
@@ -12,4 +13,5 @@ export const SHEET_HEADERS = [
   'cu_domestic',
   'fe_cr_mumbai',
   'pig_iron_foundry_gr_pune',
+  'source_pages',
 ];

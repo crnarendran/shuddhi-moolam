@@ -34,7 +34,7 @@ export async function extractPricesFromPdf(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3.6-flash',
     generationConfig: {
       responseMimeType: 'application/json',
     },
@@ -50,6 +50,7 @@ export async function extractPricesFromPdf(
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +
     '- newsletter_issue_date: Issue date range, e.g. "JULY 27-AUGUST 02"\n' +
+    '- month: The month or months covered by the issue (e.g. "JULY-AUGUST")\n' +
     '- year: 4-digit publication year (integer)\n' +
     '- crca_bundle_mumbai: Melting Scrap (CRCA – Bundle) LSLP (Mumbai)\n' +
     '- crca_bundle_chennai: Melting Scrap (CRCA – Bundle) LSLP (Chennai)\n' +
@@ -61,7 +62,8 @@ export async function extractPricesFromPdf(
     '- cu_lme: LME Settlement Rate, Copper Grade A\n' +
     '- cu_domestic: Domestic / MMR Landed price for Copper\n' +
     '- fe_cr_mumbai: Ferro Chromium (High or Low Carbon), Mumbai market\n' +
-    '- pig_iron_foundry_gr_pune: Pig Iron Foundry Grade - A (Pune)\n\n' +
+    '- pig_iron_foundry_gr_pune: Pig Iron Foundry Grade - A (Pune)\n' +
+    '- source_pages: A comma-separated string mapping each extracted column name to its page number, e.g. "crca_bundle_mumbai: 4, cu_lme: 1"\n\n' +
     'Return ONLY valid JSON matching this schema exactly.';
 
   const inlineData = {

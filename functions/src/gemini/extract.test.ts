@@ -36,6 +36,7 @@ describe('Extract Prices from PDF', () => {
   it('should successfully extract and validate a full record', async () => {
     const validResponse = {
       newsletter_issue_date: 'JULY 27-AUGUST 02, 2026',
+      month: 'JULY-AUGUST',
       year: 2026,
       crca_bundle_mumbai: '47,500 - 46,500',
       crca_bundle_chennai: '48,000',
@@ -48,6 +49,7 @@ describe('Extract Prices from PDF', () => {
       cu_domestic: '123',
       fe_cr_mumbai: '123',
       pig_iron_foundry_gr_pune: '123',
+      source_pages: 'crca_bundle_mumbai: 4',
     };
 
     mockGenerateContent.mockResolvedValueOnce({
@@ -89,6 +91,7 @@ describe('Extract Prices from PDF', () => {
   it('should retry on transient errors and eventually succeed', async () => {
     const validResponse = {
       newsletter_issue_date: 'JULY 27-AUGUST 02, 2026',
+      month: 'JULY-AUGUST',
       year: 2026,
       crca_bundle_mumbai: '1',
       crca_bundle_chennai: '1',
@@ -101,6 +104,7 @@ describe('Extract Prices from PDF', () => {
       cu_domestic: '1',
       fe_cr_mumbai: '1',
       pig_iron_foundry_gr_pune: '1',
+      source_pages: 'crca_bundle_mumbai: 1',
     };
 
     mockGenerateContent

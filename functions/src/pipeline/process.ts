@@ -1,4 +1,5 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { defineSecret } from 'firebase-functions/params';
 import * as logger from 'firebase-functions/logger';
 import { downloadPdf } from '../drive/download';
 import { extractPricesFromPdf } from '../gemini/extract';
@@ -7,8 +8,13 @@ import { appendRow } from '../sheets/append';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 
+const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
+
 export const processPendingPdf = onDocumentWritten(
-  'pipeline_runs/{fileId}',
+  {
+    document: 'pipeline_runs/{fileId}',
+    secrets: [geminiApiKeySecret]
+  },
   async (event) => {
     const after = event.data?.after;
     const before = event.data?.before;

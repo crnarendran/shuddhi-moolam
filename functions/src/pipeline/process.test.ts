@@ -42,7 +42,7 @@ describe('processPendingPdf', () => {
         candidatesTokenCount: 50
       },
     });
-    (ensureYearTab as jest.Mock).mockResolvedValue('Data_2026');
+    (ensureYearTab as jest.Mock).mockResolvedValue('2026');
     (appendRow as jest.Mock).mockResolvedValue(undefined);
 
     // Cast handler to unknown then invoke
@@ -54,7 +54,7 @@ describe('processPendingPdf', () => {
     expect(downloadPdf).toHaveBeenCalledWith('123');
     expect(extractPricesFromPdf).toHaveBeenCalled();
     expect(ensureYearTab).toHaveBeenCalledWith(2026);
-    expect(appendRow).toHaveBeenCalledWith('Data_2026', { year: 2026 });
+    expect(appendRow).toHaveBeenCalledWith('2026', { year: 2026 });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
     expect(recordStage).toHaveBeenCalledWith('123', 'extracting');
     expect(recordStage).toHaveBeenCalledWith('123', 'routing');
@@ -64,7 +64,7 @@ describe('processPendingPdf', () => {
       expect.objectContaining({
         gemini: { tokensIn: 100, tokensOut: 50 },
         year: 2026,
-        targetTab: 'Data_2026',
+        targetTab: '2026',
       })
     );
     expect(sendAlert).not.toHaveBeenCalled();
