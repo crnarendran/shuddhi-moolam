@@ -61,6 +61,7 @@ jobs:
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
         run: |
+          echo "MASTER_SHEET_ID=1DNB8wkqGiVZ1fED4tSVI43PdNY6cY9NdYO6HsZJ-hoY" > .env
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}' > sa.json
           export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
           npx firebase-tools deploy --only functions --project sai-shuddhi-moolam --force
