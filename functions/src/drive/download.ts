@@ -7,17 +7,20 @@ const MAX_PDF_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
  * Downloads a PDF file from Google Drive into a Buffer.
  * Checks mimeType and size constraints before downloading.
  * @param {string} fileId - The ID of the Drive file to download.
- * @returns {Promise<Buffer>} A Buffer containing the PDF bytes.
+ * @returns {Promise<{buffer: Buffer, filename: string}>} A Buffer
+ * containing the PDF bytes and its filename.
  */
-export async function downloadPdf(fileId: string): Promise<Buffer> {
+export async function downloadPdf(
+  fileId: string
+): Promise<{buffer: Buffer, filename: string}> {
   logger.info(`Fetching metadata for file ${fileId}`);
 
   const meta = await drive.files.get({
     fileId,
-    fields: 'mimeType, size',
+    fields: 'mimeType, size, name',
   });
 
-  const { mimeType, size } = meta.data;
+  const { mimeType, size, name } = meta.data;
 
   if (mimeType !== 'application/pdf') {
     throw new Error(
@@ -40,5 +43,8 @@ export async function downloadPdf(fileId: string): Promise<Buffer> {
     { responseType: 'arraybuffer' }
   );
 
-  return Buffer.from(response.data as ArrayBuffer);
+  return {
+    buffer: Buffer.from(response.data as ArrayBuffer),
+    filename: name || fileId
+  };
 }

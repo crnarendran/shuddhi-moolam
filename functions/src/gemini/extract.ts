@@ -49,8 +49,9 @@ export async function extractPricesFromPdf(
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +
-    '- newsletter_issue_date: Issue date range, e.g. "JULY 27-AUGUST 02"\n' +
-    '- month: The month or months covered by the issue (e.g. "JULY-AUGUST")\n' +
+    '- newsletter_issue: Issue date range, e.g. "JULY 27-AUGUST 02"\n' +
+    '- month: The 2-digit month number (mm format) of the first month ' +
+    'covered by the issue (e.g. "07" for July)\n' +
     '- year: 4-digit publication year (integer)\n' +
     '- crca_bundle_mumbai: Melting Scrap (CRCA – Bundle) LSLP (Mumbai)\n' +
     '- crca_bundle_chennai: Melting Scrap (CRCA – Bundle) LSLP (Chennai)\n' +

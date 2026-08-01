@@ -30,11 +30,14 @@ export const processPendingPdf = onDocumentWritten(
       try {
         // 1. Download
         await recordStage(fileId, 'downloading');
-        const pdfBuffer = await downloadPdf(fileId);
+        const { buffer: pdfBuffer, filename } = await downloadPdf(fileId);
 
         // 2. Extract
         await recordStage(fileId, 'extracting');
         const { data: record, usage } = await extractPricesFromPdf(pdfBuffer);
+
+        // Overwrite the issue date with the full path/filename
+        record.newsletter_issue = `newsletter_issue/${filename}`;
 
         // 3. Ensure tab (we could use 'validating' too but the plan
         // says routing)
