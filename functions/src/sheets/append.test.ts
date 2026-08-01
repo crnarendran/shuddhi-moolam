@@ -20,7 +20,7 @@ describe('appendRow', () => {
 
   it('maps record to row and appends to sheet', async () => {
     const mockRecord: ExtractionRecord = {
-      newsletter_issue_date: 'JULY 27-AUGUST 02',
+      newsletter_issue: 'JULY 27-AUGUST 02',
       month: 'JULY-AUGUST',
       year: 2026,
       crca_bundle_mumbai: '47,500',

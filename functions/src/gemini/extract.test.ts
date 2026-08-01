@@ -35,7 +35,7 @@ describe('Extract Prices from PDF', () => {
 
   it('should successfully extract and validate a full record', async () => {
     const validResponse = {
-      newsletter_issue_date: 'JULY 27-AUGUST 02, 2026',
+      newsletter_issue: 'JULY 27-AUGUST 02, 2026',
       month: 'JULY-AUGUST',
       year: 2026,
       crca_bundle_mumbai: '47,500 - 46,500',
@@ -75,7 +75,7 @@ describe('Extract Prices from PDF', () => {
     'should throw a validation error on missing fields without retrying',
     async () => {
       const invalidResponse = {
-        newsletter_issue_date: 'JULY 27-AUGUST 02, 2026',
+        newsletter_issue: 'JULY 27-AUGUST 02, 2026',
       // Missing year and other fields
       };
 
@@ -90,7 +90,7 @@ describe('Extract Prices from PDF', () => {
 
   it('should retry on transient errors and eventually succeed', async () => {
     const validResponse = {
-      newsletter_issue_date: 'JULY 27-AUGUST 02, 2026',
+      newsletter_issue: 'JULY 27-AUGUST 02, 2026',
       month: 'JULY-AUGUST',
       year: 2026,
       crca_bundle_mumbai: '1',

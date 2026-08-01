@@ -33,7 +33,7 @@ describe('processPendingPdf', () => {
   };
 
   it('should successfully process a PDF end-to-end', async () => {
-    (downloadPdf as jest.Mock).mockResolvedValue(Buffer.from('pdf'));
+    (downloadPdf as jest.Mock).mockResolvedValue({ buffer: Buffer.from('pdf'), filename: 'test.pdf' });
     (extractPricesFromPdf as jest.Mock).mockResolvedValue({
       data: { year: 2026 },
       usage: {
@@ -54,7 +54,7 @@ describe('processPendingPdf', () => {
     expect(downloadPdf).toHaveBeenCalledWith('123');
     expect(extractPricesFromPdf).toHaveBeenCalled();
     expect(ensureYearTab).toHaveBeenCalledWith(2026);
-    expect(appendRow).toHaveBeenCalledWith('2026', { year: 2026 });
+    expect(appendRow).toHaveBeenCalledWith('2026', { year: 2026, newsletter_issue: 'newsletter_issue/test.pdf' });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
     expect(recordStage).toHaveBeenCalledWith('123', 'extracting');
     expect(recordStage).toHaveBeenCalledWith('123', 'routing');
@@ -72,7 +72,7 @@ describe('processPendingPdf', () => {
 
   it('handles failures, records failed stage, alerts', async () => {
     const error = new Error('Extraction failed');
-    (downloadPdf as jest.Mock).mockResolvedValue(Buffer.from('pdf'));
+    (downloadPdf as jest.Mock).mockResolvedValue({ buffer: Buffer.from('pdf'), filename: 'test.pdf' });
     (extractPricesFromPdf as jest.Mock).mockRejectedValue(error);
 
     const handler = processPendingPdf as unknown as {

@@ -35,16 +35,16 @@ describe('Download PDF logic', () => {
   it('should download and return a Buffer for a valid PDF', async () => {
     (drive.files.get as jest.Mock)
       .mockResolvedValueOnce({
-        data: { mimeType: 'application/pdf', size: '1024' },
+        data: { mimeType: 'application/pdf', size: '1024', name: 'test_report.pdf' },
       })
       .mockResolvedValueOnce({
         data: new ArrayBuffer(8),
       });
 
-    const buf = await downloadPdf('f3');
-
-    expect(buf).toBeInstanceOf(Buffer);
-    expect(buf.length).toBe(8);
+    const result = await downloadPdf('f3');
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(result.buffer.length).toBeGreaterThan(0);
+    expect(result.filename).toBe('test_report.pdf');
     expect(drive.files.get).toHaveBeenCalledTimes(2);
     expect(drive.files.get).toHaveBeenLastCalledWith(
       { fileId: 'f3', alt: 'media' },
