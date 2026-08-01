@@ -35,7 +35,11 @@ describe('Download PDF logic', () => {
   it('should download and return a Buffer for a valid PDF', async () => {
     (drive.files.get as jest.Mock)
       .mockResolvedValueOnce({
-        data: { mimeType: 'application/pdf', size: '1024', name: 'test_report.pdf' },
+        data: {
+          mimeType: 'application/pdf',
+          size: '1024',
+          name: 'test_report.pdf'
+        },
       })
       .mockResolvedValueOnce({
         data: new ArrayBuffer(8),
