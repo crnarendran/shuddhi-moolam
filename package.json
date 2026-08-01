@@ -1,0 +1,18 @@
+{
+  "name": "shuddhi-moolam",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Docs-sync tooling for the Shuddhi-Moolam repo (PDF-to-Sheets extraction pipeline).",
+  "scripts": {
+    "sync:docs": "tsx scripts/syncDocs.ts"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.2.0",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
