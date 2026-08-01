@@ -3,7 +3,7 @@ id: SM-08
 title: Observability, alerting, dead-letter / reprocess
 type: ticket
 points: 3
-status: todo
+status: in-review
 depends_on: [SM-05, SM-07]
 tags: [backlog, ops, observability]
 ---

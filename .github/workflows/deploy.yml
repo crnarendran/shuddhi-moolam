@@ -1,0 +1,69 @@
+name: Deploy Cloud Functions
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Firebase Service Account Secret
+        id: check_secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "Missing FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM secret. Skipping deployment."
+            echo "has_secret=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_secret=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout code
+        if: steps.check_secret.outputs.has_secret == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: steps.check_secret.outputs.has_secret == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'functions/package-lock.json'
+
+      - name: Install dependencies
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm ci
+
+      - name: Run linter
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm run lint
+
+      - name: Build
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm run build
+
+      - name: Test
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm test
+
+      - name: Deploy to Firebase
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        env:
+          ENV: ${{ github.ref_name }}
+        run: |
+          echo "ENV=${{ github.ref_name }}" > .env
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}' > sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
+          npx firebase-tools deploy --only functions --project sai-shuddhi-moolam
+          rm sa.json
+

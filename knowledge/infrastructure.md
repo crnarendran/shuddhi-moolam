@@ -12,14 +12,16 @@ live via `firebase projects:list` / `gcloud`.
 
 ## Environments
 
-Promotion flow is `dev → staging → main`. Only the production Firebase project
-exists today; the staging/dev topology is an **open decision** (see Known Gaps).
+Promotion flow is `dev → staging → main`. All environments target the single
+`sai-shuddhi-moolam` Firebase project. Environment isolation is handled via
+config/prefixing (e.g. per-environment resource naming/prefixing in
+Firestore, Drive folders, and Functions config).
 
 | Environment | Branch | Firebase / GCP project | Status |
 |---|---|---|---|
-| Production | `main` | `sai-shuddhi-moolam` | Created (Spark plan; needs Blaze — see gaps) |
-| Staging | `staging` | *TBD* | Not provisioned |
-| Development | `dev` | *TBD* | Not provisioned |
+| Production | `main` | `sai-shuddhi-moolam` | Active (Spark plan; needs Blaze — see gaps) |
+| Staging | `staging` | `sai-shuddhi-moolam` | Active (Isolated via config/prefixing) |
+| Development | `dev` | `sai-shuddhi-moolam` | Active (Isolated via config/prefixing) |
 
 ## Services (target architecture)
 
@@ -100,14 +102,10 @@ must not perform:
    docs-portal secrets are copies of the docs-portal service-account keys also
    held by `sanjeev-ai` — GitHub has no cross-repo secret sharing for
    personal-account repos. Docs-portal secrets provisioned 2026-08-01.)
-5. **Env topology decision:** decide whether `staging`/`dev` get their own
-   Firebase projects (recommended for isolation) or all three branches deploy to
-   `sai-shuddhi-moolam` with per-env config. Fill the Environments table once
-   decided.
-6. **Docs-portal first-run redeploy:** ✅ done 2026-08-01 — 26 docs synced to
+5. **Docs-portal first-run redeploy:** ✅ done 2026-08-01 — 26 docs synced to
    `portal_docs` and the portal was redeployed, so `/shuddhi-moolam/...` routes
    are live at `https://docs-portal-staging.web.app/shuddhi-moolam/readme`.
-7. **No auto-rebuild on sync (open):** the portal's `deploy-staging.yml` rebuilds
+6. **No auto-rebuild on sync (open):** the portal's `deploy-staging.yml` rebuilds
    on a `repository_dispatch: docs-synced-staging` event that `sanjeev-ai`/
    `swarmkit`/`keystar` fire at the end of their sync workflows — this repo's
    `sync-docs.yml` does **not** yet fire it. So a brand-new doc *page* (new slug)
@@ -116,6 +114,6 @@ must not perform:
    existing page still appear live without a redeploy. Follow-up: add the
    `repository_dispatch` call to `sync-docs.yml` (needs a token with access to
    the docs-portal repo).
-8. **Dashboard auth (SM-12):** enable **Firebase Hosting + Firebase Auth
+7. **Dashboard auth (SM-12):** enable **Firebase Hosting + Firebase Auth
    (Google)** on the project, and seed the first admin email into the dashboard
    allowlist (`dashboard_admins`). Access-control decision → human step.

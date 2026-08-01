@@ -132,13 +132,11 @@ modifying TS/JS under `functions/`:
 | Environment | Firebase / GCP project | Branch |
 |---|---|---|
 | Production (prod) | `sai-shuddhi-moolam` | `main` |
-| Staging | *TBD — see Known Gaps in `knowledge/infrastructure.md`* | `staging` |
-| Development | *TBD — see Known Gaps* | `dev` |
+| Staging | `sai-shuddhi-moolam` | `staging` |
+| Development | `sai-shuddhi-moolam` | `dev` |
 
-Only `sai-shuddhi-moolam` exists today. Whether `staging`/`dev` get their own
-projects or all branches target the single project is an open infra decision
-recorded in `knowledge/infrastructure.md` — do **not** guess it silently; it's
-a billing/infra escalation.
+All branches (`dev`, `staging`, `main`) target the single `sai-shuddhi-moolam`
+project. Environment isolation is handled via config/prefixing.
 
 ## Branching & promotion
 

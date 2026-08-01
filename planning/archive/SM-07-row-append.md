@@ -3,7 +3,7 @@ id: SM-07
 title: Row mapping + idempotent append
 type: ticket
 points: 3
-status: todo
+status: in-review
 depends_on: [SM-06]
 tags: [backlog, routing, sheets, idempotency]
 ---
