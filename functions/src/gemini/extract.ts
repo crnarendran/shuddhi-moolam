@@ -8,13 +8,25 @@ const INITIAL_BACKOFF_MS = 1000;
 /**
  * Extracts structured pricing data from a newsletter PDF using Gemini.
  * @param {Buffer} pdfBuffer - The raw PDF bytes.
- * @returns {Promise<{ data: ExtractionRecord;
- * usage: { totalTokenCount: number } }>} The validated
- * extraction record.
+ * @returns {Promise<{
+ *   data: ExtractionRecord;
+ *   usage: {
+ *     totalTokenCount: number;
+ *     promptTokenCount: number;
+ *     candidatesTokenCount: number;
+ *   }
+ * }>} The validated extraction record.
  */
 export async function extractPricesFromPdf(
   pdfBuffer: Buffer
-): Promise<{ data: ExtractionRecord; usage: { totalTokenCount: number } }> {
+): Promise<{
+  data: ExtractionRecord;
+  usage: {
+    totalTokenCount: number;
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+  }
+}> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable not set.');
@@ -73,6 +85,8 @@ export async function extractPricesFromPdf(
       const text = result.response.text();
       const usageMetadata = result.response.usageMetadata;
       const totalTokenCount = usageMetadata?.totalTokenCount || 0;
+      const promptTokenCount = usageMetadata?.promptTokenCount || 0;
+      const candidatesTokenCount = usageMetadata?.candidatesTokenCount || 0;
 
       // Parse JSON
       let parsedJson: unknown;
@@ -85,7 +99,10 @@ export async function extractPricesFromPdf(
       // Zod validation
       const parsedData = extractionRecordSchema.parse(parsedJson);
       logger.info('Successfully extracted and validated data.');
-      return { data: parsedData, usage: { totalTokenCount } };
+      return {
+        data: parsedData,
+        usage: { totalTokenCount, promptTokenCount, candidatesTokenCount }
+      };
     } catch (error: unknown) {
       // Do not retry validation or parsing errors
       const err = error as Error;

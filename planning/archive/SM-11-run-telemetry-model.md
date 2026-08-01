@@ -3,7 +3,7 @@ id: SM-11
 title: Pipeline run telemetry / status model (Firestore)
 type: ticket
 points: 3
-status: todo
+status: in-review
 depends_on: [SM-03]
 tags: [backlog, observability, firestore, dashboard]
 ---

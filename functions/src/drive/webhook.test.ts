@@ -112,6 +112,8 @@ describe('Drive Webhook', () => {
     });
     expect(docRef.set).toHaveBeenCalledWith(expect.objectContaining({
       fileId: 'file1',
+      status: 'detected',
+      attempts: 0,
     }));
     expect(updatePageToken).toHaveBeenCalledWith('token2');
     expect((res as { status: jest.Mock }).status).toHaveBeenCalledWith(200);

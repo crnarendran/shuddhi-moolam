@@ -60,7 +60,11 @@ describe('Extract Prices from PDF', () => {
     const result = await extractPricesFromPdf(dummyBuffer);
     expect(result).toEqual({
       data: validResponse,
-      usage: { totalTokenCount: 42 }
+      usage: {
+        totalTokenCount: 42,
+        promptTokenCount: 0,
+        candidatesTokenCount: 0
+      }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
@@ -112,7 +116,11 @@ describe('Extract Prices from PDF', () => {
     const result = await extractPricesFromPdf(dummyBuffer);
     expect(result).toEqual({
       data: validResponse,
-      usage: { totalTokenCount: 10 }
+      usage: {
+        totalTokenCount: 10,
+        promptTokenCount: 0,
+        candidatesTokenCount: 0
+      }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(3);
   }, 10000); // increase timeout for retries

@@ -1,0 +1,54 @@
+import { getFirestore } from 'firebase-admin/firestore';
+
+export type PipelineStatus =
+  | 'detected'
+  | 'downloading'
+  | 'extracting'
+  | 'validating'
+  | 'routing'
+  | 'appended'
+  | 'failed'
+  | 'dead_letter';
+
+export interface PipelineRun {
+  fileId: string;
+  fileName?: string;
+  folderPath?: string;
+  status: PipelineStatus;
+  stages: Record<string, { startedAt: number; endedAt?: number; ok?: boolean }>;
+  detectedAt: number;
+  completedAt?: number;
+  issueDate?: string;
+  year?: number;
+  targetTab?: string;
+  appendedRange?: string;
+  extractSummary?: Record<string, unknown>;
+  error?: { stage: string; message: string; code?: string };
+  attempts: number;
+  gemini?: { tokensIn: number; tokensOut: number; estCostUsd?: number };
+}
+
+/**
+ * Records a pipeline stage and updates the pipeline run document.
+ * @param {string} fileId The ID of the file being processed.
+ * @param {PipelineStatus} status The new status of the pipeline run.
+ * @param {Partial<PipelineRun>} patch Optional fields to update on the record.
+ * @returns {Promise<void>} A promise that resolves when the update is complete.
+ */
+export async function recordStage(
+  fileId: string,
+  status: PipelineStatus,
+  patch?: Partial<PipelineRun>
+) {
+  const db = getFirestore();
+  const ref = db.collection('pipeline_runs').doc(fileId);
+  const now = Date.now();
+
+  const update: Record<string, unknown> = {
+    status,
+    ...patch,
+    [`stages.${status}`]: { startedAt: now, ok: true },
+  };
+
+  await ref.set(update, { merge: true });
+}

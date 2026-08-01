@@ -69,24 +69,22 @@ export const driveWebhook = onRequest(async (req, res) => {
 
         // Dedup check
         const db = getFirestore();
-        const processedDoc = db.doc(`_system/processed_pdfs/${fileId}`);
-        const pendingDoc = db.doc(`_system/pending_pdfs/${fileId}`);
+        const pipelineDoc = db.doc(`pipeline_runs/${fileId}`);
 
-        const [processedSnap, pendingSnap] = await Promise.all([
-          processedDoc.get(),
-          pendingDoc.get(),
-        ]);
+        const pipelineSnap = await pipelineDoc.get();
 
-        if (processedSnap.exists || pendingSnap.exists) {
+        if (pipelineSnap.exists) {
           logger.info(`File ${fileId} already processed or pending.`);
           continue;
         }
 
         // Handoff to async extraction
         logger.info(`Enqueuing file ${fileId} for extraction.`);
-        await pendingDoc.set({
+        await pipelineDoc.set({
           fileId,
-          enqueuedAt: Date.now(),
+          status: 'detected',
+          detectedAt: Date.now(),
+          attempts: 0,
         });
       }
 
