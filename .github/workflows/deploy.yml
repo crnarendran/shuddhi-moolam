@@ -48,7 +48,9 @@ jobs:
       - name: Build
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
-        run: npm run build
+        run: |
+          sed -i "s/process.env.APP_ENV || 'dev'/'${{ github.ref_name }}'/g" src/index.ts
+          npm run build
 
       - name: Test
         if: steps.check_secret.outputs.has_secret == 'true'
@@ -58,10 +60,7 @@ jobs:
       - name: Deploy to Firebase
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
-        env:
-          APP_ENV: ${{ github.ref_name }}
         run: |
-          echo "APP_ENV=${{ github.ref_name }}" > .env
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}' > sa.json
           export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
           npx firebase-tools deploy --only functions --project sai-shuddhi-moolam --force
