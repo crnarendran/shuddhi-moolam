@@ -12,7 +12,9 @@ export const drive = google.drive({ version: 'v3', auth });
 
 import { APP_ENV } from '../config';
 
-const WATCH_DOC_PATH = '_system/drive_watch' + (APP_ENV === 'main' || APP_ENV === 'prod' ? '' : '_' + APP_ENV);
+const WATCH_DOC_PATH =
+  '_system/drive_watch' +
+  (APP_ENV === 'main' || APP_ENV === 'prod' ? '' : '_' + APP_ENV);
 
 export interface WatchState {
   channelId: string;
