@@ -70,7 +70,7 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
   }, [runs, selectedRun]);
 
   const filteredRuns = runs.filter(run => 
-    run.fileName.toLowerCase().includes(search.toLowerCase())
+    (run.fileName?.toLowerCase() || "").includes(search.toLowerCase())
   );
   
   const failedCount = runs.filter(r => r.status === 'failed' || r.status === 'dead_letter').length;
