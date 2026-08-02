@@ -24,6 +24,7 @@ export interface PipelineRun {
     tokens: number;
     estimatedUsd: number;
   };
+  targetTab?: string;
 }
 
 const getStatusConfig = (status: PipelineStatus) => {
