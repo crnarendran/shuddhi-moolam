@@ -49,7 +49,8 @@ export async function extractPricesFromPdf(
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +
-    '- date: The issue date from the header of any page, formatted explicitly as dd/MM/yyyy\n' +
+    '- date: The issue date from the header of any page, ' +
+    'formatted explicitly as dd/MM/yyyy\n' +
     '- crca_bundle_mumbai: Melting Scrap (CRCA – Bundle) LSLP (Mumbai)\n' +
     '- crca_bundle_chennai: Melting Scrap (CRCA – Bundle) LSLP (Chennai)\n' +
     '- melting_foundry_scrap_mumbai: Melting Scrap (Mumbai) (Foundry)\n' +
