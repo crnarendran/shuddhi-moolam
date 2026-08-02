@@ -3,7 +3,7 @@ id: SM-20
 title: Historical & seasonal analysis view
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-15, SM-18]
 tags: [backlog, analytics, reporting, seasonal, frontend]
 ---

@@ -7,7 +7,8 @@ import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { PriceReviewPage } from './pages/PriceReviewPage';
-import { LineChart, BarChart3 } from 'lucide-react';
+import { SeasonalPage } from './pages/SeasonalPage';
+import { LineChart, BarChart3, TrendingUp } from 'lucide-react';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -17,7 +18,7 @@ function App() {
   const [runs, setRuns] = useState<PipelineRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    'monitor' | 'analytics' | 'reporting'
+    'monitor' | 'analytics' | 'reporting' | 'seasonal'
   >('monitor');
 
   useEffect(() => {
@@ -121,6 +122,18 @@ function App() {
                     <BarChart3 className="h-4 w-4" /> Price Review
                   </div>
                 </button>
+                <button
+                  onClick={() => setActiveTab('seasonal')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === 'seasonal'
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" /> Seasonal
+                  </div>
+                </button>
               </nav>
             </div>
             <div className="flex items-center space-x-4">
@@ -153,8 +166,10 @@ function App() {
           </>
         ) : activeTab === 'analytics' ? (
           <AnalyticsPage runs={runs} />
-        ) : (
+        ) : activeTab === 'reporting' ? (
           <PriceReviewPage />
+        ) : (
+          <SeasonalPage />
         )}
       </main>
     </div>

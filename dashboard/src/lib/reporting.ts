@@ -149,3 +149,30 @@ export function monthKeyLabel(key: string): string {
   const [y, m] = key.split('-').map(Number);
   return `${MONTH_LABELS[m - 1]} ${y}`;
 }
+
+export const MONTHS = MONTH_LABELS;
+
+/**
+ * Monthly averages arranged as one 12-slot row per year (Jan..Dec).
+ * Missing months are null. Useful for year-over-year overlay charts.
+ */
+export function monthlyByYear(
+  records: PriceRecord[],
+  field: string
+): Map<number, (number | null)[]> {
+  const monthly = monthlyAverages(records, field);
+  const byYear = new Map<number, (number | null)[]>();
+  for (const [key, val] of monthly) {
+    const [y, m] = key.split('-').map(Number);
+    if (!byYear.has(y)) byYear.set(y, new Array(12).fill(null));
+    byYear.get(y)![m - 1] = val;
+  }
+  return byYear;
+}
+
+/** Confidence label given how many distinct years of history exist. */
+export function confidenceLabel(years: number): string {
+  if (years >= 3) return 'ok';
+  if (years >= 1) return `low · based on ${years} year${years > 1 ? 's' : ''}`;
+  return 'insufficient';
+}
