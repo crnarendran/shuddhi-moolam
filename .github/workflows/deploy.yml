@@ -48,7 +48,9 @@ jobs:
       - name: Test
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
-        run: npm test
+        env:
+          NODE_ENV: test
+        run: npm test -- --forceExit
 
       - name: Build
         if: steps.check_secret.outputs.has_secret == 'true'
