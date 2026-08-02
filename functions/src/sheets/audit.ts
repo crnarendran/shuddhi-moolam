@@ -4,6 +4,11 @@ import { ExtractionRecord } from '../gemini/schema';
 import { MASTER_SHEET_ID } from '../config';
 import * as logger from 'firebase-functions/logger';
 
+/**
+ * Logs an audit trail row to Google Sheets
+ * @param {'insert' | 'update'} action - The action performed
+ * @param {ExtractionRecord} record - The extracted record
+ */
 export async function logAuditTrail(
   action: 'insert' | 'update',
   record: ExtractionRecord
@@ -14,7 +19,7 @@ export async function logAuditTrail(
   }
 
   const timestamp = new Date().toISOString();
-  
+
   // Map the record to a string/number array based on SHEET_HEADERS
   const recordValues = SHEET_HEADERS.map((header) => {
     const val = record[header as keyof ExtractionRecord];
@@ -23,7 +28,7 @@ export async function logAuditTrail(
 
   const rowArray = [timestamp, action, ...recordValues];
 
-  let endColumnCode = 'A'.charCodeAt(0) + rowArray.length - 1;
+  const endColumnCode = 'A'.charCodeAt(0) + rowArray.length - 1;
   let endColumnLetter = '';
   if (endColumnCode > 'Z'.charCodeAt(0)) {
     endColumnLetter = 'A' + String.fromCharCode(endColumnCode - 26);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { upsertRow } from './upsert';
 import { sheetsClient } from './routing';
 import { MASTER_SHEET_ID } from '../config';

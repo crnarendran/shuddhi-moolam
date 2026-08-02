@@ -14,7 +14,9 @@ jest.mock('firebase-admin/firestore', () => {
   mockDoc.collection.mockReturnValue(mockCollection);
 
   return {
-    getFirestore: jest.fn(() => ({ collection: jest.fn(() => mockCollection) })),
+    getFirestore: jest.fn(() => ({
+      collection: jest.fn(() => mockCollection)
+    })),
   };
 });
 

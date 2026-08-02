@@ -57,11 +57,15 @@ export const processPendingPdf = onDocumentWritten(
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const historicalCol = require('../config').HISTORICAL_COLLECTION;
         await getFirestore().collection(historicalCol).doc(docId).set(record);
-        
+
         // Also add to history subcollection
         const timestampId = new Date().getTime().toString();
-        await getFirestore().collection(historicalCol).doc(docId).collection('history').doc(timestampId).set(record);
-
+        await getFirestore()
+          .collection(historicalCol)
+          .doc(docId)
+          .collection('history')
+          .doc(timestampId)
+          .set(record);
 
         // 5. Success
         await recordStage(fileId, 'appended', {

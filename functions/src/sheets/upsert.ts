@@ -5,12 +5,13 @@ import { MASTER_SHEET_ID } from '../config';
 
 /**
  * Maps the extraction record to an array of values in the order
- * defined by SHEET_HEADERS, and appends or updates the row in the specified tab.
+ * defined by SHEET_HEADERS, and appends or updates the row in the
+ * specified tab.
  *
  * Idempotency is enforced by checking if the date exists.
  * @param {string} tabTitle - The name of the tab to append to.
  * @param {ExtractionRecord} record - The extracted data record.
- * @returns {Promise<'insert' | 'update'>} Resolves when the operation is complete.
+ * @returns {Promise<'insert' | 'update'>} Resolves when complete.
  */
 export async function upsertRow(
   tabTitle: string,
@@ -52,7 +53,8 @@ export async function upsertRow(
 
   if (existingRowIndex > 0) {
     // 2. Update existing row
-    const range = `${tabTitle}!A${existingRowIndex}:${endColumnLetter}${existingRowIndex}`;
+    const range =
+      `${tabTitle}!A${existingRowIndex}:${endColumnLetter}${existingRowIndex}`;
     await sheetsClient.spreadsheets.values.update({
       spreadsheetId: masterSheetId,
       range,
