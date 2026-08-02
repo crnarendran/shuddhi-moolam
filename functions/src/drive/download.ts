@@ -1,7 +1,7 @@
 import { drive } from './watch';
 import * as logger from 'firebase-functions/logger';
 
-const MAX_PDF_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
+const MAX_PDF_SIZE_BYTES = 16 * 1024 * 1024; // 16 MB
 
 /**
  * Downloads a PDF file from Google Drive into a Buffer.
