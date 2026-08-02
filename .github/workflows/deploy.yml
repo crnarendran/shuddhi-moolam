@@ -45,17 +45,17 @@ jobs:
         working-directory: ./functions
         run: npm run lint
 
+      - name: Test
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm test
+
       - name: Build
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
         run: |
           sed -i "s/process.env.APP_ENV || 'dev'/('${{ github.ref_name }}' as string)/g" src/index.ts src/config.ts
           npm run build
-
-      - name: Test
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./functions
-        run: npm test
 
       - name: Build Dashboard
         if: steps.check_secret.outputs.has_secret == 'true'

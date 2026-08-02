@@ -75,7 +75,7 @@ export async function extractPricesFromPdf(
   };
 
   let attempt = 0;
-  let delayMs = INITIAL_BACKOFF_MS;
+  let delayMs = process.env.NODE_ENV === 'test' ? 0 : INITIAL_BACKOFF_MS;
 
   while (attempt < MAX_RETRIES) {
     try {
