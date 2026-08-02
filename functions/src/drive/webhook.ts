@@ -14,12 +14,17 @@ export const driveWebhook = onRequest(
       for (const doc of snap.docs) {
         if (!doc.data().fileName || doc.data().fileName === 'Unknown') {
           try {
-            const res = await drive.files.get({ fileId: doc.id, fields: 'name' });
+            const res = await drive.files.get({
+              fileId: doc.id,
+              fields: 'name',
+            });
             if (res.data.name) {
               await doc.ref.update({ fileName: res.data.name });
               count++;
             }
-          } catch(e) {}
+          } catch (e) {
+            logger.warn('Failed to get name', { e });
+          }
         }
       }
       res.status(200).send(`Fixed ${count} filenames!`);

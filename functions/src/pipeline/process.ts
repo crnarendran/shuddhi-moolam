@@ -37,8 +37,8 @@ export const processPendingPdf = onDocumentWritten(
         // 1. Download
         await recordStage(fileId, 'downloading');
         const { buffer: pdfBuffer, filename } = await downloadPdf(fileId);
-        
-        // Update the document with fileName so the dashboard can display it immediately
+
+        // Update the document with fileName so the dashboard can display it
         if (event.data?.after) {
           await event.data.after.ref.update({ fileName: filename });
         }
