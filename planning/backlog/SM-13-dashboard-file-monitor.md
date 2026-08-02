@@ -3,7 +3,7 @@ id: SM-13
 title: Monitoring dashboard — live file monitor & detail
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-12]
 tags: [backlog, dashboard, frontend]
 ---

@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { startDriveWatch, stopDriveWatch, getWatchState } from './drive/watch';
 import { driveWebhook as _driveWebhook } from './drive/webhook';
 import { processPendingPdf as _processPendingPdf } from './pipeline/process';
+import { chatEndpoint as _chatEndpoint } from './analytics/chat';
 
 initializeApp();
 
@@ -77,5 +78,6 @@ module.exports = {
   [`helloWorld${suffix}`]: _helloWorld,
   [`registerWatch${suffix}`]: _registerWatch,
   [`renewWatch${suffix}`]: _renewWatch,
+  [`chatEndpoint${suffix}`]: _chatEndpoint,
 };
 

@@ -3,7 +3,7 @@ id: SM-12
 title: Monitoring dashboard — app shell, hosting & auth
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-11]
 tags: [backlog, dashboard, frontend, auth, hosting]
 ---

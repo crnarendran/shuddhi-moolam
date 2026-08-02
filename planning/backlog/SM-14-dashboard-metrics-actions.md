@@ -3,7 +3,7 @@ id: SM-14
 title: Monitoring dashboard — metrics & reprocess actions
 type: ticket
 points: 3
-status: todo
+status: in-review
 depends_on: [SM-13, SM-08]
 tags: [backlog, dashboard, frontend, ops]
 ---
