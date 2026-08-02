@@ -73,11 +73,11 @@ jobs:
           npx firebase-tools deploy --only functions --project sai-shuddhi-moolam --force
           
           if [ "${{ github.ref_name }}" = "main" ]; then
-            npx firebase-tools deploy --only hosting --project sai-shuddhi-moolam --force
+            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam --project sai-shuddhi-moolam --force
           elif [ "${{ github.ref_name }}" = "staging" ]; then
-            npx firebase-tools deploy --only hosting --site sai-shuddhi-moolam-staging --project sai-shuddhi-moolam --force
+            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam-staging --project sai-shuddhi-moolam --force
           else
-            npx firebase-tools deploy --only hosting --site sai-shuddhi-moolam-dev --project sai-shuddhi-moolam --force
+            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam-dev --project sai-shuddhi-moolam --force
           fi
           
           rm sa.json
