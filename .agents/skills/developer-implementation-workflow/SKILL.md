@@ -22,7 +22,14 @@ Only the Developer agent (invoked as a subagent) writes production code. The Arc
 - **Run:** Launch all long-running commands (e.g., `npm run test`, `pytest`) in the background using `WaitMsBeforeAsync`. Rely on native event-driven wakeups.
 - **Refactor:** Clean up the code once tests pass.
 
-## Step 3: Validation & Escalation Check
+## Transitive Dependency Override Rules
+- **Major Version Family Alignment:** When overriding or pinning a transitive dependency version to fix a bug:
+  1. Inspect the dependency requirements of primary consuming packages (e.g., `googleapis` / `googleapis-common`).
+  2. NEVER downgrade a transitive dependency to a previous major version family (e.g. `gaxios` 6.x) if the primary package requires the current major version family (7.x).
+  3. Always verify and upgrade to the latest release within the CURRENT major version family (e.g. `7.3.0` instead of `6.5.0`).
+
+## Step 3: Validation, Live Diagnostic & Escalation Check
+- **Live Diagnostic Verification:** Whenever dependency overrides or external API clients (e.g., Google Drive API) are modified, running unit tests with mocks is NOT sufficient. You MUST execute live diagnostic scripts (e.g., `diag-webhook.cjs`) against live APIs as part of the pre-promotion checklist before submitting for review.
 - Follow `.agents/skills/human-escalation-policy/SKILL.md`. Most blocked
   paths, missing dependencies, or ticket ambiguity should be documented in
   the ticket and passed back to the Architect without waiting — but if
