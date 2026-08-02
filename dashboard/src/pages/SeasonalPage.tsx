@@ -15,7 +15,7 @@ import {
 const HISTORICAL =
   import.meta.env.VITE_HISTORICAL_COLLECTION || 'historical_prices';
 
-export function SeasonalPage() {
+export function SeasonalPage({ isDark }: { isDark: boolean }) {
   const [records, setRecords] = useState<PriceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState(COMMODITIES[7].key); // Cu LME
@@ -36,26 +36,28 @@ export function SeasonalPage() {
 
   const yearKeys = [...byYear.keys()].sort();
   const latestYear = yearKeys[yearKeys.length - 1];
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
 
   const overlayOption = {
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
     legend: {
       data: yearKeys.map(String),
-      textStyle: { color: '#9ca3af' },
+      textStyle: { color: axisColor },
       top: 0,
     },
     xAxis: {
       type: 'category',
       data: MONTHS,
-      axisLabel: { color: '#9ca3af' },
-      axisLine: { lineStyle: { color: 'rgba(148,163,184,0.3)' } },
+      axisLabel: { color: axisColor },
+      axisLine: { lineStyle: { color: gridColor } },
     },
     yAxis: {
       type: 'value',
       scale: true,
-      axisLabel: { color: '#9ca3af' },
-      splitLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } },
+      axisLabel: { color: axisColor },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     series: yearKeys.map((y) => ({
       name: String(y),
@@ -67,8 +69,8 @@ export function SeasonalPage() {
       lineStyle:
         y === latestYear
           ? { color: '#2563eb', width: 3 }
-          : { color: '#9ca3af', width: 1.5, type: 'dashed' },
-      itemStyle: { color: y === latestYear ? '#2563eb' : '#9ca3af' },
+          : { color: axisColor, width: 1.5, type: 'dashed' },
+      itemStyle: { color: y === latestYear ? '#2563eb' : axisColor },
     })),
   };
 
@@ -82,13 +84,13 @@ export function SeasonalPage() {
     xAxis: {
       type: 'category',
       data: MONTHS,
-      axisLabel: { color: '#9ca3af' },
-      axisLine: { lineStyle: { color: 'rgba(148,163,184,0.3)' } },
+      axisLabel: { color: axisColor },
+      axisLine: { lineStyle: { color: gridColor } },
     },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: '{value}%', color: '#9ca3af' },
-      splitLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } },
+      axisLabel: { formatter: '{value}%', color: axisColor },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     series: [
       {
@@ -100,7 +102,7 @@ export function SeasonalPage() {
           return {
             value: Number(v.toFixed(2)),
             itemStyle: {
-              color: v <= -0.05 ? '#e24b4a' : v >= 0.05 ? '#16a34a' : '#9ca3af',
+              color: v <= -0.05 ? '#e24b4a' : v >= 0.05 ? '#16a34a' : axisColor,
               borderRadius: 3,
             },
           };

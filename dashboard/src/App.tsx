@@ -13,7 +13,11 @@ import { LineChart, BarChart3, TrendingUp } from 'lucide-react';
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') return saved === 'dark';
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  });
   
   const [runs, setRuns] = useState<PipelineRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
@@ -53,6 +57,7 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 
   if (loading) {
@@ -165,11 +170,11 @@ function App() {
             <FileMonitor runs={runs} loading={runsLoading} />
           </>
         ) : activeTab === 'analytics' ? (
-          <AnalyticsPage runs={runs} />
+          <AnalyticsPage runs={runs} isDark={isDark} />
         ) : activeTab === 'reporting' ? (
-          <PriceReviewPage />
+          <PriceReviewPage isDark={isDark} />
         ) : (
-          <SeasonalPage />
+          <SeasonalPage isDark={isDark} />
         )}
       </main>
     </div>

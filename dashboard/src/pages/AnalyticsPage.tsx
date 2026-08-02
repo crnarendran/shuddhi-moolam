@@ -4,7 +4,11 @@ import { type PipelineRun } from '../components/FileMonitor';
 import { AIChatPanel } from '../components/AIChatPanel';
 import { MessageSquare } from 'lucide-react';
 
-export function AnalyticsPage({ runs }: { runs: PipelineRun[] }) {
+export function AnalyticsPage(
+  { runs, isDark }: { runs: PipelineRun[]; isDark: boolean }
+) {
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? '#3f3f46' : '#e5e7eb';
   const [selectedMetric, setSelectedMetric] = useState<string>('Cu LME');
   const [isChatOpen, setIsChatOpen] = useState(false);
 
@@ -48,13 +52,13 @@ export function AnalyticsPage({ runs }: { runs: PipelineRun[] }) {
     xAxis: {
       type: 'category',
       data: chartData.dates,
-      axisLabel: { color: '#9ca3af' }, // zinc-400
-      axisLine: { lineStyle: { color: '#3f3f46' } }, // zinc-700
+      axisLabel: { color: axisColor }, // zinc-400
+      axisLine: { lineStyle: { color: gridColor } }, // zinc-700
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#9ca3af' },
-      splitLine: { lineStyle: { color: '#3f3f46' } },
+      axisLabel: { color: axisColor },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     series: [
       {
@@ -114,7 +118,6 @@ export function AnalyticsPage({ runs }: { runs: PipelineRun[] }) {
         <ReactECharts
           option={options}
           style={{ height: 400, width: '100%' }}
-          theme="dark" // You might want to toggle this dynamically based on app's theme
         />
       </div>
 

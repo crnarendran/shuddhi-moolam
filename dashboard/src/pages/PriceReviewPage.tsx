@@ -33,7 +33,7 @@ const statusStyle: Record<Status, string> = {
   'No data': 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
 };
 
-export function PriceReviewPage() {
+export function PriceReviewPage({ isDark }: { isDark: boolean }) {
   const [records, setRecords] = useState<PriceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [threshold, setThreshold] = useState(5);
@@ -82,6 +82,8 @@ export function PriceReviewPage() {
     .sort((a, b) => Math.abs(b.pct!) - Math.abs(a.pct!))[0];
 
   const chartRows = rows.filter((r) => r.pct !== null);
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
   const chartOption = {
     grid: { left: 4, right: 24, top: 8, bottom: 8, containLabel: true },
     tooltip: {
@@ -90,14 +92,14 @@ export function PriceReviewPage() {
     },
     xAxis: {
       type: 'value',
-      axisLabel: { formatter: '{value}%', color: '#9ca3af' },
-      splitLine: { lineStyle: { color: 'rgba(148,163,184,0.2)' } },
+      axisLabel: { formatter: '{value}%', color: axisColor },
+      splitLine: { lineStyle: { color: gridColor } },
     },
     yAxis: {
       type: 'category',
       data: chartRows.map((r) => r.label),
-      axisLabel: { color: '#9ca3af' },
-      axisLine: { lineStyle: { color: 'rgba(148,163,184,0.3)' } },
+      axisLabel: { color: axisColor },
+      axisLine: { lineStyle: { color: gridColor } },
     },
     series: [
       {
