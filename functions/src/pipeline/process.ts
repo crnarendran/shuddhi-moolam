@@ -40,8 +40,8 @@ export const processPendingPdf = onDocumentWritten(
         await recordStage(fileId, 'downloading');
         const { buffer: pdfBuffer, filename } = await downloadPdf(fileId);
 
-        // 2. Extract
-        await recordStage(fileId, 'extracting');
+        // 2. Extract (record the filename now so the monitor shows it)
+        await recordStage(fileId, 'extracting', { fileName: filename });
         const { data: record, usage } = await extractPricesFromPdf(pdfBuffer);
 
         // Overwrite the filename with the full path/filename

@@ -3,8 +3,16 @@ id: SM-25
 title: File monitor display fixes — filename + year→tab label
 type: ticket
 points: 2
-status: todo
+status: in-review
 depends_on: [SM-11, SM-13, SM-06]
+
+## Resolution (2026-08-02)
+- **Filename:** fixed — `process.ts` now sets `fileName` on the run at the
+  `extracting` stage (from `downloadPdf`), which the FileMonitor `FILE` column
+  reads. It was never written before (webhook wrote only fileId/status).
+- **Year → Tab:** NOT a bug — the pipeline names year tabs just `<year>`
+  (e.g. `2026`), so `FileMonitor`'s `year → targetTab` correctly renders
+  `2026 → 2026`. Left as-is.
 tags: [backlog, bug, dashboard, ux]
 ---
 # SM-25 — File monitor display fixes

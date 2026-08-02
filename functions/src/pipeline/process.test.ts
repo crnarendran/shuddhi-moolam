@@ -81,7 +81,9 @@ describe('processPendingPdf', () => {
       filename: 'test.pdf'
     });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
-    expect(recordStage).toHaveBeenCalledWith('123', 'extracting');
+    expect(recordStage).toHaveBeenCalledWith('123', 'extracting', {
+      fileName: 'test.pdf',
+    });
     expect(recordStage).toHaveBeenCalledWith('123', 'routing');
     expect(recordStage).toHaveBeenCalledWith(
       '123',
