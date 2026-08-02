@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import * as logger from 'firebase-functions/logger';
 import { SHEET_HEADERS } from './constants';
+import { MASTER_SHEET_ID } from '../config';
 
 const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -14,7 +15,7 @@ export const sheetsClient = google.sheets({ version: 'v4', auth });
  * @returns {Promise<string>} The title of the tab (e.g. "2026").
  */
 export async function ensureYearTab(year: number): Promise<string> {
-  const masterSheetId = process.env.MASTER_SHEET_ID;
+  const masterSheetId = MASTER_SHEET_ID;
   if (!masterSheetId) {
     throw new Error('MASTER_SHEET_ID environment variable not set.');
   }

@@ -1,4 +1,5 @@
 import { driveWebhook } from './webhook';
+import { DRIVE_ROOT_FOLDER_ID } from '../config';
 import { getWatchState, updatePageToken, drive } from './watch';
 import { getFirestore } from 'firebase-admin/firestore';
 import { Request } from 'firebase-functions/v2/https';
@@ -97,7 +98,7 @@ describe('Drive Webhook', () => {
     });
 
     (drive.files.get as jest.Mock).mockResolvedValue({
-      data: { parents: ['1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb'] },
+      data: { parents: [DRIVE_ROOT_FOLDER_ID] },
     });
 
     const db = getFirestore();

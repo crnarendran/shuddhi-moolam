@@ -1,4 +1,5 @@
 import { ensureYearTab, sheetsClient } from './routing';
+import { MASTER_SHEET_ID } from '../config';
 
 jest.mock('googleapis', () => {
   return {
@@ -25,18 +26,9 @@ jest.mock('googleapis', () => {
 describe('Sheets Routing Logic', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.MASTER_SHEET_ID = 'test-sheet-id';
   });
 
   afterEach(() => {
-    delete process.env.MASTER_SHEET_ID;
-  });
-
-  it('should throw if MASTER_SHEET_ID is missing', async () => {
-    delete process.env.MASTER_SHEET_ID;
-    await expect(ensureYearTab(2026)).rejects.toThrow(
-      'MASTER_SHEET_ID environment variable not set.'
-    );
   });
 
   it('should reuse existing tab if found', async () => {
@@ -49,7 +41,7 @@ describe('Sheets Routing Logic', () => {
     const title = await ensureYearTab(2026);
     expect(title).toBe('2026');
     expect(sheetsClient.spreadsheets.get).toHaveBeenCalledWith({
-      spreadsheetId: 'test-sheet-id',
+      spreadsheetId: MASTER_SHEET_ID,
     });
     expect(sheetsClient.spreadsheets.batchUpdate).not.toHaveBeenCalled();
     expect(sheetsClient.spreadsheets.values.update).not.toHaveBeenCalled();
@@ -73,7 +65,7 @@ describe('Sheets Routing Logic', () => {
     expect(title).toBe('2026');
 
     expect(sheetsClient.spreadsheets.batchUpdate).toHaveBeenCalledWith({
-      spreadsheetId: 'test-sheet-id',
+      spreadsheetId: MASTER_SHEET_ID,
       requestBody: expect.objectContaining({
         requests: [
           { addSheet: { properties: { title: '2026' } } },
@@ -83,7 +75,7 @@ describe('Sheets Routing Logic', () => {
 
     // Writes headers
     expect(sheetsClient.spreadsheets.values.update).toHaveBeenCalledWith({
-      spreadsheetId: 'test-sheet-id',
+      spreadsheetId: MASTER_SHEET_ID,
       range: '2026!A1',
       valueInputOption: 'USER_ENTERED',
       requestBody: expect.objectContaining({

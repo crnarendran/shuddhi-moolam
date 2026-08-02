@@ -2,15 +2,10 @@ import { onRequest } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as logger from 'firebase-functions/logger';
 import { getWatchState, updatePageToken, drive } from './watch';
-import { defineSecret } from 'firebase-functions/params';
-
-const driveRootFolderIdSecret = defineSecret('DRIVE_ROOT_FOLDER_ID');
-
-const DRIVE_ROOT_FOLDER_ID =
-  process.env.DRIVE_ROOT_FOLDER_ID || '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb';
+import { DRIVE_ROOT_FOLDER_ID, FIRESTORE_COLLECTION } from '../config';
 
 export const driveWebhook = onRequest(
-  { secrets: [driveRootFolderIdSecret] },
+  {},
   async (req, res) => {
     const channelId = req.headers['x-goog-channel-id'] as string;
     const resourceId = req.headers['x-goog-resource-id'] as string;
@@ -74,7 +69,7 @@ export const driveWebhook = onRequest(
 
           // Dedup check
           const db = getFirestore();
-          const pipelineDoc = db.doc(`pipeline_runs/${fileId}`);
+          const pipelineDoc = db.doc(`${FIRESTORE_COLLECTION}/${fileId}`);
 
           const pipelineSnap = await pipelineDoc.get();
 

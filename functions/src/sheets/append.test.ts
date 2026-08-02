@@ -1,5 +1,6 @@
 import { appendRow } from './append';
 import { sheetsClient } from './routing';
+import { MASTER_SHEET_ID } from '../config';
 import { ExtractionRecord } from '../gemini/schema';
 
 // mock the google sheets client
@@ -37,13 +38,13 @@ describe('appendRow', () => {
       source_pages: 'crca_bundle_mumbai: 4',
     };
 
-    process.env.MASTER_SHEET_ID = 'test-sheet-id';
+    // process.env.MASTER_SHEET_ID = 'test-sheet-id';
 
     await appendRow('Data_2026', mockRecord);
 
     expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledTimes(1);
     expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledWith({
-      spreadsheetId: 'test-sheet-id',
+      spreadsheetId: MASTER_SHEET_ID,
       range: 'Data_2026!A:O',
       valueInputOption: 'USER_ENTERED',
       requestBody: {

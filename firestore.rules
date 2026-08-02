@@ -1,9 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /pipeline_runs/{document=**} {
+    match /{collection}/{document=**} {
       // Only allow crnarendran@gmail.com to read pipeline runs for the dashboard
-      allow read: if request.auth != null && request.auth.token.email == "crnarendran@gmail.com";
+      allow read: if collection.matches('^pipeline_runs.*') && request.auth != null && request.auth.token.email == "crnarendran@gmail.com";
       // Only backend functions can write
       allow write: if false; 
     }

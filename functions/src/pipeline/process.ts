@@ -12,7 +12,8 @@ const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
 export const processPendingPdf = onDocumentWritten(
   {
-    document: 'pipeline_runs/{fileId}',
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    document: `${require('../config').FIRESTORE_COLLECTION}/{fileId}`,
     secrets: [geminiApiKeySecret]
   },
   async (event) => {
@@ -24,7 +25,7 @@ export const processPendingPdf = onDocumentWritten(
       after?.data()?.status === 'detected' &&
       before?.data()?.status !== 'detected'
     ) {
-      const fileId = event.params.fileId;
+      const fileId = (event.params as Record<string, string>).fileId;
       logger.info(`Started processing pending PDF`, { fileId });
 
       try {

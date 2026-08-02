@@ -1,6 +1,7 @@
 import { sheetsClient } from './routing';
 import { SHEET_HEADERS } from './constants';
 import { ExtractionRecord } from '../gemini/schema';
+import { MASTER_SHEET_ID } from '../config';
 
 /**
  * Maps the extraction record to an array of values in the order
@@ -16,7 +17,7 @@ export async function appendRow(
   tabTitle: string,
   record: ExtractionRecord
 ): Promise<void> {
-  const masterSheetId = process.env.MASTER_SHEET_ID;
+  const masterSheetId = MASTER_SHEET_ID;
   if (!masterSheetId) {
     throw new Error('MASTER_SHEET_ID environment variable not set.');
   }

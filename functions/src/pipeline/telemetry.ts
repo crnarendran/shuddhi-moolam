@@ -1,4 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
+import { FIRESTORE_COLLECTION } from '../config';
 
 export type PipelineStatus =
   | 'detected'
@@ -41,7 +42,7 @@ export async function recordStage(
   patch?: Partial<PipelineRun>
 ) {
   const db = getFirestore();
-  const ref = db.collection('pipeline_runs').doc(fileId);
+  const ref = db.collection(FIRESTORE_COLLECTION).doc(fileId);
   const now = Date.now();
 
   const update: Record<string, unknown> = {

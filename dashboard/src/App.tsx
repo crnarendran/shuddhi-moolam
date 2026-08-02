@@ -30,7 +30,8 @@ function App() {
       setRuns([]);
       return;
     }
-    const q = query(collection(db, 'pipeline_runs'), orderBy('detectedAt', 'desc'));
+    const collectionName = import.meta.env.VITE_FIRESTORE_COLLECTION || 'pipeline_runs';
+    const q = query(collection(db, collectionName), orderBy('detectedAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
