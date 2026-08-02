@@ -7,6 +7,7 @@ export type PipelineStatus =
   | 'extracting'
   | 'validating'
   | 'routing'
+  | 'upserting'
   | 'appended'
   | 'failed'
   | 'dead_letter';

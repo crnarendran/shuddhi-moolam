@@ -5,7 +5,8 @@ import * as logger from 'firebase-functions/logger';
 import { downloadPdf } from '../drive/download';
 import { extractPricesFromPdf } from '../gemini/extract';
 import { ensureYearTab } from '../sheets/routing';
-import { appendRow } from '../sheets/append';
+import { upsertRow } from '../sheets/upsert';
+import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 
@@ -46,7 +47,9 @@ export const processPendingPdf = onDocumentWritten(
         const tabTitle = await ensureYearTab(record.date);
 
         // 4. Append
-        await appendRow(tabTitle, record);
+        await recordStage(fileId, 'upserting');
+        const action = await upsertRow(tabTitle, record);
+        await logAuditTrail(action, record);
 
         // 4.5 Insert into Historical Collection
         const [day, month, year] = record.date.split('/');
@@ -54,6 +57,11 @@ export const processPendingPdf = onDocumentWritten(
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const historicalCol = require('../config').HISTORICAL_COLLECTION;
         await getFirestore().collection(historicalCol).doc(docId).set(record);
+        
+        // Also add to history subcollection
+        const timestampId = new Date().getTime().toString();
+        await getFirestore().collection(historicalCol).doc(docId).collection('history').doc(timestampId).set(record);
+
 
         // 5. Success
         await recordStage(fileId, 'appended', {

@@ -2,19 +2,22 @@ import { processPendingPdf } from './process';
 import { downloadPdf } from '../drive/download';
 import { extractPricesFromPdf } from '../gemini/extract';
 import { ensureYearTab } from '../sheets/routing';
-import { appendRow } from '../sheets/append';
+import { upsertRow } from '../sheets/upsert';
+import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 
-
 jest.mock('firebase-admin/firestore', () => {
   const setMock = jest.fn();
-  const docMock = jest.fn(() => ({ set: setMock }));
-  const collectionMock = jest.fn(() => ({ doc: docMock }));
+  const mockDoc = { set: setMock, collection: jest.fn() };
+  const mockCollection = { doc: jest.fn(() => mockDoc) };
+  mockDoc.collection.mockReturnValue(mockCollection);
+
   return {
-    getFirestore: jest.fn(() => ({ collection: collectionMock })),
+    getFirestore: jest.fn(() => ({ collection: jest.fn(() => mockCollection) })),
   };
 });
+
 jest.mock('firebase-functions/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
@@ -22,7 +25,8 @@ jest.mock('firebase-functions/logger', () => ({
 jest.mock('../drive/download');
 jest.mock('../gemini/extract');
 jest.mock('../sheets/routing');
-jest.mock('../sheets/append');
+jest.mock('../sheets/upsert');
+jest.mock('../sheets/audit');
 jest.mock('../utils/alert');
 jest.mock('./telemetry');
 
@@ -54,7 +58,8 @@ describe('processPendingPdf', () => {
       },
     });
     (ensureYearTab as jest.Mock).mockResolvedValue('2026');
-    (appendRow as jest.Mock).mockResolvedValue(undefined);
+    (upsertRow as jest.Mock).mockResolvedValue('insert');
+    (logAuditTrail as jest.Mock).mockResolvedValue(undefined);
 
     // Cast handler to unknown then invoke
     const handler = processPendingPdf as unknown as {
@@ -65,7 +70,11 @@ describe('processPendingPdf', () => {
     expect(downloadPdf).toHaveBeenCalledWith('123');
     expect(extractPricesFromPdf).toHaveBeenCalled();
     expect(ensureYearTab).toHaveBeenCalledWith('27/07/2026');
-    expect(appendRow).toHaveBeenCalledWith('2026', {
+    expect(upsertRow).toHaveBeenCalledWith('2026', {
+      date: '27/07/2026',
+      filename: 'test.pdf'
+    });
+    expect(logAuditTrail).toHaveBeenCalledWith('insert', {
       date: '27/07/2026',
       filename: 'test.pdf'
     });

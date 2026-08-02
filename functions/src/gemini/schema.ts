@@ -15,6 +15,7 @@ export const extractionRecordSchema = z.object({
   fe_cr_mumbai: z.string(),
   pig_iron_foundry_gr_pune: z.string(),
   source_pages: z.string(),
+  last_modified_date: z.string().optional(),
 });
 
 export type ExtractionRecord = z.infer<typeof extractionRecordSchema>;
