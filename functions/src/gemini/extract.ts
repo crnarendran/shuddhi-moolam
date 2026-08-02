@@ -98,6 +98,9 @@ export async function extractPricesFromPdf(
       let parsedJson: unknown;
       try {
         parsedJson = JSON.parse(text);
+        if (Array.isArray(parsedJson) && parsedJson.length > 0) {
+          parsedJson = parsedJson[0];
+        }
       } catch (err) {
         throw new Error(`Failed to parse Gemini response as JSON: ${text}`);
       }
