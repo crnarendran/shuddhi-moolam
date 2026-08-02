@@ -7,30 +7,6 @@ import { DRIVE_ROOT_FOLDER_ID, FIRESTORE_COLLECTION } from '../config';
 export const driveWebhook = onRequest(
   {},
   async (req, res) => {
-    if (req.query.fixFilenames === 'true') {
-      const db = getFirestore();
-      const snap = await db.collection(FIRESTORE_COLLECTION).get();
-      let count = 0;
-      for (const doc of snap.docs) {
-        if (!doc.data().fileName || doc.data().fileName === 'Unknown') {
-          try {
-            const res = await drive.files.get({
-              fileId: doc.id,
-              fields: 'name',
-            });
-            if (res.data.name) {
-              await doc.ref.update({ fileName: res.data.name });
-              count++;
-            }
-          } catch (e) {
-            logger.warn('Failed to get name', { e });
-          }
-        }
-      }
-      res.status(200).send(`Fixed ${count} filenames!`);
-      return;
-    }
-
     const channelId = req.headers['x-goog-channel-id'] as string;
     const resourceId = req.headers['x-goog-resource-id'] as string;
     const resourceState = req.headers['x-goog-resource-state'] as string;
