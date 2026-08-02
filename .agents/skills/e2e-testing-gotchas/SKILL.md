@@ -85,6 +85,7 @@ usually faster than re-discovering the same fix again.
 - **Gate heavy/write-driven tests behind an explicit environment check**
   rather than letting them run unconditionally in every environment,
   especially any environment that isn't a disposable sandbox.
+- **Cross-Environment Trigger Interception / Event Stealing:** When multiple backend environments (`dev`, `staging`, `prod`) share a cloud project, deploying trigger path changes to `dev` without promoting them to `staging` and `main` causes stale functions in staging/prod to listen to `dev` triggers. Always verify that staging/prod functions are updated or disabled during dev testing to prevent event hijacking.
 - **Widen timeouts for tests that share a machine with many parallel
   workers.** CPU contention under a full parallel run can make a test that
   passes in isolation time out under load — this is a resourcing problem,
