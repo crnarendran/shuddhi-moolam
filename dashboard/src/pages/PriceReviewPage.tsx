@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
 import {
   COMMODITIES,
   monthlyAverages,
@@ -20,9 +18,6 @@ interface Row {
   status: Status;
 }
 
-const HISTORICAL =
-  import.meta.env.VITE_HISTORICAL_COLLECTION || 'historical_prices';
-
 const fmt = (n: number | null): string =>
   n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
@@ -33,18 +28,10 @@ const statusStyle: Record<Status, string> = {
   'No data': 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
 };
 
-export function PriceReviewPage({ isDark }: { isDark: boolean }) {
-  const [records, setRecords] = useState<PriceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+export function PriceReviewPage(
+  { records, isDark }: { records: PriceRecord[]; isDark: boolean }
+) {
   const [threshold, setThreshold] = useState(5);
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, HISTORICAL), (snap) => {
-      setRecords(snap.docs.map((d) => d.data() as PriceRecord));
-      setLoading(false);
-    }, () => setLoading(false));
-    return () => unsub();
-  }, []);
 
   const months = useMemo(() => {
     const set = new Set<string>();
@@ -116,13 +103,6 @@ export function PriceReviewPage({ isDark }: { isDark: boolean }) {
       },
     ],
   };
-
-  if (loading) {
-    return (
-      <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
-        text-center">Loading price history…</div>
-    );
-  }
 
   if (months.length < 2) {
     return (

@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
 import {
   COMMODITIES,
   MONTHS,
@@ -12,21 +10,10 @@ import {
   type PriceRecord,
 } from '../lib/reporting';
 
-const HISTORICAL =
-  import.meta.env.VITE_HISTORICAL_COLLECTION || 'historical_prices';
-
-export function SeasonalPage({ isDark }: { isDark: boolean }) {
-  const [records, setRecords] = useState<PriceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+export function SeasonalPage(
+  { records, isDark }: { records: PriceRecord[]; isDark: boolean }
+) {
   const [metric, setMetric] = useState(COMMODITIES[7].key); // Cu LME
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, HISTORICAL), (snap) => {
-      setRecords(snap.docs.map((d) => d.data() as PriceRecord));
-      setLoading(false);
-    }, () => setLoading(false));
-    return () => unsub();
-  }, []);
 
   const years = yearsOfData(records);
   const confidence = confidenceLabel(years);
@@ -110,13 +97,6 @@ export function SeasonalPage({ isDark }: { isDark: boolean }) {
       },
     ],
   };
-
-  if (loading) {
-    return (
-      <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
-        text-center">Loading price history…</div>
-    );
-  }
 
   if (yearKeys.length === 0) {
     return (
