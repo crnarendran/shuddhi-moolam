@@ -17,9 +17,8 @@ This is a **separate view** from the Price Review dashboard (SM-18): it needs a
 new input (consumption weights) and produces a different output (cost impact).
 
 ## What it reproduces (from the MMR analysis sheet)
-- A **prior-year baseline** (e.g. "2025 Jan+Feb+Mar average") per commodity.
-- **Q1–Q4 averages** for the year + the **difference** of each quarter vs the
-  baseline / prior quarter.
+- **Q1–Q4 averages** per commodity, each compared to a **rolling baseline**
+  (decided 2026-08-01 — see below), giving a **difference** per quarter.
 - **Nett difference across the 4 quarters** (annual net price change) per
   commodity.
 - **Impact Per Kg** = annual net change × the commodity's **consumption weight**
@@ -27,12 +26,20 @@ new input (consumption weights) and produces a different output (cost impact).
 - **Sum of Impact** = Σ Impact Per Kg across commodities (the headline: total
   product cost impact, e.g. −5.85).
 
+## Baseline: ROLLING (decided 2026-08-01)
+Use a **rolling baseline**, not the fixed prior-year quarter the sample sheet
+used. Default = the **trailing 4-quarter (TTM) moving average**, recomputed each
+period, so each quarter's difference is measured against the recent trend
+(smooths seasonality). The window is **configurable** (e.g. trailing 4 vs prior
+quarter) in the same config as the weights. Confirm the exact window with the
+user if TTM isn't what's meant.
+
 ## New input required (business data — escalate)
 - A **consumption model / bill-of-materials**: per-commodity kg factor (how much
   of each commodity goes into a unit/kg of the product). **Not in the
   newsletter** — the user provides it. Store in an admin-editable Firestore
-  `consumption_weights` config, plus the chosen **baseline reference** (which
-  prior-year quarter).
+  `consumption_weights` config, plus the **rolling-baseline window** (default
+  trailing 4 quarters — see Baseline above).
 - The sheet tracks a **subset** of commodities (CRCA Scrap Mumbai, FeSiMg, FeSi
   70–75%, Fe Mn, Pig iron, Coke) — the view must let the user pick which
   commodities and weights are in the impact model.
@@ -53,7 +60,9 @@ new input (consumption weights) and produces a different output (cost impact).
 - Impact Per Kg = nett change × weight; Sum of Impact = Σ across commodities.
 - Missing weight for a commodity → excluded from the sum and flagged (not 0
   silently).
-- Resistant to short history (baseline may be the only prior-year reference).
+- Rolling baseline computes over the trailing window; with < a full window of
+  history it uses whatever quarters exist and labels it low-confidence (SM-20
+  rule), never a fixed prior-year point.
 - Responsive per SM-23.
 
 ## Notes
