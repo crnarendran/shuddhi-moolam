@@ -69,7 +69,7 @@ export const FileDetailPanel = ({ run, onClose }: { run: PipelineRun; onClose: (
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 capitalize">{stageName}</span>
                     {stageData?.timestamp && (
                        <time className="text-xs text-gray-500 font-mono">
-                         {stageData.timestamp.toDate?.().toLocaleTimeString() || '-'}
+                         {(typeof stageData.timestamp.toDate === 'function' ? stageData.timestamp.toDate() : new Date(stageData.timestamp)).toLocaleTimeString() || '-'}
                        </time>
                     )}
                   </div>
