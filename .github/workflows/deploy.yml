@@ -69,15 +69,20 @@ jobs:
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}' > sa.json
           export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
-          npx firebase-tools deploy --only functions,firestore --project sai-shuddhi-moolam --force
-          
           if [ "${{ github.ref_name }}" = "main" ]; then
-            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam --project sai-shuddhi-moolam --force
+            SUFFIX=""
+            HOSTING="hosting:sai-shuddhi-moolam"
           elif [ "${{ github.ref_name }}" = "staging" ]; then
-            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam-staging --project sai-shuddhi-moolam --force
+            SUFFIX="_staging"
+            HOSTING="hosting:sai-shuddhi-moolam-staging"
           else
-            npx firebase-tools deploy --only hosting:sai-shuddhi-moolam-dev --project sai-shuddhi-moolam --force
+            SUFFIX="_dev"
+            HOSTING="hosting:sai-shuddhi-moolam-dev"
           fi
+          
+          FUNCS="functions:driveWebhook${SUFFIX},functions:processPendingPdf${SUFFIX},functions:helloWorld${SUFFIX},functions:registerWatch${SUFFIX},functions:renewWatch${SUFFIX},functions:chatEndpoint${SUFFIX}"
+          
+          npx firebase-tools deploy --only ${FUNCS},firestore,${HOSTING} --project sai-shuddhi-moolam --force
           
           rm sa.json
 
