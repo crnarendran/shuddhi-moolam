@@ -20,7 +20,6 @@
     "cors": "^2.8.6",
     "firebase-admin": "^12.0.0",
     "firebase-functions": "^5.0.0",
-    "gaxios": "6.5.0",
     "googleapis": "^173.0.0",
     "zod": "^3.23.8"
   },
@@ -38,5 +37,8 @@
     "ts-jest": "^29.1.5",
     "typescript": "^5.5.2"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "gaxios": "6.5.0"
+  }
 }
