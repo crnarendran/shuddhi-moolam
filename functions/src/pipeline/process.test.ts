@@ -42,7 +42,7 @@ describe('processPendingPdf', () => {
     params: { fileId: '123' },
     data: {
       before: { data: () => ({ status: 'pending' }) },
-      after: { data: () => ({ status: 'detected' }) }
+      after: { data: () => ({ status: 'detected', detectedAt: 1000 }) }
     },
   };
 
@@ -81,13 +81,21 @@ describe('processPendingPdf', () => {
       filename: 'test.pdf'
     });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
-    expect(recordStage).toHaveBeenCalledWith('123', 'extracting');
+    expect(recordStage).toHaveBeenCalledWith('123', 'extracting', {
+      fileName: 'test.pdf',
+    });
     expect(recordStage).toHaveBeenCalledWith('123', 'routing');
     expect(recordStage).toHaveBeenCalledWith(
       '123',
       'appended',
       expect.objectContaining({
-        gemini: { tokensIn: 100, tokensOut: 50 },
+        gemini: expect.objectContaining({
+          tokensIn: 100,
+          tokensOut: 50,
+          estCostUsd: expect.any(Number),
+        }),
+        cost: { estimatedUsd: expect.any(Number) },
+        durationMs: expect.any(Number),
         year: 2026,
         targetTab: '2026',
       })

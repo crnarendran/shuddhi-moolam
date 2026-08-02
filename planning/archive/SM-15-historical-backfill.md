@@ -3,11 +3,19 @@ id: SM-15
 title: Historical / bulk backfill of existing PDFs
 type: ticket
 points: 3
-status: todo
+status: done
 depends_on: [SM-05, SM-07, SM-11]
 tags: [backlog, ingestion, resilience, backfill]
 ---
 # SM-15 — Historical / bulk backfill of existing PDFs
+
+## Resolution (2026-08-02 — DONE, no code)
+Resolved operationally: the user ingested **all** historical newsletters through
+the **regular ingestion path** (Drive drop → pipeline), so `historical_prices`
+now holds the full history and the seasonal/cost-impact views (SM-20/SM-26) have
+their data. The dedicated automated backfill tool was therefore **not built**.
+Re-open only if a **watch-gap recovery** tool (catch files missed while a Drive
+channel was expired) is later wanted — that was the ticket's secondary purpose.
 
 ## Goal
 Process PDFs that the event trigger won't catch on its own: files already sitting

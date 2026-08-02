@@ -17,6 +17,10 @@ jest.mock('./routing', () => ({
   },
 }));
 
+// keep the post-write sort a no-op here so upsert's own read/write
+// assertions are unaffected (sort has its own tests in sort.test.ts)
+jest.mock('./sort');
+
 describe('upsertRow', () => {
   const mockDate = new Date('2026-08-02T12:00:00Z');
   let RealDate: DateConstructor;

@@ -2,8 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{collection}/{document=**} {
-      // Only allow crnarendran@gmail.com to read pipeline runs for the dashboard
-      allow read: if collection.matches('^pipeline_runs.*') && request.auth != null && request.auth.token.email == "crnarendran@gmail.com";
+      // Allow the dashboard owner to read the monitor (pipeline_runs*) and the
+      // reporting collections (historical_prices*).
+      allow read: if (collection.matches('^pipeline_runs.*') || collection.matches('^historical_prices.*')) && request.auth != null && request.auth.token.email == "crnarendran@gmail.com";
       // Only backend functions can write
       allow write: if false; 
     }

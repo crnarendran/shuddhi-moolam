@@ -28,6 +28,8 @@ export interface PipelineRun {
   error?: { stage: string; message: string; code?: string };
   attempts: number;
   gemini?: { tokensIn: number; tokensOut: number; estCostUsd?: number };
+  durationMs?: number;
+  cost?: { estimatedUsd: number };
 }
 
 /**
