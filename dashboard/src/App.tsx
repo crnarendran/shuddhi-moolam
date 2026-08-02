@@ -81,14 +81,14 @@ function App() {
       <header className="bg-white dark:bg-zinc-800 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <LayoutDashboard className="h-6 w-6 text-blue-600" />
-              <span className="font-semibold text-lg text-gray-900 dark:text-white mr-6">Monitoring</span>
-              
-              <nav className="flex space-x-4">
+            <div className="flex items-center space-x-2 min-w-0">
+              <LayoutDashboard className="h-6 w-6 text-blue-600 flex-shrink-0" />
+              <span className="font-semibold text-lg text-gray-900 dark:text-white mr-6 hidden sm:inline">Monitoring</span>
+
+              <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab('monitor')}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'monitor'
                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
@@ -100,7 +100,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('analytics')}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'analytics'
                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
@@ -112,7 +112,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('reporting')}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'reporting'
                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
@@ -124,7 +124,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('seasonal')}
-                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'seasonal'
                       ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
@@ -145,7 +145,7 @@ function App() {
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">{user.email}</span>
+                <span className="text-sm font-medium hidden sm:inline">{user.email}</span>
                 <button
                   onClick={logout}
                   className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-red-600 dark:text-red-400"

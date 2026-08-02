@@ -3,7 +3,7 @@ id: SM-23
 title: Responsive / mobile-friendly UI (all surfaces)
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-12]
 tags: [backlog, dashboard, frontend, ux, responsive]
 ---
