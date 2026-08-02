@@ -44,8 +44,9 @@ export async function extractPricesFromPdf(
     'You are a data extraction assistant.\n' +
     'Extract the following exact commodity prices from the provided PDF.\n' +
     'The issue date should be exactly as printed on the front page.\n' +
-    'All prices must be returned verbatim as strings ' +
-    '(including ranges and commas).\n' +
+    'All prices must be returned as strings (with commas intact).\n' +
+    'If a price is listed as a range (e.g. 42,600 - 42,800), you MUST ' +
+    'extract ONLY the upper bound (maximum) value (e.g. 42,800).\n' +
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +
