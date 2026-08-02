@@ -154,7 +154,7 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {run.detectedAt ? formatTimeAgo(run.detectedAt.toDate()) : '-'}
+                        {run.detectedAt ? formatTimeAgo(typeof run.detectedAt.toDate === 'function' ? run.detectedAt.toDate() : new Date(run.detectedAt)) : '-'}
                       </td>
                       <td className="px-6 py-4 text-gray-500 dark:text-gray-400">
                         {run.year ? `${run.year} → Data_${run.year}` : '-'}
