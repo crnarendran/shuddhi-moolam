@@ -9,6 +9,7 @@ import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
+import { estimateGeminiCostUsd } from './cost';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
@@ -31,6 +32,7 @@ export const processPendingPdf = onDocumentWritten(
       before?.data()?.status !== 'detected'
     ) {
       const fileId = (event.params as Record<string, string>).fileId;
+      const detectedAt = after?.data()?.detectedAt as number | undefined;
       logger.info(`Started processing pending PDF`, { fileId });
 
       try {
@@ -38,13 +40,8 @@ export const processPendingPdf = onDocumentWritten(
         await recordStage(fileId, 'downloading');
         const { buffer: pdfBuffer, filename } = await downloadPdf(fileId);
 
-        // Update the document with fileName so the dashboard can display it
-        if (event.data?.after) {
-          await event.data.after.ref.update({ fileName: filename });
-        }
-
-        // 2. Extract
-        await recordStage(fileId, 'extracting');
+        // 2. Extract (record the filename now so the monitor shows it)
+        await recordStage(fileId, 'extracting', { fileName: filename });
         const { data: record, usage } = await extractPricesFromPdf(pdfBuffer);
 
         // Overwrite the filename with the full path/filename
@@ -76,14 +73,19 @@ export const processPendingPdf = onDocumentWritten(
           .set(record);
 
         // 5. Success
+        const now = Date.now();
+        const tokensIn = usage.promptTokenCount || 0;
+        const tokensOut = usage.candidatesTokenCount || 0;
+        const estimatedUsd = estimateGeminiCostUsd(tokensIn, tokensOut);
         await recordStage(fileId, 'appended', {
-          gemini: {
-            tokensIn: usage.promptTokenCount || 0,
-            tokensOut: usage.candidatesTokenCount || 0,
-          },
+          gemini: { tokensIn, tokensOut, estCostUsd: estimatedUsd },
+          cost: { estimatedUsd },
           year: parseInt(record.date.split('/')[2] || '0', 10),
           targetTab: tabTitle,
-          completedAt: Date.now()
+          completedAt: now,
+          ...(typeof detectedAt === 'number'
+            ? { durationMs: now - detectedAt }
+            : {}),
         });
 
         logger.info(`Successfully processed PDF`, {

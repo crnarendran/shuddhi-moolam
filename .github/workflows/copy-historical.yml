@@ -1,0 +1,37 @@
+name: Copy historical prices (Firestore)
+
+# One-off, manually-triggered copy of a Firestore collection to another
+# within the sai-shuddhi-moolam project. Default copies prod
+# `historical_prices` -> `historical_prices_dev` so the dev reports have real
+# data. Non-destructive to the source. Uses the existing deploy service account.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Source collection'
+        required: true
+        default: 'historical_prices'
+      dest:
+        description: 'Destination collection'
+        required: true
+        default: 'historical_prices_dev'
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install firebase-admin
+      - name: Copy collection
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}
+        run: |
+          echo "$SA" > /tmp/sa.json
+          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
+          node scripts/copyHistorical.mjs \
+            "${{ github.event.inputs.source }}" \
+            "${{ github.event.inputs.dest }}"

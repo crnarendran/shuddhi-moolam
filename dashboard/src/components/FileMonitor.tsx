@@ -78,7 +78,7 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
 
   return (
     <div className="flex h-[calc(100vh-12rem)] gap-6 relative overflow-hidden">
-      <div className={`flex-1 flex flex-col bg-white dark:bg-zinc-800/80 shadow-sm rounded-lg overflow-hidden transition-all duration-300 border border-gray-200 dark:border-zinc-700 ${selectedRun ? 'mr-[35%]' : ''}`}>
+      <div className={`flex-1 flex flex-col bg-white dark:bg-zinc-800/80 shadow-sm rounded-lg overflow-hidden transition-all duration-300 border border-gray-200 dark:border-zinc-700 ${selectedRun ? 'md:mr-[35%]' : ''}`}>
         
         {failedCount > 0 && (
           <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 text-sm font-medium flex items-center gap-2 border-b border-red-100 dark:border-red-900/30 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
@@ -121,7 +121,7 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
               </p>
             </div>
           ) : (
-            <table className="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+            <table className="w-full min-w-[720px] text-left text-sm text-gray-600 dark:text-gray-400">
               <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-800/80 sticky top-0 z-10 border-b border-gray-200 dark:border-zinc-700">
                 <tr>
                   <th className="px-6 py-3 font-semibold">File</th>
@@ -175,7 +175,7 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
         </div>
       </div>
       
-      <div className={`absolute top-0 right-0 h-full w-[33%] bg-white dark:bg-zinc-800 shadow-2xl rounded-lg border border-gray-200 dark:border-zinc-700 transform transition-transform duration-300 ease-in-out z-20 ${selectedRun ? 'translate-x-0' : 'translate-x-[110%]'}`}>
+      <div className={`absolute top-0 right-0 h-full w-full md:w-[33%] bg-white dark:bg-zinc-800 shadow-2xl rounded-lg border border-gray-200 dark:border-zinc-700 transform transition-transform duration-300 ease-in-out z-20 ${selectedRun ? 'translate-x-0' : 'translate-x-[110%]'}`}>
         {selectedRun && (
           <FileDetailPanel run={selectedRun} onClose={() => setSelectedRun(null)} />
         )}

@@ -156,7 +156,7 @@ export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean;
   };
 
   return (
-    <div className={`fixed top-0 right-0 h-full w-[400px] z-50 bg-white dark:bg-zinc-900 shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed top-0 right-0 h-full w-full sm:w-[400px] z-50 bg-white dark:bg-zinc-900 shadow-2xl flex flex-col transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
       <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
           <Bot className="w-5 h-5 text-blue-600" /> AI Analytics Chat
