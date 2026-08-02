@@ -39,6 +39,6 @@
   },
   "private": true,
   "overrides": {
-    "gaxios": "6.5.0"
+    "gaxios": "7.3.0"
   }
 }
