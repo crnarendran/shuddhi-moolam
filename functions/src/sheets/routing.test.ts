@@ -38,7 +38,7 @@ describe('Sheets Routing Logic', () => {
       },
     });
 
-    const title = await ensureYearTab(2026);
+    const title = await ensureYearTab('27/07/2026');
     expect(title).toBe('2026');
     expect(sheetsClient.spreadsheets.get).toHaveBeenCalledWith({
       spreadsheetId: MASTER_SHEET_ID,
@@ -61,7 +61,7 @@ describe('Sheets Routing Logic', () => {
       sheetsClient.spreadsheets.values.update as jest.Mock
     ).mockResolvedValueOnce({});
 
-    const title = await ensureYearTab(2026);
+    const title = await ensureYearTab('27/07/2026');
     expect(title).toBe('2026');
 
     expect(sheetsClient.spreadsheets.batchUpdate).toHaveBeenCalledWith({

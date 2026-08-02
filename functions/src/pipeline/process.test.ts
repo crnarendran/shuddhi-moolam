@@ -6,7 +6,15 @@ import { appendRow } from '../sheets/append';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 
-jest.mock('firebase-admin/firestore');
+
+jest.mock('firebase-admin/firestore', () => {
+  const setMock = jest.fn();
+  const docMock = jest.fn(() => ({ set: setMock }));
+  const collectionMock = jest.fn(() => ({ doc: docMock }));
+  return {
+    getFirestore: jest.fn(() => ({ collection: collectionMock })),
+  };
+});
 jest.mock('firebase-functions/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
@@ -38,7 +46,7 @@ describe('processPendingPdf', () => {
       filename: 'test.pdf'
     });
     (extractPricesFromPdf as jest.Mock).mockResolvedValue({
-      data: { year: 2026 },
+      data: { date: '27/07/2026' },
       usage: {
         totalTokenCount: 150,
         promptTokenCount: 100,
@@ -56,10 +64,10 @@ describe('processPendingPdf', () => {
 
     expect(downloadPdf).toHaveBeenCalledWith('123');
     expect(extractPricesFromPdf).toHaveBeenCalled();
-    expect(ensureYearTab).toHaveBeenCalledWith(2026);
+    expect(ensureYearTab).toHaveBeenCalledWith('27/07/2026');
     expect(appendRow).toHaveBeenCalledWith('2026', {
-      year: 2026,
-      newsletter_issue: 'newsletter_issue/test.pdf'
+      date: '27/07/2026',
+      filename: 'test.pdf'
     });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
     expect(recordStage).toHaveBeenCalledWith('123', 'extracting');

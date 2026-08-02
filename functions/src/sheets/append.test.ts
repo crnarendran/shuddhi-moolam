@@ -21,9 +21,8 @@ describe('appendRow', () => {
 
   it('maps record to row and appends to sheet', async () => {
     const mockRecord: ExtractionRecord = {
-      newsletter_issue: 'JULY 27-AUGUST 02',
-      month: 'JULY-AUGUST',
-      year: 2026,
+      filename: 'test.pdf',
+      date: '27/07/2026',
       crca_bundle_mumbai: '47,500',
       crca_bundle_chennai: '48,000',
       melting_foundry_scrap_mumbai: '46,500',
@@ -45,14 +44,13 @@ describe('appendRow', () => {
     expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledTimes(1);
     expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledWith({
       spreadsheetId: MASTER_SHEET_ID,
-      range: 'Data_2026!A:O',
+      range: 'Data_2026!A:N',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [
           [
-            'JULY 27-AUGUST 02',
-            'JULY-AUGUST',
-            2026,
+            'test.pdf',
+            '27/07/2026',
             '47,500',
             '48,000',
             '46,500',

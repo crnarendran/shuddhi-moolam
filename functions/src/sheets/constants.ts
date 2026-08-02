@@ -1,7 +1,6 @@
 export const SHEET_HEADERS = [
-  'newsletter_issue',
-  'month',
-  'year',
+  'filename',
+  'date',
   'crca_bundle_mumbai',
   'crca_bundle_chennai',
   'melting_foundry_scrap_mumbai',

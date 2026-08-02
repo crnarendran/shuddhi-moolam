@@ -1,3 +1,4 @@
+import { getFirestore } from 'firebase-admin/firestore';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as logger from 'firebase-functions/logger';
@@ -37,16 +38,22 @@ export const processPendingPdf = onDocumentWritten(
         await recordStage(fileId, 'extracting');
         const { data: record, usage } = await extractPricesFromPdf(pdfBuffer);
 
-        // Overwrite the issue date with the full path/filename
-        record.newsletter_issue = `newsletter_issue/${filename}`;
+        // Overwrite the filename with the full path/filename
+        record.filename = filename;
 
-        // 3. Ensure tab (we could use 'validating' too but the plan
-        // says routing)
+        // 3. Ensure tab
         await recordStage(fileId, 'routing');
-        const tabTitle = await ensureYearTab(record.year);
+        const tabTitle = await ensureYearTab(record.date);
 
         // 4. Append
         await appendRow(tabTitle, record);
+
+        // 4.5 Insert into Historical Collection
+        const [day, month, year] = record.date.split('/');
+        const docId = `${year}-${month}-${day}`;
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const historicalCol = require('../config').HISTORICAL_COLLECTION;
+        await getFirestore().collection(historicalCol).doc(docId).set(record);
 
         // 5. Success
         await recordStage(fileId, 'appended', {
@@ -54,7 +61,7 @@ export const processPendingPdf = onDocumentWritten(
             tokensIn: usage.promptTokenCount || 0,
             tokensOut: usage.candidatesTokenCount || 0,
           },
-          year: record.year,
+          year: parseInt(record.date.split('/')[2] || '0', 10),
           targetTab: tabTitle,
           completedAt: Date.now()
         });

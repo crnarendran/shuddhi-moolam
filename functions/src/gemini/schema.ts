@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
 export const extractionRecordSchema = z.object({
-  newsletter_issue: z.string(),
-  month: z.string(),
-  year: z.number().int(),
+  filename: z.string().optional(),
+  date: z.string(),
   crca_bundle_mumbai: z.string(),
   crca_bundle_chennai: z.string(),
   melting_foundry_scrap_mumbai: z.string(),
