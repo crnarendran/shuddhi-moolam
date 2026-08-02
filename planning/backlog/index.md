@@ -53,7 +53,7 @@ built for this single-owner tool.
 | [SM-12](SM-12-dashboard-app-shell.md) | Dashboard — app shell, hosting & auth | 5 | SM-11 |
 | [SM-13](SM-13-dashboard-file-monitor.md) | Dashboard — live file monitor & detail | 5 | SM-12 |
 | [SM-14](SM-14-dashboard-metrics-actions.md) | Dashboard — metrics & reprocess actions | 3 | SM-13, SM-08 |
-| [SM-15](SM-15-historical-backfill.md) | Historical / bulk backfill of existing PDFs | 3 | SM-05, SM-07, SM-11 |
+| [SM-15](../archive/SM-15-historical-backfill.md) | Historical / bulk backfill — **done** (manual regular ingestion; not built) | 3 | SM-05, SM-07, SM-11 |
 | [SM-16](SM-16-data-analytics.md) | Analytics / reporting on extracted data — **superseded by SM-18** | 5 | SM-07, SM-12 |
 | [SM-18](SM-18-price-review-insights.md) | Price Review & Insights — reporting views (supersedes SM-16) | 5 | SM-07, SM-12 |
 | [SM-19](SM-19-price-alerts-quarterly-report.md) | Price-movement alerts & quarterly review report | 5 | SM-08, SM-18, SM-20 |
