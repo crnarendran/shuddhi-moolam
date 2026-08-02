@@ -50,7 +50,7 @@ jobs:
         working-directory: ./functions
         env:
           NODE_ENV: test
-        run: npm test -- --forceExit
+        run: npm test
 
       - name: Build
         if: steps.check_secret.outputs.has_secret == 'true'
