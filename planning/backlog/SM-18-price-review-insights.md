@@ -3,7 +3,7 @@ id: SM-18
 title: Price Review & Insights — reporting views
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-07, SM-12]
 supersedes: SM-16
 tags: [backlog, dashboard, analytics, reporting, frontend]
