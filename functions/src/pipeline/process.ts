@@ -9,6 +9,7 @@ import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
+import { estimateGeminiCostUsd } from './cost';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
@@ -31,6 +32,7 @@ export const processPendingPdf = onDocumentWritten(
       before?.data()?.status !== 'detected'
     ) {
       const fileId = (event.params as Record<string, string>).fileId;
+      const detectedAt = after?.data()?.detectedAt as number | undefined;
       logger.info(`Started processing pending PDF`, { fileId });
 
       try {
@@ -71,14 +73,19 @@ export const processPendingPdf = onDocumentWritten(
           .set(record);
 
         // 5. Success
+        const now = Date.now();
+        const tokensIn = usage.promptTokenCount || 0;
+        const tokensOut = usage.candidatesTokenCount || 0;
+        const estimatedUsd = estimateGeminiCostUsd(tokensIn, tokensOut);
         await recordStage(fileId, 'appended', {
-          gemini: {
-            tokensIn: usage.promptTokenCount || 0,
-            tokensOut: usage.candidatesTokenCount || 0,
-          },
+          gemini: { tokensIn, tokensOut, estCostUsd: estimatedUsd },
+          cost: { estimatedUsd },
           year: parseInt(record.date.split('/')[2] || '0', 10),
           targetTab: tabTitle,
-          completedAt: Date.now()
+          completedAt: now,
+          ...(typeof detectedAt === 'number'
+            ? { durationMs: now - detectedAt }
+            : {}),
         });
 
         logger.info(`Successfully processed PDF`, {

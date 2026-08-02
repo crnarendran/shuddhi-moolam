@@ -3,7 +3,7 @@ id: SM-24
 title: Fix latency & total-cost metrics (telemetry not populating)
 type: ticket
 points: 3
-status: todo
+status: in-review
 depends_on: [SM-11, SM-14, SM-05]
 tags: [backlog, bug, dashboard, telemetry, observability]
 ---
