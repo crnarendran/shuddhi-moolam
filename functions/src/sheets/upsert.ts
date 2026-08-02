@@ -2,6 +2,7 @@ import { sheetsClient } from './routing';
 import { SHEET_HEADERS } from './constants';
 import { ExtractionRecord } from '../gemini/schema';
 import { MASTER_SHEET_ID } from '../config';
+import { sortTabByDateDesc } from './sort';
 
 /**
  * Maps the extraction record to an array of values in the order
@@ -63,6 +64,7 @@ export async function upsertRow(
         values: [rowArray],
       },
     });
+    await sortTabByDateDesc(tabTitle);
     return 'update';
   } else {
     // 3. Append new row
@@ -75,6 +77,7 @@ export async function upsertRow(
         values: [rowArray],
       },
     });
+    await sortTabByDateDesc(tabTitle);
     return 'insert';
   }
 }

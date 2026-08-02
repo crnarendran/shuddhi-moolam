@@ -3,7 +3,7 @@ id: SM-22
 title: Keep master sheet sorted latest-first
 type: ticket
 points: 2
-status: todo
+status: in-review
 depends_on: [SM-07]
 tags: [backlog, sheets, pipeline]
 ---
