@@ -62,6 +62,8 @@ built for this single-owner tool.
 | [SM-22](SM-22-sheet-sort-latest-first.md) | Keep master sheet sorted latest-first | 2 | SM-07 |
 | [SM-23](SM-23-responsive-mobile-friendly.md) | Responsive / mobile-friendly UI (all surfaces) | 5 | SM-12 |
 | [SM-24](SM-24-latency-cost-metrics.md) | Fix latency & total-cost metrics (telemetry bug) | 3 | SM-11, SM-14, SM-05 |
+| [SM-25](SM-25-file-monitor-display-fixes.md) | File monitor display fixes — filename + year→tab label | 2 | SM-11, SM-13, SM-06 |
+| [SM-26](SM-26-cost-impact-analysis.md) | Cost-impact analysis — consumption-weighted quarterly view | 5 | SM-18, SM-20 |
 
 **Reporting & UX epic (SM-18…SM-24):** Price Review & Insights reporting
 (SM-18), quarterly/seasonal alerts (SM-19), historical & seasonal analysis
@@ -69,8 +71,8 @@ resistant to ~2yr history (SM-20), spread/correlation monitors (SM-21),
 sheet-sorted-latest-first (SM-22), responsive/mobile UI (SM-23), and the
 latency/cost telemetry fix (SM-24). SM-18 renames/absorbs SM-16.
 
-**Total: 86 points** (pipeline SM-01…SM-10 = 34, dashboard SM-11…SM-14 = 16,
-backfill SM-15 = 3, SM-16 superseded, reporting & UX SM-18…SM-24 = 28, plus
+**Total: 93 points** (pipeline SM-01…SM-10 = 34, dashboard SM-11…SM-14 = 16,
+backfill SM-15 = 3, SM-16 superseded, reporting & UX SM-18…SM-26 = 35, plus
 SM-17 schema in archive). Blocked on the human-only prerequisites in
 `knowledge/infrastructure.md` → Known Gaps before anything can run live; the
 code can still be built and unit-tested (mocked APIs) without them.
