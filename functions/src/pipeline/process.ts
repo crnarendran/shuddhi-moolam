@@ -16,7 +16,10 @@ export const processPendingPdf = onDocumentWritten(
   {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     document: `${require('../config').FIRESTORE_COLLECTION}/{fileId}`,
-    secrets: [geminiApiKeySecret]
+    secrets: [geminiApiKeySecret],
+    timeoutSeconds: 300,
+    maxInstances: 2,
+    concurrency: 1
   },
   async (event) => {
     const after = event.data?.after;
