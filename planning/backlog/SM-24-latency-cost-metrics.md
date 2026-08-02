@@ -13,19 +13,27 @@ tags: [backlog, bug, dashboard, telemetry, observability]
 > **Gemini cost** tiles aren't working (empty/zero). Fold the fix into the other
 > session's pipeline + `SummaryMetrics`.
 
-## Symptom
-`SummaryMetrics` "avg latency" and "total/Gemini cost" show nothing — the
-underlying telemetry isn't being written and/or aggregated.
+## Symptom (confirmed on staging 2026-08-01)
+On `sai-shuddhi-moolam-staging.web.app` with 16 processed runs (100% appended):
+- **Avg Latency tile shows `-`** AND the per-file **`DURATION` column is `-` on
+  every row** → duration is never recorded, so there is nothing to average.
+- **Total Cost tile shows `$0.0000`** → the aggregation runs and formats a
+  number, but every run's cost is 0 → Gemini usage is never captured.
 
-## Likely root causes (verify)
-1. **Latency:** the pipeline isn't recording per-stage `startedAt`/`endedAt` (or
-   `detectedAt`/`completedAt`) on `pipeline_runs`, so a total duration can't be
-   computed.
-2. **Cost:** the Gemini call (SM-05) isn't capturing usage metadata
+So these are two **write-side** gaps in the pipeline, not a dashboard-only bug.
+
+## Root causes (confirmed / to fix)
+1. **Latency (confirmed):** the pipeline isn't recording per-stage
+   `startedAt`/`endedAt` (or `detectedAt`/`completedAt`) on `pipeline_runs`, so
+   no total duration exists — hence both the `DURATION` column and the Avg
+   Latency tile are `-`.
+2. **Cost (confirmed):** the Gemini call (SM-05) isn't capturing usage metadata
    (`usageMetadata.promptTokenCount` / `candidatesTokenCount`), so
-   `gemini.{tokensIn,tokensOut,estCostUsd}` stays empty.
-3. **Aggregation:** `SummaryMetrics` isn't summing/averaging those fields (or
-   chokes on older runs missing them).
+   `gemini.{tokensIn,tokensOut,estCostUsd}` is 0 → Total Cost sums to `$0.0000`.
+3. **Aggregation (mostly OK):** cost already sums/formats (shows `$0.0000`);
+   latency shows `-` for an empty set. Once (1) and (2) write real data, verify
+   the tiles + `DURATION` column render and format it (and exclude older runs
+   that predate the fields).
 
 ## Scope
 - **Pipeline (functions):** on each stage transition write `stages.<name>.{startedAt,endedAt}`
