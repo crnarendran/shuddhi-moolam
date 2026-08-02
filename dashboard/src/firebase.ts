@@ -9,8 +9,8 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "sai-shuddhi-moolam",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "sai-shuddhi-moolam.firebasestorage.app",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "834855301873",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:834855301873:web:c2e6bc7427785680942f50",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-FPBT2XCNBF"
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:834855301873:web:eaf229c3df497d56942f50",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-P52Z2RN2F0"
 };
 
 const app = initializeApp(firebaseConfig);
