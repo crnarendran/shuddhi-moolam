@@ -54,9 +54,23 @@ built for this single-owner tool.
 | [SM-13](SM-13-dashboard-file-monitor.md) | Dashboard — live file monitor & detail | 5 | SM-12 |
 | [SM-14](SM-14-dashboard-metrics-actions.md) | Dashboard — metrics & reprocess actions | 3 | SM-13, SM-08 |
 | [SM-15](SM-15-historical-backfill.md) | Historical / bulk backfill of existing PDFs | 3 | SM-05, SM-07, SM-11 |
-| [SM-16](SM-16-data-analytics.md) | Analytics / reporting on extracted data (later) | 5 | SM-07, SM-12 |
+| [SM-16](SM-16-data-analytics.md) | Analytics / reporting on extracted data — **superseded by SM-18** | 5 | SM-07, SM-12 |
+| [SM-18](SM-18-price-review-insights.md) | Price Review & Insights — reporting views (supersedes SM-16) | 5 | SM-07, SM-12 |
+| [SM-19](SM-19-price-alerts-quarterly-report.md) | Price-movement alerts & quarterly review report | 5 | SM-08, SM-18, SM-20 |
+| [SM-20](SM-20-historical-seasonal-analysis.md) | Historical & seasonal analysis view (short-history resistant) | 5 | SM-15, SM-18 |
+| [SM-21](SM-21-spread-correlation-monitors.md) | Spread & correlation monitors (later) | 3 | SM-18 |
+| [SM-22](SM-22-sheet-sort-latest-first.md) | Keep master sheet sorted latest-first | 2 | SM-07 |
+| [SM-23](SM-23-responsive-mobile-friendly.md) | Responsive / mobile-friendly UI (all surfaces) | 5 | SM-12 |
+| [SM-24](SM-24-latency-cost-metrics.md) | Fix latency & total-cost metrics (telemetry bug) | 3 | SM-11, SM-14, SM-05 |
 
-**Total: 58 points** (pipeline SM-01…SM-10 = 34, dashboard SM-11…SM-14 = 16,
-backfill SM-15 = 3, analytics SM-16 = 5). Blocked on the human-only
-prerequisites in `knowledge/infrastructure.md` → Known Gaps before anything can
-run live; the code can still be built and unit-tested (mocked APIs) without them.
+**Reporting & UX epic (SM-18…SM-24):** Price Review & Insights reporting
+(SM-18), quarterly/seasonal alerts (SM-19), historical & seasonal analysis
+resistant to ~2yr history (SM-20), spread/correlation monitors (SM-21),
+sheet-sorted-latest-first (SM-22), responsive/mobile UI (SM-23), and the
+latency/cost telemetry fix (SM-24). SM-18 renames/absorbs SM-16.
+
+**Total: 86 points** (pipeline SM-01…SM-10 = 34, dashboard SM-11…SM-14 = 16,
+backfill SM-15 = 3, SM-16 superseded, reporting & UX SM-18…SM-24 = 28, plus
+SM-17 schema in archive). Blocked on the human-only prerequisites in
+`knowledge/infrastructure.md` → Known Gaps before anything can run live; the
+code can still be built and unit-tested (mocked APIs) without them.
