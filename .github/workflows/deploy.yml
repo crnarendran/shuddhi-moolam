@@ -62,7 +62,7 @@ jobs:
         working-directory: ./dashboard
         run: |
           npm ci
-          npm run build
+          npm run build -- --mode ${{ github.ref_name }}
 
       - name: Deploy to Firebase
         if: steps.check_secret.outputs.has_secret == 'true'
