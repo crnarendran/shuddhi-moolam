@@ -3,7 +3,7 @@ id: SM-26
 title: Cost-impact analysis — consumption-weighted quarterly view
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-18, SM-20]
 tags: [backlog, analytics, reporting, cost-impact, frontend]
 ---

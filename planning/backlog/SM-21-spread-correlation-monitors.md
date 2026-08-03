@@ -3,7 +3,7 @@ id: SM-21
 title: Spread & correlation monitors
 type: ticket
 points: 3
-status: todo
+status: in-review
 priority: later
 depends_on: [SM-18]
 tags: [backlog, analytics, reporting, later]
