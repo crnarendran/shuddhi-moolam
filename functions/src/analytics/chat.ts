@@ -3,6 +3,7 @@ import cors from 'cors';
 import {
   DataChatServiceClient
 } from '@google-cloud/geminidataanalytics/build/src/v1beta';
+import { recordChatUsage } from './chatUsage';
 
 const corsHandler = cors({ origin: true });
 const chatClient = new DataChatServiceClient();
@@ -10,6 +11,10 @@ const chatClient = new DataChatServiceClient();
 export const chatEndpoint = onRequest((req, res) => {
   corsHandler(req, res, async () => {
     const { message, history } = req.body;
+
+    // Record estimated chat usage separately from pipeline cost (SM-27).
+    // Fire-and-forget; must never affect the chat response.
+    void recordChatUsage(message, history);
 
     // Initialize SSE streaming headers
     res.setHeader('Content-Type', 'text/event-stream');

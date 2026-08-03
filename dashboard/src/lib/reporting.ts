@@ -176,3 +176,107 @@ export function confidenceLabel(years: number): string {
   if (years >= 1) return `low · based on ${years} year${years > 1 ? 's' : ''}`;
   return 'insufficient';
 }
+
+/** Sorts "YYYY-Q#" quarter keys chronologically. */
+function sortQuarterKeys(keys: string[]): string[] {
+  return keys.slice().sort();
+}
+
+/** Rolling baseline for quarter keys: avg of the trailing `window` quarters. */
+export function quarterlyRollingBaseline(
+  quarterly: Map<string, number>,
+  window = 4
+): Map<string, number> {
+  const keys = sortQuarterKeys([...quarterly.keys()]);
+  const out = new Map<string, number>();
+  for (let i = 0; i < keys.length; i++) {
+    const prior = keys.slice(Math.max(0, i - window), i);
+    if (prior.length === 0) continue;
+    const sum = prior.reduce((a, k) => a + (quarterly.get(k) ?? 0), 0);
+    out.set(keys[i], sum / prior.length);
+  }
+  return out;
+}
+
+export interface ImpactRow {
+  key: string;
+  label: string;
+  latest: number | null;
+  baseline: number | null;
+  netChange: number | null;
+  weight: number;
+  impact: number | null;
+}
+
+/**
+ * Consumption-weighted cost impact: for the latest quarter, each commodity's
+ * change vs its trailing rolling baseline (default 4 quarters) times its
+ * per-kg consumption weight, summed into a total product cost impact.
+ */
+export function costImpact(
+  records: PriceRecord[],
+  weights: Record<string, number>,
+  window = 4
+): { rows: ImpactRow[]; sum: number; latestQuarter: string | null } {
+  const allQuarters = new Set<string>();
+  const perCommodity = new Map<string, Map<string, number>>();
+  for (const c of COMMODITIES) {
+    const q = quarterlyAverages(records, c.key);
+    perCommodity.set(c.key, q);
+    for (const k of q.keys()) allQuarters.add(k);
+  }
+  const sorted = sortQuarterKeys([...allQuarters]);
+  const latestQuarter = sorted.length ? sorted[sorted.length - 1] : null;
+
+  let sum = 0;
+  const rows: ImpactRow[] = COMMODITIES.map((c) => {
+    const q = perCommodity.get(c.key)!;
+    const baseMap = quarterlyRollingBaseline(q, window);
+    const latest = latestQuarter ? q.get(latestQuarter) ?? null : null;
+    const baseline = latestQuarter ? baseMap.get(latestQuarter) ?? null : null;
+    const netChange =
+      latest !== null && baseline !== null ? latest - baseline : null;
+    const weight = weights[c.key] ?? 0;
+    const impact = netChange !== null ? netChange * weight : null;
+    if (impact !== null) sum += impact;
+    return {
+      key: c.key, label: c.label, latest, baseline, netChange, weight, impact,
+    };
+  });
+  return { rows, sum, latestQuarter };
+}
+
+/** Human label for a "YYYY-Q#" quarter key, e.g. "Q2 2026". */
+export function quarterKeyLabel(key: string): string {
+  const [y, q] = key.split('-');
+  return `${q} ${y}`;
+}
+
+/**
+ * Monthly spread (A − B) between two commodities, keyed "YYYY-MM", for the
+ * months where both have a value. Used by the spread/correlation monitor.
+ */
+export function monthlySpread(
+  records: PriceRecord[],
+  keyA: string,
+  keyB: string
+): Map<string, number> {
+  const a = monthlyAverages(records, keyA);
+  const b = monthlyAverages(records, keyB);
+  const out = new Map<string, number>();
+  for (const [k, av] of a) {
+    const bv = b.get(k);
+    if (bv !== undefined) out.set(k, av - bv);
+  }
+  return out;
+}
+
+/** Mean and sample standard deviation of a series of numbers. */
+export function meanStd(values: number[]): { mean: number; std: number } {
+  if (values.length === 0) return { mean: 0, std: 0 };
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  if (values.length < 2) return { mean, std: 0 };
+  const variance =
+    values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1);
+  return { mean, std: Math.sqrt(variance) };
+}
