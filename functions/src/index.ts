@@ -6,6 +6,10 @@ import { startDriveWatch, stopDriveWatch, getWatchState } from './drive/watch';
 import { driveWebhook as _driveWebhook } from './drive/webhook';
 import { processPendingPdf as _processPendingPdf } from './pipeline/process';
 import { chatEndpoint as _chatEndpoint } from './analytics/chat';
+import { getFirestore } from 'firebase-admin/firestore';
+import { latestMoMBreaches, breachSummary } from './reporting/alerts';
+import { sendAlert } from './utils/alert';
+import { PriceRecord } from './reporting/aggregate';
 
 initializeApp();
 
@@ -68,6 +72,29 @@ const _renewWatch = onSchedule('every 24 hours', async () => {
   }
 });
 
+/**
+ * Weekly price-movement alert (SM-19): flags commodities whose latest
+ * month-over-month change breaches the threshold and sends an alert.
+ */
+const _priceReviewAlert = onSchedule('0 9 * * 1', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const hist = require('./config').HISTORICAL_COLLECTION;
+  const snap = await getFirestore().collection(hist).get();
+  const records = snap.docs.map((d) => d.data() as PriceRecord);
+  const threshold = parseFloat(process.env.PRICE_ALERT_THRESHOLD || '') || 5;
+  const breaches = latestMoMBreaches(records, threshold);
+  if (breaches.length === 0) {
+    logger.info('Price review: no commodities breached the threshold.');
+    return;
+  }
+  const noun = breaches.length === 1 ? 'commodity' : 'commodities';
+  await sendAlert(
+    `Price review: ${breaches.length} ${noun} moved >${threshold}%`,
+    breachSummary(breaches),
+    'price-review'
+  );
+});
+
 const env = process.env.APP_ENV || 'dev';
 const isProd = env === 'main' || env === 'prod';
 const suffix = isProd ? '' : `_${env}`;
@@ -79,5 +106,6 @@ module.exports = {
   [`registerWatch${suffix}`]: _registerWatch,
   [`renewWatch${suffix}`]: _renewWatch,
   [`chatEndpoint${suffix}`]: _chatEndpoint,
+  [`priceReviewAlert${suffix}`]: _priceReviewAlert,
 };
 

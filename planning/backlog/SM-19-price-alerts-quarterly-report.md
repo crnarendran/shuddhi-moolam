@@ -3,7 +3,7 @@ id: SM-19
 title: Price-movement alerts & quarterly review report
 type: ticket
 points: 5
-status: todo
+status: in-review
 depends_on: [SM-08, SM-18, SM-20]
 tags: [backlog, alerts, reporting, ops, scheduled]
 ---
