@@ -4,24 +4,28 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
+  Calculator,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
 import { PriceReviewPage } from './pages/PriceReviewPage';
 import { SeasonalPage } from './pages/SeasonalPage';
+import { CostImpactPage } from './pages/CostImpactPage';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
-type Tab = 'price-review' | 'seasonal' | 'monitor';
+type Tab = 'price-review' | 'seasonal' | 'cost-impact' | 'monitor';
 const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
+  { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
 ];
 
 const tabFromHash = (): Tab => {
   const h = window.location.hash.replace('#', '');
-  return h === 'seasonal' || h === 'monitor' ? h : 'price-review';
+  return h === 'seasonal' || h === 'monitor' || h === 'cost-impact'
+    ? h : 'price-review';
 };
 
 const HISTORICAL =
@@ -118,12 +122,15 @@ function App() {
     );
   }
 
-  const hasChat = activeTab === 'price-review' || activeTab === 'seasonal';
+  const hasChat = activeTab !== 'monitor';
+  const viewName =
+    activeTab === 'seasonal' ? 'Seasonal analysis'
+      : activeTab === 'cost-impact' ? 'Cost impact analysis'
+        : 'Price Review';
   const chatContext =
-    `The user is viewing the ${
-      activeTab === 'seasonal' ? 'Seasonal analysis' : 'Price Review'
-    } of the metals price dashboard. Answer only from the available extracted ` +
-    'newsletter price data; if the data does not cover something, say so.';
+    `The user is viewing the ${viewName} of the metals price dashboard. ` +
+    'Answer only from the available extracted newsletter price data; if the ' +
+    'data does not cover something, say so.';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
@@ -179,6 +186,8 @@ function App() {
           <PriceReviewPage records={records} isDark={isDark} />
         ) : activeTab === 'seasonal' ? (
           <SeasonalPage records={records} isDark={isDark} />
+        ) : activeTab === 'cost-impact' ? (
+          <CostImpactPage records={records} isDark={isDark} />
         ) : (
           <>
             <SummaryMetrics runs={runs} />
