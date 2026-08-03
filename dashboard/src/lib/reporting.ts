@@ -251,3 +251,32 @@ export function quarterKeyLabel(key: string): string {
   const [y, q] = key.split('-');
   return `${q} ${y}`;
 }
+
+/**
+ * Monthly spread (A − B) between two commodities, keyed "YYYY-MM", for the
+ * months where both have a value. Used by the spread/correlation monitor.
+ */
+export function monthlySpread(
+  records: PriceRecord[],
+  keyA: string,
+  keyB: string
+): Map<string, number> {
+  const a = monthlyAverages(records, keyA);
+  const b = monthlyAverages(records, keyB);
+  const out = new Map<string, number>();
+  for (const [k, av] of a) {
+    const bv = b.get(k);
+    if (bv !== undefined) out.set(k, av - bv);
+  }
+  return out;
+}
+
+/** Mean and sample standard deviation of a series of numbers. */
+export function meanStd(values: number[]): { mean: number; std: number } {
+  if (values.length === 0) return { mean: 0, std: 0 };
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  if (values.length < 2) return { mean, std: 0 };
+  const variance =
+    values.reduce((a, b) => a + (b - mean) ** 2, 0) / (values.length - 1);
+  return { mean, std: Math.sqrt(variance) };
+}

@@ -4,28 +4,32 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator,
+  Calculator, Shuffle,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
 import { PriceReviewPage } from './pages/PriceReviewPage';
 import { SeasonalPage } from './pages/SeasonalPage';
 import { CostImpactPage } from './pages/CostImpactPage';
+import { SpreadsPage } from './pages/SpreadsPage';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
-type Tab = 'price-review' | 'seasonal' | 'cost-impact' | 'monitor';
+type Tab = 'price-review' | 'seasonal' | 'cost-impact' | 'spreads' | 'monitor';
 const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
+  { id: 'spreads', label: 'Spreads', icon: Shuffle },
   { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
 ];
 
+const VALID_TABS: Tab[] = [
+  'price-review', 'seasonal', 'cost-impact', 'spreads', 'monitor',
+];
 const tabFromHash = (): Tab => {
-  const h = window.location.hash.replace('#', '');
-  return h === 'seasonal' || h === 'monitor' || h === 'cost-impact'
-    ? h : 'price-review';
+  const h = window.location.hash.replace('#', '') as Tab;
+  return VALID_TABS.includes(h) ? h : 'price-review';
 };
 
 const HISTORICAL =
@@ -126,7 +130,8 @@ function App() {
   const viewName =
     activeTab === 'seasonal' ? 'Seasonal analysis'
       : activeTab === 'cost-impact' ? 'Cost impact analysis'
-        : 'Price Review';
+        : activeTab === 'spreads' ? 'Spread monitor'
+          : 'Price Review';
   const chatContext =
     `The user is viewing the ${viewName} of the metals price dashboard. ` +
     'Answer only from the available extracted newsletter price data; if the ' +
@@ -188,6 +193,8 @@ function App() {
           <SeasonalPage records={records} isDark={isDark} />
         ) : activeTab === 'cost-impact' ? (
           <CostImpactPage records={records} isDark={isDark} />
+        ) : activeTab === 'spreads' ? (
+          <SpreadsPage records={records} isDark={isDark} />
         ) : (
           <>
             <SummaryMetrics runs={runs} />
