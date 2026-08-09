@@ -11,6 +11,10 @@ import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
 import { PriceRecord } from './reporting/aggregate';
 
+import { sheetsClient } from './sheets/routing';
+import { MASTER_SHEET_ID } from './config';
+import { SHEET_HEADERS } from './sheets/constants';
+
 initializeApp();
 
 /**
@@ -107,5 +111,60 @@ module.exports = {
   [`renewWatch${suffix}`]: _renewWatch,
   [`chatEndpoint${suffix}`]: _chatEndpoint,
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
+  [`clearTabs${suffix}`]: onRequest(async (request, response) => {
+    try {
+      if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');
+
+      const doc = await sheetsClient.spreadsheets.get({
+        spreadsheetId: MASTER_SHEET_ID,
+      });
+      const sheets = doc.data.sheets || [];
+      type DelReq = { deleteSheet: { sheetId: number | null | undefined } };
+      const requests: DelReq[] = [];
+
+      const sheet2025 = sheets.find(
+        (s) => s.properties?.title === '2025'
+      );
+      if (sheet2025) {
+        requests.push({
+          deleteSheet: { sheetId: sheet2025.properties?.sheetId },
+        });
+      }
+
+      if (requests.length > 0) {
+        await sheetsClient.spreadsheets.batchUpdate({
+          spreadsheetId: MASTER_SHEET_ID,
+          requestBody: { requests },
+        });
+      }
+
+      await sheetsClient.spreadsheets.values.clear({
+        spreadsheetId: MASTER_SHEET_ID,
+        range: '2026!A2:Z',
+      });
+
+      // Update Audit_Log headers
+      const userFriendlyHeaders = SHEET_HEADERS.map((header: string) =>
+        header
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      );
+      await sheetsClient.spreadsheets.values.update({
+        spreadsheetId: MASTER_SHEET_ID,
+        range: 'Audit_Log!A1',
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [['Timestamp', 'Action', ...userFriendlyHeaders]],
+        },
+      });
+
+      response.send('Tabs cleared and Audit_Log headers updated successfully.');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      logger.error('Failed to clear tabs', { error: msg });
+      response.status(500).send(msg);
+    }
+  }),
 };
 

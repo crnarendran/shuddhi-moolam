@@ -1,6 +1,23 @@
 import { extractPricesFromPdf } from './extract';
+import { CORE_KEYS } from './components';
+
+/**
+ * Builds a minimal valid Gemini response: the issue date, every core
+ * field set to the given value, and a source_pages string.
+ * @param {string} value - The price value to assign to each core field.
+ * @returns {Record<string, string>} A schema-valid response object.
+ */
+function makeValidResponse(value: string): Record<string, string> {
+  const resp: Record<string, string> = { date: '27/07/2026' };
+  for (const k of CORE_KEYS) resp[k] = value;
+  resp.source_pages = 'crca_bundle_mumbai: 7';
+  return resp;
+}
 
 const mockGenerateContent = jest.fn();
+const mockUploadFile = jest.fn();
+const mockGetFile = jest.fn();
+const mockDeleteFile = jest.fn();
 
 jest.mock('@google/generative-ai', () => {
   return {
@@ -14,12 +31,46 @@ jest.mock('@google/generative-ai', () => {
   };
 });
 
+jest.mock('@google/generative-ai/server', () => ({
+  GoogleAIFileManager: jest.fn().mockImplementation(() => ({
+    uploadFile: mockUploadFile,
+    getFile: mockGetFile,
+    deleteFile: mockDeleteFile,
+  })),
+  FileState: { PROCESSING: 'PROCESSING', ACTIVE: 'ACTIVE', FAILED: 'FAILED' },
+}));
+
+/**
+ * Sets the File-API mock to return a file already in the given state.
+ * @param {string} state - The FileState value to report.
+ * @returns {void}
+ */
+function mockUploadState(state: string): void {
+  mockUploadFile.mockResolvedValue({
+    file: {
+      name: 'files/abc',
+      uri: 'https://generativelanguage.googleapis.com/v1/files/abc',
+      mimeType: 'application/pdf',
+      state,
+    },
+  });
+}
+
 describe('Extract Prices from PDF', () => {
   const dummyBuffer = Buffer.from('dummy-pdf-content');
+  // Force the File API path without allocating a real large buffer:
+  // INLINE_MAX_MB=0 means any non-empty PDF exceeds the inline threshold.
+  const forceFileApi = () => {
+    process.env.INLINE_MAX_MB = '0';
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-api-key';
+    delete process.env.INLINE_MAX_MB; // default 14 MB → inline path
+    // Default: upload succeeds and the file is immediately ACTIVE.
+    mockUploadState('ACTIVE');
+    mockDeleteFile.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -34,21 +85,7 @@ describe('Extract Prices from PDF', () => {
   });
 
   it('should successfully extract and validate a full record', async () => {
-    const validResponse = {
-      date: '27/07/2026',
-      crca_bundle_mumbai: '47,500 - 46,500',
-      crca_bundle_chennai: '48,000',
-      melting_foundry_scrap_mumbai: '',
-      fe_mn_hc_mumbai: '123',
-      fe_si_70_75_mumbai: '123',
-      low_sulp_cal_petro_coke: '123',
-      fe_si_mg_mumbai: '123',
-      cu_lme: '123',
-      cu_domestic: '123',
-      fe_cr_mumbai: '123',
-      pig_iron_foundry_gr_pune: '123',
-      source_pages: 'crca_bundle_mumbai: 4',
-    };
+    const validResponse = makeValidResponse('123');
 
     mockGenerateContent.mockResolvedValueOnce({
       response: {
@@ -63,10 +100,100 @@ describe('Extract Prices from PDF', () => {
       usage: {
         totalTokenCount: 42,
         promptTokenCount: 0,
-        candidatesTokenCount: 0
+        candidatesTokenCount: 0,
+        thoughtsTokenCount: 0
       }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures reasoning tokens from usageMetadata', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: {
+          totalTokenCount: 500,
+          promptTokenCount: 100,
+          candidatesTokenCount: 20,
+          thoughtsTokenCount: 380,
+        },
+      },
+    });
+
+    const result = await extractPricesFromPdf(dummyBuffer);
+    expect(result.usage.thoughtsTokenCount).toBe(380);
+    expect(result.usage.candidatesTokenCount).toBe(20);
+  });
+
+  it('uses inline data for normal-sized files (no File API)', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+
+    expect(mockUploadFile).not.toHaveBeenCalled();
+    const parts = mockGenerateContent.mock.calls[0][0];
+    expect(parts[1]).toEqual({
+      inlineData: expect.objectContaining({ mimeType: 'application/pdf' }),
+    });
+  });
+
+  it('uploads large files via the File API and deletes afterward', async () => {
+    forceFileApi();
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+
+    expect(mockUploadFile).toHaveBeenCalledTimes(1);
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      dummyBuffer,
+      expect.objectContaining({ mimeType: 'application/pdf' })
+    );
+    // The prompt is sent with a fileData part, not inline base64.
+    const parts = mockGenerateContent.mock.calls[0][0];
+    expect(parts[1]).toEqual({
+      fileData: expect.objectContaining({ mimeType: 'application/pdf' }),
+    });
+    expect(mockDeleteFile).toHaveBeenCalledWith('files/abc');
+  });
+
+  it('polls until the uploaded (large) file becomes ACTIVE', async () => {
+    forceFileApi();
+    mockUploadState('PROCESSING');
+    mockGetFile.mockResolvedValueOnce({
+      name: 'files/abc',
+      uri: 'https://x/files/abc',
+      mimeType: 'application/pdf',
+      state: 'ACTIVE',
+    });
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+    expect(mockGetFile).toHaveBeenCalledWith('files/abc');
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  }, 10000);
+
+  it('throws when a large-file File API upload FAILED', async () => {
+    forceFileApi();
+    mockUploadState('FAILED');
+    await expect(extractPricesFromPdf(dummyBuffer)).rejects.toThrow(
+      /File API failed/
+    );
+    expect(mockGenerateContent).not.toHaveBeenCalled();
   });
 
   it(
@@ -87,21 +214,8 @@ describe('Extract Prices from PDF', () => {
     });
 
   it('should retry on transient errors and eventually succeed', async () => {
-    const validResponse = {
-      date: '27/07/2026',
-      crca_bundle_mumbai: '1',
-      crca_bundle_chennai: '1',
-      melting_foundry_scrap_mumbai: '1',
-      fe_mn_hc_mumbai: '1',
-      fe_si_70_75_mumbai: '1',
-      low_sulp_cal_petro_coke: '1',
-      fe_si_mg_mumbai: '1',
-      cu_lme: '1',
-      cu_domestic: '1',
-      fe_cr_mumbai: '1',
-      pig_iron_foundry_gr_pune: '1',
-      source_pages: 'crca_bundle_mumbai: 1',
-    };
+    const validResponse = makeValidResponse('1');
+    validResponse.source_pages = 'crca_bundle_mumbai: 1';
 
     mockGenerateContent
       .mockRejectedValueOnce(new Error('Transient network error'))
@@ -119,7 +233,8 @@ describe('Extract Prices from PDF', () => {
       usage: {
         totalTokenCount: 10,
         promptTokenCount: 0,
-        candidatesTokenCount: 0
+        candidatesTokenCount: 0,
+        thoughtsTokenCount: 0
       }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(3);

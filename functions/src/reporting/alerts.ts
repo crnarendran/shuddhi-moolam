@@ -1,19 +1,14 @@
 import { monthlyAverages, pctChange, PriceRecord } from './aggregate';
+import { COMPONENTS } from '../gemini/components';
 
-// The commodities monitored for price-movement alerts (SM-19).
-export const ALERT_COMMODITIES: { key: string; label: string }[] = [
-  { key: 'crca_bundle_mumbai', label: 'CRCA Bundle Mumbai' },
-  { key: 'crca_bundle_chennai', label: 'CRCA Bundle Chennai' },
-  { key: 'melting_foundry_scrap_mumbai', label: 'Melting Foundry scrap' },
-  { key: 'fe_mn_hc_mumbai', label: 'Fe Mn HC' },
-  { key: 'fe_si_70_75_mumbai', label: 'Fe Si 70-75%' },
-  { key: 'low_sulp_cal_petro_coke', label: 'Low Sulp Cal Petro Coke' },
-  { key: 'fe_si_mg_mumbai', label: 'FeSiMg' },
-  { key: 'cu_lme', label: 'Cu LME' },
-  { key: 'cu_domestic', label: 'Cu (domestic)' },
-  { key: 'fe_cr_mumbai', label: 'Fe Cr' },
-  { key: 'pig_iron_foundry_gr_pune', label: 'Pig Iron Foundry Pune' },
-];
+// The commodities monitored for price-movement alerts (SM-19). Derived
+// from the core-tier components in the shared registry so it tracks the
+// master Sheet and never drifts (cu_lme dropped, new core items added).
+export const ALERT_COMMODITIES: { key: string; label: string }[] =
+  COMPONENTS.filter((c) => c.tier === 'core').map((c) => ({
+    key: c.key,
+    label: c.label,
+  }));
 
 export interface Breach {
   key: string;

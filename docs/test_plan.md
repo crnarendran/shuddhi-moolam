@@ -24,11 +24,21 @@ Shuddhi-Moolam strictly enforces **Test-Driven Development (TDD)** as defined in
 
 The Jest test suite lives in `functions/src/` and is executed via `npm test`.
 
-### 1. Gemini Extraction (`functions/src/gemini/extract.ts`)
-- **Schema Validation**:
-  - Tests verify that `extractPricesFromPdf` returns all 13 required fields specified in `extractionRecordSchema`.
-  - Verifies that price ranges (e.g. `47,500 - 46,500`) and numeric strings are preserved verbatim without numeric coercion.
-  - Verifies that missing fields default to explicit empty string `""` rather than `null` or `undefined`.
+### 1. Gemini Extraction (`functions/src/gemini/extract.ts`) & Registry
+- **Component registry (`components.ts`)**: `components.test.ts` guards the
+  single source of truth — 31 components (16 core / 6 extended / 9 archived),
+  unique keys, the three tiers partition all keys with no overlap, and the
+  prompt has exactly one line per component.
+- **Schema drift (`schema.test.ts`)**: verifies `extractionRecordSchema`'s
+  price keys equal the registry's keys, that **core** fields are required and
+  **extended + archived** fields are optional, and that a missing core field
+  fails validation.
+- **Schema Validation (`extract.test.ts`)**:
+  - Verifies `extractPricesFromPdf` returns a record validated against
+    `extractionRecordSchema` (all 16 core fields present).
+  - Verifies price ranges (e.g. `47,500 - 46,500`) are captured as the
+    upper-bound value; strings are preserved without numeric coercion.
+  - Verifies a missing core commodity is an explicit empty string `""`.
 - **Retry Logic & Backoff**:
   - Simulates API network errors to verify retry behavior up to 3 attempts with exponential backoff.
   - Verifies that `ZodError` validation failures and JSON parse failures fail fast and do not retry.
@@ -38,10 +48,16 @@ The Jest test suite lives in `functions/src/` and is executed via `npm test`.
   - Tests verify `ensureYearTab(year)` checks existing tabs on spreadsheet `MASTER_SHEET_ID`.
   - Verifies that if `Data_<year>` exists, no creation call is fired.
   - Verifies that if `Data_<year>` does not exist, `batchUpdate` creates the sheet and `values.update` populates `SHEET_HEADERS` at `Data_<year>!A1`.
-- **Row Appending (`append.ts`)**:
-  - Verifies `appendRow` maps `ExtractionRecord` fields strictly matching `SHEET_HEADERS` order.
-  - Verifies dynamic end column letter calculation (`A` through `M` for 13 fields).
-  - Verifies `valueInputOption: 'USER_ENTERED'` is passed to Google Sheets API.
+- **Row Upsert (`upsert.ts`)**:
+  - Verifies `upsertRow` maps the record to a row strictly matching
+    `SHEET_HEADERS` order (`filename`, `date`, 16 core commodities,
+    `source_pages`, `last_modified_date`).
+  - **Tier isolation (`constants.test.ts`)**: verifies `SHEET_HEADERS` is
+    derived from `CORE_KEYS` and **excludes every extended and archived
+    component**, and stays within the 26-column single-letter limit
+    (currently 20 columns, `A` through `T`).
+  - Verifies the upsert is idempotent on the issue `date` (update vs insert)
+    and passes `valueInputOption: 'USER_ENTERED'`.
 
 ### 3. Drive Ingestion & Webhooks (`functions/src/drive/`)
 - **Header Validation & Channel Authorization (`webhook.ts`)**:
@@ -104,6 +120,52 @@ E2E scenarios validate full multi-component integration flows:
 - **Given**: A file ID `fileId_failed` sitting in `_system/dead_letters`.
 - **When**: An operator deletes `_system/dead_letters/fileId_failed` and creates `_system/pending_pdfs/fileId_failed`.
 - **Then**: `processPendingPdf` triggers immediately, successfully processes the file, and moves the lock to `_system/processed_pdfs/fileId_failed`.
+
+---
+
+## SM-28: Foundation Revamp & Backlog Re-Extraction
+
+The extraction contract expanded from 13 flat fields to the 31-component tiered
+registry. Before the prod backlog is re-extracted, these scenarios must pass in
+**dev**. This section is the SDET/Reviewer sign-off checklist.
+
+### Scenario RX-1: Golden-Fixture Accuracy (dev)
+- **Given**: the real newsletter `MMRW03082026.pdf` (issue Aug 3, 2026).
+- **When**: it is processed by the new extractor in the **dev** environment.
+- **Then**: all **16 core** values match the newsletter's pages 6-8 on manual
+  review; the **6 extended** and **9 archived** values are captured where
+  printed; the issue `date` is `dd/MM/yyyy`; ranges yield the upper bound.
+- **Prompt tuning**: any mismatch is fixed by editing the component's
+  `promptDesc` in `components.ts` (never by hand-editing the stored data).
+
+### Scenario RX-2: Tier Placement
+- **Given**: a processed issue in dev.
+- **Then**: the master Sheet row contains **only** the 16 core columns (+
+  metadata); the Firestore `historical_prices_dev` doc contains **all 31**
+  components; the dashboards display core + extended and **never** archived
+  (e.g. `cu_lme`, `zinc_ingot`).
+
+### Scenario RX-3: Clean Backlog Rebuild (dev)
+- **Given**: `historical_prices_dev` holds docs under the **old** 13-field
+  shape.
+- **When**: the full Drive PDF backlog is re-processed.
+- **Then**: each doc (id `YYYY-MM-DD`) is overwritten via `.set()` with the new
+  shape; **no** doc retains the dropped `cu_domestic` key or a core `cu_lme`
+  value; the dev master-Sheet year tabs are cleared and re-headered (15→20
+  columns) before repopulating.
+
+### Scenario RX-4: Reporting Continuity
+- **Given**: the rebuilt dev data.
+- **Then**: Price Review, Seasonal, Cost-Impact, and Spreads dashboards render
+  with the new commodity keys; alerts (`ALERT_COMMODITIES`) reference core keys
+  only; no dashboard references the removed `cu_lme`/`cu_domestic` keys.
+
+### Scenario RX-5: Prod Re-Extraction (Release-Manager gated)
+- **Given**: dev sign-off on RX-1..RX-4 and promotion dev→staging→main.
+- **When**: the **one-time** prod backlog re-extraction runs.
+- **Then**: prod `historical_prices` and the prod master Sheet are rebuilt
+  under the new contract; this step is performed via the Release Manager flow,
+  never by a direct push.
 
 ---
 
