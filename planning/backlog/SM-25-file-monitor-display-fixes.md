@@ -5,6 +5,9 @@ type: ticket
 points: 2
 status: in-review
 depends_on: [SM-11, SM-13, SM-06]
+tags: [backlog, bug, dashboard, ux]
+---
+# SM-25 — File monitor display fixes
 
 ## Resolution (2026-08-02)
 - **Filename:** fixed — `process.ts` now sets `fileName` on the run at the
@@ -13,9 +16,6 @@ depends_on: [SM-11, SM-13, SM-06]
 - **Year → Tab:** NOT a bug — the pipeline names year tabs just `<year>`
   (e.g. `2026`), so `FileMonitor`'s `year → targetTab` correctly renders
   `2026 → 2026`. Left as-is.
-tags: [backlog, bug, dashboard, ux]
----
-# SM-25 — File monitor display fixes
 
 > Small display bugs in the live file monitor (SM-13). Fold into the other
 > session's `FileMonitor` + pipeline telemetry.
