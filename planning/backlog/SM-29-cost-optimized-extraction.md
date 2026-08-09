@@ -53,16 +53,23 @@ the data. Fixed:
 - A size-aware compression pre-step remains optional (not needed once slicing
   lands, Phase 3).
 
-### Phase 3 — Token minimization + QA gate (optional; measure Phase 1 first) — TODO
-Only pursue if Phase 1 cost isn't already near-zero:
-- **Page-slice** each PDF to the ~3 price-table pages before upload (locate by
-  table-header text) — biggest input-token cut.
-- **Hybrid**: `pdftotext -layout` (free) for the tabular fields that parse
-  cleanly (Primary Material, Ferro Alloys, Raipur, Coke); send **only the
-  Domestic Prices page** to the LLM for the 2D grid.
-- **Data-quality cross-check**: diff pdftotext vs LLM on overlapping fields;
-  normalize both to the same rule (range→upper-bound) and **FLAG, don't hard-fail**
-  initially (benign format diffs must not halt the weekly pipeline).
+### Phase 3 — Token minimization + QA gate — DEFERRED (decided 2026-08-09)
+**Not implemented, by decision.** Phase 1 removed the thinking tokens, so the
+per-file cost is already ~$0.0004 (≈ $0.03 for the whole 75-file backlog);
+slicing would save pennies. It also carries downsides in the CF Node-20 runtime:
+- The `pdftotext -layout` hybrid + QA-diff **cannot run in Cloud Functions**
+  (`pdftotext` is a native poppler binary, not in the runtime; Ghostscript
+  compression has the same problem).
+- Page-slicing needs a fragile `pdfjs-dist` dependency in CF just to locate the
+  price pages, and a missed header would **silently drop a price** — a
+  correctness risk for negligible savings.
+- Phase 2 (File API) already solved the large-file problem independently.
+
+**Revisit only if** the post-deploy per-file cost measurement (see Phase 1
+verify step) shows cost is still meaningful. If revived, build page-slicing
+conservatively: detect price pages, and **fall back to the full PDF whenever
+detection is not confident** so it can never drop data. The pdftotext hybrid
+would require a pure-JS text oracle (`pdfjs`) or bundling poppler.
 
 ## Review notes (carry into Phase 2/3)
 - **Model choice for the grid**: the 2D Domestic Prices grid (Al/Cu/Tin/Zn/Pb/Ni
