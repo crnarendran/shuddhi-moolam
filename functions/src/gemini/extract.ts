@@ -97,7 +97,8 @@ export async function extractPricesFromPdf(
   // so it is cast through; the REST API still honours the field.
   const generationConfig = {
     responseMimeType: 'application/json',
-    thinkingConfig: { thinkingBudget: 0 },
+    // 1024 is the minimum budget; 0 causes a 400 Bad Request
+    thinkingConfig: { thinkingBudget: 1024 },
   } as unknown as GenerationConfig;
   const model = genAI.getGenerativeModel({
     model: 'gemini-3.6-flash',
