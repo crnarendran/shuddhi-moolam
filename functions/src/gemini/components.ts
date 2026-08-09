@@ -219,16 +219,16 @@ export const COMPONENTS: Component[] = [
   },
   {
     key: 'calcinated_petroleum_coke_9_4mm',
-    label: 'Calcined Petroleum Coke 9-4mm (Indian)',
+    label: 'Calcined Petroleum Coke 0-4mm (Indian)',
     page: 8,
     category: 'Raipur Local',
     unit: 'Rs/kg',
     market: 'Raipur',
     tier: 'core',
     promptDesc:
-      'Calcinated Petroleum Coke (9-4mm) (Indian Market), basic rate ' +
+      'Calcined Petroleum Coke (0-4mm) (Indian Market), basic rate ' +
       '(Rs/kg) from the Raipur Local Market Prices table (approx. ' +
-      'page 8).',
+      'page 8). (Some issues label the size 9-4mm.)',
   },
   // --- Page 8: Coke - Ex-Plant Basic Prices (Rs/tonne) ---
   {

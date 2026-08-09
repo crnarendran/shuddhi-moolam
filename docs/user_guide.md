@@ -97,7 +97,7 @@ the **16 core columns** plus 4 metadata columns, in this left-to-right order:
 | `fe_cr_mumbai` | Ferro Chromium HC 60-65% (Mumbai) | Rs/kg | `140` |
 | `fe_si_mg_mumbai` | Ferro Silicon Magnesium (Mumbai) | Rs/kg | `190` |
 | `low_sulp_cal_petro_coke` | Import Low-Sulphur CPC 98% (Raipur) | Rs/kg | `59` |
-| `calcinated_petroleum_coke_9_4mm` | Calcined Petroleum Coke 9-4mm (Indian) | Rs/kg | `80` |
+| `calcinated_petroleum_coke_9_4mm` | Calcined Petroleum Coke 0-4mm (Indian) | Rs/kg | `80` |
 | `lam_coke` | Lam Coke (Ex-Plant) | Rs/tonne | `35,000` |
 
 The **6 extended** commodities also visible on the dashboards are: Sponge Iron

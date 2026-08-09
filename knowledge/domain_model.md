@@ -90,7 +90,7 @@ Metadata fields: `date` (issue date, `dd/MM/yyyy` — routes to the
 | `fe_cr_mumbai` | Ferro Chromium HC 60-65%, Mumbai (8) | Rs/kg |
 | `fe_si_mg_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
 | `low_sulp_cal_petro_coke` | Raipur Local, Import Low-Sulphur CPC 98% (8) | Rs/kg |
-| `calcinated_petroleum_coke_9_4mm` | Raipur Local, CPC 9-4mm Indian (8) | Rs/kg |
+| `calcinated_petroleum_coke_9_4mm` | Raipur Local, CPC 0-4mm Indian (8) | Rs/kg |
 | `lam_coke` | Coke Ex-Plant (8) | Rs/tonne |
 
 ### Extended components (6 — Firestore + dashboards only)

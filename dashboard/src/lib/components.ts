@@ -139,7 +139,7 @@ export const COMPONENTS: Component[] = [
   },
   {
     key: 'calcinated_petroleum_coke_9_4mm',
-    label: 'Calcined Petroleum Coke 9-4mm (Indian)',
+    label: 'Calcined Petroleum Coke 0-4mm (Indian)',
     category: 'Raipur Local',
     unit: 'Rs/kg',
     market: 'Raipur',
