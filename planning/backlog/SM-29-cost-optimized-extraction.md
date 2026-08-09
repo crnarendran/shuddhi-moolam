@@ -88,3 +88,43 @@ would require a pure-JS text oracle (`pdfjs`) or bundling poppler.
   thinking + total tokens; dashboards reflect true cost.
 - Phase 2: a >15 MB issue extracts successfully instead of dead-lettering.
 - Phase 3 (if pursued): LLM touches ≤1 page/issue; QA mismatches flagged.
+
+## OPEN — live-test regression (2026-08-09), handoff to Antigravity
+**Symptom:** after the green deploy (`ce54b21`), a fresh newsletter dropped into
+the dev folder (`1rvSE-…`) is **not processed** — no new `2026` tab, and the
+audit tab's newest row is still `MMRW03082026` @ 10:52 (that row is OLD-schema,
+written by the pre-deploy code). The Drive watch worked at 10:52, so the channel
+is likely still active.
+
+**Prime suspect:** Phase 2 switched **all** extraction from inline base64 to the
+Gemini **File API** (`extract.ts`, `GoogleAIFileManager`). It was only
+mock-tested, never against the live API. If it errors at runtime it breaks
+**every** file (not just large ones) — consistent with a normal drop failing;
+the old inline path worked.
+
+**Diagnose (needs GCP/Firestore access):**
+1. Newest `pipeline_runs_dev` doc + `_system/dead_letters` → the error message.
+2. `_system/pending_pdfs` — is the file stuck pending (proc failed/hung)? If
+   nothing anywhere, the webhook/watch didn't fire (check `watch_state`).
+3. Cloud Functions logs for `processPendingPdf_dev` around the drop — look for
+   File API upload/auth errors, "Generative Language API" file endpoint not
+   enabled, `fileData` rejected, or a `thinkingConfig` rejection.
+
+**Recommended fix (likely resolution):** make the File API **conditional** —
+keep the proven **inline** path for normal files, use File API **only** for PDFs
+too big for inline (> ~15–18 MB). Restores the regressed common case and still
+handles oversized issues (16.7 MB `MMRW29062026.pdf`). Add a size-branch unit
+test. Keep the 50 MB download guard (`MAX_PDF_SIZE_MB`).
+
+**Verify:** deploy to dev, drop a fresh newsletter → expect a new `2026` tab with
+the new columns (`aluminium_ingot`, `tin_ingot`, `pig_iron_sg_grade_a_pune`,
+`calcinated_petroleum_coke_9_4mm`, `lam_coke`; **no** `cu_lme` in the sheet —
+it's archived/Firestore-only) and a `pipeline_runs_dev` run reaching `appended`
+with `gemini.thinkingTokens` ≈ 0 (confirms Phase 1). Dedup: re-dropping the same
+file may be skipped via `_system/processed_pdfs/{fileId}`; use a fresh upload or
+clear that lock.
+
+**Still open after extraction works:** re-header the sheet tabs to the new 20-col
+layout (ensureYearTab only writes headers when it *creates* a tab); build the
+SM-28 full dev backlog re-extraction (list dev PDFs → clear locks → reprocess);
+then dev→staging→prod via the Release Manager + the one-time prod re-extraction.
