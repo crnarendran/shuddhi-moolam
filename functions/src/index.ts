@@ -11,6 +11,11 @@ import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
 import { PriceRecord } from './reporting/aggregate';
 
+import { initializeApp } from 'firebase-admin/app';
+import { sheetsClient } from './sheets/routing';
+import { MASTER_SHEET_ID } from './config';
+import { SHEET_HEADERS } from './sheets/constants';
+
 initializeApp();
 
 /**
@@ -109,18 +114,22 @@ module.exports = {
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
-      const { sheetsClient } = require('./sheets/routing');
-      const { MASTER_SHEET_ID } = require('./config');
-      const { SHEET_HEADERS } = require('./sheets/constants');
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');
 
-      const doc = await sheetsClient.spreadsheets.get({ spreadsheetId: MASTER_SHEET_ID });
+      const doc = await sheetsClient.spreadsheets.get({
+        spreadsheetId: MASTER_SHEET_ID,
+      });
       const sheets = doc.data.sheets || [];
-      const requests = [];
+      type DelReq = { deleteSheet: { sheetId: number | null | undefined } };
+      const requests: DelReq[] = [];
 
-      const sheet2025 = sheets.find((s: any) => s.properties?.title === '2025');
+      const sheet2025 = sheets.find(
+        (s) => s.properties?.title === '2025'
+      );
       if (sheet2025) {
-        requests.push({ deleteSheet: { sheetId: sheet2025.properties.sheetId } });
+        requests.push({
+          deleteSheet: { sheetId: sheet2025.properties?.sheetId },
+        });
       }
 
       if (requests.length > 0) {
@@ -137,7 +146,10 @@ module.exports = {
 
       // Update Audit_Log headers
       const userFriendlyHeaders = SHEET_HEADERS.map((header: string) =>
-        header.split('_').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+        header
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
       );
       await sheetsClient.spreadsheets.values.update({
         spreadsheetId: MASTER_SHEET_ID,
@@ -149,9 +161,10 @@ module.exports = {
       });
 
       response.send('Tabs cleared and Audit_Log headers updated successfully.');
-    } catch (e: any) {
-      logger.error('Failed to clear tabs', { error: e.message });
-      response.status(500).send(e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      logger.error('Failed to clear tabs', { error: msg });
+      response.status(500).send(msg);
     }
   }),
 };
