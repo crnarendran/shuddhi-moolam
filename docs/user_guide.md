@@ -51,29 +51,63 @@ The pipeline automatically routes each newsletter's data based on its publicatio
 
 ---
 
-## Reading an Extracted Row
+## What Gets Extracted: the Three Tiers
 
-Each row appended to a year tab corresponds to one weekly issue. The table below lists the 13 canonical columns in their exact left-to-right order:
+Each newsletter issue is read into **31 tracked components**, but not every
+component appears in every place. Each has a **tier** that controls where it
+shows up:
 
-| Column Header | Field Description | Example Value |
-|---|---|---|
-| `newsletter_issue_date` | Issue date range printed on the front page | `JULY 27-AUGUST 02` |
-| `year` | 4-digit publication year | `2026` |
-| `crca_bundle_mumbai` | Melting Scrap (CRCA – Bundle) LSLP (Mumbai/Pune) | `38,500 - 39,000` |
-| `crca_bundle_chennai` | Melting Scrap (CRCA – Bundle) LSLP (Chennai) | `40,000` |
-| `melting_foundry_scrap_mumbai` | Melting Scrap (Mumbai/Pune) (Foundry) | `37,000` |
-| `fe_mn_hc_mumbai` | Ferro Manganese HC (Ferro Alloys – Mumbai) | `68,000` |
-| `fe_si_70_75_mumbai` | Ferro Silicon (70–75%) (Ferro Alloys – Mumbai) | `95,000` |
-| `low_sulp_cal_petro_coke` | Low Sulp. (max 1.5%) cal Petro. Coke 98% (Raipur) | `22,500` |
-| `fe_si_mg_mumbai` | Ferro Silicon Magnesium (Ferro Alloys – Mumbai) | `115,000` |
-| `cu_lme` | LME Settlement Rate, Copper Grade A | `9,850` |
-| `cu_domestic` | Domestic / MMR Landed price for Copper | `845` |
-| `fe_cr_mumbai` | Ferro Chromium (High or Low Carbon), Mumbai market | `102,000` |
-| `pig_iron_foundry_gr_pune` | Pig Iron Foundry Grade – A (Pune) | `41,500` |
+| Tier | Count | Master Sheet | Dashboards | Data store (Firestore) |
+|---|---|:--:|:--:|:--:|
+| **core** | 16 | ✅ | ✅ | ✅ |
+| **extended** | 6 | — | ✅ | ✅ |
+| **archived** | 9 | — | — | ✅ |
+
+Every component is always captured into the data store. **Extended** items are
+useful commodities shown on the dashboards but deliberately kept out of the
+master Sheet (pending a decision to promote them). **Archived** items (e.g.
+Copper LME, domestic Zinc/Lead/Nickel) are captured passively for possible
+future use, and are hidden from both the Sheet and the dashboards.
+
+> Why capture things we don't yet show? Adding a component to the extraction is
+> essentially free; the costly step is re-reading the entire PDF backlog. So we
+> capture generously once and decide later where each one is displayed — moving
+> a component up a tier never requires re-processing the PDFs.
+
+## Reading an Extracted Row (the Master Sheet)
+
+Each row on a year tab corresponds to one weekly issue. The master Sheet shows
+the **16 core columns** plus 4 metadata columns, in this left-to-right order:
+`filename`, `date`, the 16 core commodities below, `source_pages`,
+`last_modified_date`.
+
+| Core Column | Description | Unit | Example |
+|---|---|---|---|
+| `aluminium_ingot` | Aluminium Ingot (Mumbai) | Rs/kg | `339` |
+| `copper_cathode` | Copper Cathode (Mumbai) | Rs/kg | `1,326` |
+| `tin_ingot` | Tin Ingot (Mumbai) | Rs/kg | `5,349` |
+| `melting_foundry_scrap_mumbai` | Melting Scrap Foundry (Mumbai/Pune) | Rs/tonne | `46,500` |
+| `crca_bundle_mumbai` | CRCA-Bundle LSLP (Mumbai/Pune) | Rs/tonne | `47,400` |
+| `crca_bundle_chennai` | CRCA-Bundle LSLP (Chennai) | Rs/tonne | `49,000` |
+| `pig_iron_sg_grade_a_pune` | Pig Iron SG Grade-A (Pune) | Rs/tonne | `49,500` |
+| `pig_iron_foundry_gr_pune` | Pig Iron Foundry Grade-A (Pune) | Rs/tonne | `48,000` |
+| `fe_si_70_75_mumbai` | Ferro Silicon 70-75% (Mumbai) | Rs/kg | `109` |
+| `fe_mn_hc_mumbai` | Ferro Manganese HC (Mumbai) | Rs/kg | `95` |
+| `inoculant_2_6mm_mumbai` | Inoculant 2-6mm (Mumbai) | Rs/kg | `208` |
+| `fe_cr_mumbai` | Ferro Chromium HC 60-65% (Mumbai) | Rs/kg | `140` |
+| `fe_si_mg_mumbai` | Ferro Silicon Magnesium (Mumbai) | Rs/kg | `190` |
+| `low_sulp_cal_petro_coke` | Import Low-Sulphur CPC 98% (Raipur) | Rs/kg | `59` |
+| `calcinated_petroleum_coke_9_4mm` | Calcined Petroleum Coke 9-4mm (Indian) | Rs/kg | `80` |
+| `lam_coke` | Lam Coke (Ex-Plant) | Rs/tonne | `35,000` |
+
+The **6 extended** commodities also visible on the dashboards are: Sponge Iron
+(Mandi Gobindgarh), Ferro Silicon 70/75 (Raipur), Ferro Manganese 70/75
+(Raipur), Silico Manganese (Mumbai), High Ferro Manganese 78% (Raipur), and
+Graphite Petroleum Coke (Mumbai).
 
 ### Key Formatting Rules
-- **Verbatim Text Preservation**: Prices are extracted as text strings, not numeric values. Price ranges (e.g., `47,500 - 46,500`) and currency formatting are preserved verbatim from the PDF source.
-- **Explicit Missing Values**: If a specific commodity price is omitted or unlisted in a particular issue, the cell will contain an empty string `""` rather than missing or shifted data.
+- **Verbatim Text Preservation**: Prices are extracted as text strings, not numeric values. Price ranges (e.g., `47,500 - 46,500`) are captured as the upper-bound value; currency formatting is preserved from the PDF source.
+- **Explicit Missing Values**: If a core commodity price is omitted in a particular issue, the cell contains an empty string `""` rather than missing or shifted data. (Extended and archived values may simply be absent when not printed.)
 
 ---
 
