@@ -2,6 +2,12 @@
 // engine (functions/src/reporting). No I/O — operates on plain price
 // records read from Firestore `historical_prices`.
 
+import {
+  VISIBLE_COMPONENTS,
+  CORE_COMPONENTS,
+  type ComponentTier,
+} from './components';
+
 export interface PriceRecord {
   date: string; // dd/MM/yyyy
   [field: string]: unknown;
@@ -10,22 +16,32 @@ export interface PriceRecord {
 export interface Commodity {
   key: string;
   label: string;
+  category: string;
+  unit: string;
+  tier: ComponentTier;
 }
 
-// The commodities tracked in the MMR sheet, in display order.
-export const COMMODITIES: Commodity[] = [
-  { key: 'crca_bundle_mumbai', label: 'CRCA Bundle Mumbai' },
-  { key: 'crca_bundle_chennai', label: 'CRCA Bundle Chennai' },
-  { key: 'melting_foundry_scrap_mumbai', label: 'Melting Foundry scrap' },
-  { key: 'fe_mn_hc_mumbai', label: 'Fe Mn HC' },
-  { key: 'fe_si_70_75_mumbai', label: 'Fe Si 70-75%' },
-  { key: 'low_sulp_cal_petro_coke', label: 'Low Sulp Cal Petro Coke' },
-  { key: 'fe_si_mg_mumbai', label: 'FeSiMg' },
-  { key: 'cu_lme', label: 'Cu LME' },
-  { key: 'cu_domestic', label: 'Cu (domestic)' },
-  { key: 'fe_cr_mumbai', label: 'Fe Cr' },
-  { key: 'pig_iron_foundry_gr_pune', label: 'Pig Iron Foundry Pune' },
-];
+// Dashboard-visible commodities (core + extended; archived hidden), in
+// registry display order, derived from the shared component registry
+// (./components) so the dashboard, sheet, and extraction schema never
+// drift. Carries tier so pages can badge the 'extended' (not-yet-in-Sheet)
+// commodities.
+export const COMMODITIES: Commodity[] = VISIBLE_COMPONENTS.map((c) => ({
+  key: c.key,
+  label: c.label,
+  category: c.category,
+  unit: c.unit,
+  tier: c.tier,
+}));
+
+// Core-only subset (mirrors the master Sheet columns).
+export const CORE_COMMODITIES: Commodity[] = CORE_COMPONENTS.map((c) => ({
+  key: c.key,
+  label: c.label,
+  category: c.category,
+  unit: c.unit,
+  tier: c.tier,
+}));
 
 /** Normalizes a raw price cell to a number (range midpoint), or null. */
 export function normalizePrice(raw: unknown): number | null {

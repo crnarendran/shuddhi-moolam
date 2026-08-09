@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { extractionRecordSchema, ExtractionRecord } from './schema';
+import { buildPromptFields } from './components';
 import * as logger from 'firebase-functions/logger';
 
 const MAX_RETRIES = 3;
@@ -41,9 +42,12 @@ export async function extractPricesFromPdf(
   });
 
   const prompt =
-    'You are a data extraction assistant.\n' +
-    'Extract the following exact commodity prices from the provided PDF.\n' +
-    'The issue date should be exactly as printed on the front page.\n' +
+    'You are a data extraction assistant for the Minerals & Metals ' +
+    'Review (MMR) weekly newsletter.\n' +
+    'Extract the following exact commodity prices from the provided ' +
+    'PDF. Each field notes the source table and an approximate page ' +
+    'number as a hint; rely on the table/section name to locate the ' +
+    'value if pagination differs.\n' +
     'All prices must be returned as strings (with commas intact).\n' +
     'If a price is listed as a range (e.g. 42,600 - 42,800), you MUST ' +
     'extract ONLY the upper bound (maximum) value (e.g. 42,800).\n' +
@@ -52,19 +56,10 @@ export async function extractPricesFromPdf(
     'Required fields:\n' +
     '- date: The issue date from the header of any page, ' +
     'formatted explicitly as dd/MM/yyyy\n' +
-    '- crca_bundle_mumbai: Melting Scrap (CRCA – Bundle) LSLP (Mumbai)\n' +
-    '- crca_bundle_chennai: Melting Scrap (CRCA – Bundle) LSLP (Chennai)\n' +
-    '- melting_foundry_scrap_mumbai: Melting Scrap (Mumbai) (Foundry)\n' +
-    '- fe_mn_hc_mumbai: Ferro Manganese HC (Ferro Alloys - Mumbai)\n' +
-    '- fe_si_70_75_mumbai: Ferro Silicon (70-75%) (Ferro Alloys - Mumbai)\n' +
-    '- low_sulp_cal_petro_coke: Low Sulp. cal Petro. Coke 98% (Raipur)\n' +
-    '- fe_si_mg_mumbai: Ferro Silicon Magnesium (Ferro Alloys - Mumbai)\n' +
-    '- cu_lme: LME Settlement Rate, Copper Grade A\n' +
-    '- cu_domestic: Domestic / MMR Landed price for Copper\n' +
-    '- fe_cr_mumbai: Ferro Chromium (High or Low Carbon), Mumbai market\n' +
-    '- pig_iron_foundry_gr_pune: Pig Iron Foundry Grade - A (Pune)\n' +
-    '- source_pages: A comma-separated string mapping each extracted column ' +
-    'name to its page number, e.g. "crca_bundle_mumbai: 4, cu_lme: 1"\n\n' +
+    buildPromptFields() +
+    '\n- source_pages: A comma-separated string mapping each ' +
+    'extracted field name to the page number it was read from, e.g. ' +
+    '"crca_bundle_mumbai: 7, lam_coke: 8"\n\n' +
     'Return ONLY valid JSON matching this schema exactly.';
 
   const inlineData = {

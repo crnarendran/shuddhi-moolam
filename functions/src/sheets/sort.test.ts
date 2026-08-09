@@ -2,6 +2,9 @@
 import { sortTabByDateDesc } from './sort';
 import { sheetsClient } from './routing';
 import { MASTER_SHEET_ID } from '../config';
+import { SHEET_HEADERS } from './constants';
+
+const END = String.fromCharCode('A'.charCodeAt(0) + SHEET_HEADERS.length - 1);
 
 jest.mock('./routing', () => ({
   sheetsClient: {
@@ -32,11 +35,11 @@ describe('sortTabByDateDesc', () => {
 
     expect(sheetsClient.spreadsheets.values.get).toHaveBeenCalledWith({
       spreadsheetId: MASTER_SHEET_ID,
-      range: '2026!A2:O',
+      range: `2026!A2:${END}`,
     });
     const call = (sheetsClient.spreadsheets.values.update as jest.Mock).mock
       .calls[0][0];
-    expect(call.range).toBe('2026!A2:O');
+    expect(call.range).toBe(`2026!A2:${END}`);
     const writtenDates = call.requestBody.values.map((r: any[]) => r[1]);
     expect(writtenDates).toEqual(['27/07/2026', '06/04/2026', '13/03/2026']);
   });

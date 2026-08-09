@@ -1,4 +1,18 @@
 import { extractPricesFromPdf } from './extract';
+import { CORE_KEYS } from './components';
+
+/**
+ * Builds a minimal valid Gemini response: the issue date, every core
+ * field set to the given value, and a source_pages string.
+ * @param {string} value - The price value to assign to each core field.
+ * @return {Record<string, string>} A schema-valid response object.
+ */
+function makeValidResponse(value: string): Record<string, string> {
+  const resp: Record<string, string> = { date: '27/07/2026' };
+  for (const k of CORE_KEYS) resp[k] = value;
+  resp.source_pages = 'crca_bundle_mumbai: 7';
+  return resp;
+}
 
 const mockGenerateContent = jest.fn();
 
@@ -34,21 +48,7 @@ describe('Extract Prices from PDF', () => {
   });
 
   it('should successfully extract and validate a full record', async () => {
-    const validResponse = {
-      date: '27/07/2026',
-      crca_bundle_mumbai: '47,500 - 46,500',
-      crca_bundle_chennai: '48,000',
-      melting_foundry_scrap_mumbai: '',
-      fe_mn_hc_mumbai: '123',
-      fe_si_70_75_mumbai: '123',
-      low_sulp_cal_petro_coke: '123',
-      fe_si_mg_mumbai: '123',
-      cu_lme: '123',
-      cu_domestic: '123',
-      fe_cr_mumbai: '123',
-      pig_iron_foundry_gr_pune: '123',
-      source_pages: 'crca_bundle_mumbai: 4',
-    };
+    const validResponse = makeValidResponse('123');
 
     mockGenerateContent.mockResolvedValueOnce({
       response: {
@@ -87,21 +87,8 @@ describe('Extract Prices from PDF', () => {
     });
 
   it('should retry on transient errors and eventually succeed', async () => {
-    const validResponse = {
-      date: '27/07/2026',
-      crca_bundle_mumbai: '1',
-      crca_bundle_chennai: '1',
-      melting_foundry_scrap_mumbai: '1',
-      fe_mn_hc_mumbai: '1',
-      fe_si_70_75_mumbai: '1',
-      low_sulp_cal_petro_coke: '1',
-      fe_si_mg_mumbai: '1',
-      cu_lme: '1',
-      cu_domestic: '1',
-      fe_cr_mumbai: '1',
-      pig_iron_foundry_gr_pune: '1',
-      source_pages: 'crca_bundle_mumbai: 1',
-    };
+    const validResponse = makeValidResponse('1');
+    validResponse.source_pages = 'crca_bundle_mumbai: 1';
 
     mockGenerateContent
       .mockRejectedValueOnce(new Error('Transient network error'))
