@@ -20,7 +20,8 @@ export const processPendingPdf = onDocumentWritten(
     secrets: [geminiApiKeySecret],
     timeoutSeconds: 300,
     maxInstances: 2,
-    concurrency: 1
+    concurrency: 1,
+    memory: '1GiB'
   },
   async (event) => {
     const after = event.data?.after;
