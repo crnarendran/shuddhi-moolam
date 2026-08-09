@@ -1,4 +1,4 @@
-import { SHEET_HEADERS } from './constants';
+import { SHEET_HEADERS, SHEET_HEADERS_FRIENDLY } from './constants';
 import { CORE_KEYS, EXTENDED_KEYS } from '../gemini/components';
 
 describe('SHEET_HEADERS', () => {
@@ -23,5 +23,18 @@ describe('SHEET_HEADERS', () => {
 
   it('drops the deprecated cu_lme column', () => {
     expect(SHEET_HEADERS).not.toContain('cu_lme');
+  });
+});
+
+describe('SHEET_HEADERS_FRIENDLY', () => {
+  it('has one title-cased label per raw header', () => {
+    expect(SHEET_HEADERS_FRIENDLY).toHaveLength(SHEET_HEADERS.length);
+    expect(SHEET_HEADERS_FRIENDLY[0]).toBe('Filename');
+    expect(SHEET_HEADERS_FRIENDLY).toContain('Aluminium Ingot');
+    expect(SHEET_HEADERS_FRIENDLY).toContain('Lam Coke');
+  });
+
+  it('contains no underscores', () => {
+    for (const h of SHEET_HEADERS_FRIENDLY) expect(h).not.toContain('_');
   });
 });

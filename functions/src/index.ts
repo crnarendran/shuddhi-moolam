@@ -13,7 +13,7 @@ import { PriceRecord } from './reporting/aggregate';
 
 import { sheetsClient } from './sheets/routing';
 import { MASTER_SHEET_ID } from './config';
-import { SHEET_HEADERS } from './sheets/constants';
+import { SHEET_HEADERS_FRIENDLY } from './sheets/constants';
 
 initializeApp();
 
@@ -99,6 +99,25 @@ const _priceReviewAlert = onSchedule('0 9 * * 1', async () => {
   );
 });
 
+/**
+ * Callable to re-run extraction for a single already-tracked PDF. Flips
+ * its run doc back to 'detected', which re-triggers processPendingPdf.
+ * Backs the dashboard "Reprocess" button (previously undefined).
+ */
+const _reprocessPendingPdf = onCall(async (request) => {
+  const fileId = (request.data as { fileId?: string })?.fileId;
+  if (!fileId) {
+    throw new HttpsError('invalid-argument', 'fileId is required');
+  }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const col = require('./config').FIRESTORE_COLLECTION;
+  await getFirestore().collection(col).doc(fileId).update({
+    status: 'detected',
+    detectedAt: Date.now(),
+  });
+  return { success: true, fileId };
+});
+
 const env = process.env.APP_ENV || 'dev';
 const isProd = env === 'main' || env === 'prod';
 const suffix = isProd ? '' : `_${env}`;
@@ -111,6 +130,7 @@ module.exports = {
   [`renewWatch${suffix}`]: _renewWatch,
   [`chatEndpoint${suffix}`]: _chatEndpoint,
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
+  [`reprocessPendingPdf${suffix}`]: _reprocessPendingPdf,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');
@@ -119,47 +139,40 @@ module.exports = {
         spreadsheetId: MASTER_SHEET_ID,
       });
       const sheets = doc.data.sheets || [];
-      type DelReq = { deleteSheet: { sheetId: number | null | undefined } };
-      const requests: DelReq[] = [];
 
-      const sheet2025 = sheets.find(
-        (s) => s.properties?.title === '2025'
-      );
-      if (sheet2025) {
-        requests.push({
-          deleteSheet: { sheetId: sheet2025.properties?.sheetId },
-        });
-      }
-
-      if (requests.length > 0) {
-        await sheetsClient.spreadsheets.batchUpdate({
+      // Reset every year tab (a 4-digit title): clear all rows AND
+      // rewrite row 1 with the current headers. Clearing data alone
+      // leaves a stale header, so a re-extraction's new columns would
+      // land misaligned under the old labels (the SM-29 prod bug).
+      const yearTabs = sheets
+        .map((s) => s.properties?.title || '')
+        .filter((t) => /^\d{4}$/.test(t));
+      for (const title of yearTabs) {
+        await sheetsClient.spreadsheets.values.clear({
           spreadsheetId: MASTER_SHEET_ID,
-          requestBody: { requests },
+          range: `${title}!A:Z`,
+        });
+        await sheetsClient.spreadsheets.values.update({
+          spreadsheetId: MASTER_SHEET_ID,
+          range: `${title}!A1`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [SHEET_HEADERS_FRIENDLY] },
         });
       }
 
-      await sheetsClient.spreadsheets.values.clear({
-        spreadsheetId: MASTER_SHEET_ID,
-        range: '2026!A2:Z',
-      });
-
-      // Update Audit_Log headers
-      const userFriendlyHeaders = SHEET_HEADERS.map((header: string) =>
-        header
-          .split('_')
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ')
-      );
+      // Refresh the Audit_Log header row too.
       await sheetsClient.spreadsheets.values.update({
         spreadsheetId: MASTER_SHEET_ID,
         range: 'Audit_Log!A1',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [['Timestamp', 'Action', ...userFriendlyHeaders]],
+          values: [['Timestamp', 'Action', ...SHEET_HEADERS_FRIENDLY]],
         },
       });
 
-      response.send('Tabs cleared and Audit_Log headers updated successfully.');
+      response.send(
+        `Reset ${yearTabs.length} year tab(s) and Audit_Log headers.`
+      );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       logger.error('Failed to clear tabs', { error: msg });
