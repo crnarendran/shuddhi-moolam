@@ -17,7 +17,7 @@ export const GEMINI_OUTPUT_USD_PER_1M =
  * @param {number} tokensIn - Prompt (input) token count.
  * @param {number} tokensOut - Candidate (output) token count.
  * @param {number} thinkingTokens - Reasoning tokens (billed as output).
- * @return {number} Estimated cost in USD.
+ * @returns {number} Estimated cost in USD.
  */
 export function estimateGeminiCostUsd(
   tokensIn: number,

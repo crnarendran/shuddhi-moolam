@@ -21,7 +21,7 @@ const UPLOAD_TIMEOUT_MS = 120000;
  * cap, so oversized issues no longer fail (SM-29 Phase 2).
  * @param {GoogleAIFileManager} fileManager - The file manager client.
  * @param {Buffer} pdfBuffer - The raw PDF bytes.
- * @return {Promise<{uri: string; name: string; mimeType: string}>}
+ * @returns {Promise<{uri: string; name: string; mimeType: string}>}
  *   The active file reference.
  */
 async function uploadPdfAndWait(

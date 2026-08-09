@@ -460,7 +460,7 @@ export const ARCHIVED_KEYS: string[] = COMPONENTS.filter(
 /**
  * Builds the bulleted field list injected into the Gemini prompt, one
  * line per component: "- <key>: <grounding description>".
- * @return {string} The newline-joined prompt field list.
+ * @returns {string} The newline-joined prompt field list.
  */
 export function buildPromptFields(): string {
   return COMPONENTS.map((c) => `- ${c.key}: ${c.promptDesc}`).join('\n');

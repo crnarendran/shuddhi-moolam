@@ -5,7 +5,7 @@ import { CORE_KEYS } from './components';
  * Builds a minimal valid Gemini response: the issue date, every core
  * field set to the given value, and a source_pages string.
  * @param {string} value - The price value to assign to each core field.
- * @return {Record<string, string>} A schema-valid response object.
+ * @returns {Record<string, string>} A schema-valid response object.
  */
 function makeValidResponse(value: string): Record<string, string> {
   const resp: Record<string, string> = { date: '27/07/2026' };
@@ -43,7 +43,7 @@ jest.mock('@google/generative-ai/server', () => ({
 /**
  * Sets the File-API mock to return a file already in the given state.
  * @param {string} state - The FileState value to report.
- * @return {void}
+ * @returns {void}
  */
 function mockUploadState(state: string): void {
   mockUploadFile.mockResolvedValue({
@@ -101,7 +101,7 @@ describe('Extract Prices from PDF', () => {
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
 
-  it('captures reasoning tokens from usageMetadata.thoughtsTokenCount', async () => {
+  it('captures reasoning tokens from usageMetadata', async () => {
     mockGenerateContent.mockResolvedValueOnce({
       response: {
         text: () => JSON.stringify(makeValidResponse('1')),
