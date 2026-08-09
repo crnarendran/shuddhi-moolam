@@ -116,11 +116,11 @@ export async function extractPricesFromPdf(
     'If a price is listed as a range (e.g. 42,600 - 42,800), you MUST ' +
     'extract ONLY the upper bound (maximum) value (e.g. 42,800).\n' +
     'IMPORTANT: the Primary Material & Semi-finished Products table ' +
-    '(Mandi Gobindgarh, approx. page 7) prints TWO weekly-average columns, ' +
-    'one per date. These are NOT a price range. For every field read from ' +
-    'that table, use ONLY the value under the MOST RECENT date (the ' +
-    'later-dated column, normally the rightmost). The upper-bound rule ' +
-    'above applies only to a genuine min-max range within a single cell.\n' +
+    '(Mandi Gobindgarh, approx. page 7) prints TWO weekly-average columns. ' +
+    'These are NOT a price range. For every field read from ' +
+    'that table, ALWAYS extract the SECOND (right-most) value if two values ' +
+    'are printed on the same line separated by spaces or dashes. The ' +
+    'upper-bound rule above applies only to a genuine min-max range.\n' +
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +

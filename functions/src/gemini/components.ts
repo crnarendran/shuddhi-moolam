@@ -102,7 +102,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Melting Scrap (CRCA - Bundle) LSLP (Mumbai/Pune), weekly ' +
       'average (Rs/tonne) from the Primary Material table (approx. ' +
-      'page 7). Use the most recent weekly column.',
+      'page 7). Extract the right-most value.',
   },
   {
     key: 'crca_bundle_chennai',
@@ -115,7 +115,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Melting Scrap (CRCA - Bundle) LSLP (Chennai), weekly average ' +
       '(Rs/tonne) from the Primary Material table (approx. page 7). ' +
-      'Use the most recent weekly column.',
+      'Extract the right-most value.',
   },
   {
     key: 'pig_iron_sg_grade_a_pune',
@@ -128,7 +128,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Pig Iron SG Grade - A (Pune), weekly average (Rs/tonne) from ' +
       'the Raw Material section of the Primary Material table ' +
-      '(approx. page 7). Use the most recent weekly column.',
+      '(approx. page 7). Extract the right-most value.',
   },
   {
     key: 'pig_iron_foundry_gr_pune',
@@ -141,7 +141,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Pig Iron Foundry Grade - A (Pune), weekly average (Rs/tonne) ' +
       'from the Raw Material section of the Primary Material table ' +
-      '(approx. page 7). Use the most recent weekly column.',
+      '(approx. page 7). Extract the right-most value.',
   },
   // --- Page 8: Ferro Alloys & Minor Metals - Mumbai (Weekly avg, Rs/kg) ---
   {
@@ -257,7 +257,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Sponge Iron (MG-Punjab), weekly average (Rs/tonne) from the ' +
       'Primary Material table, Mandi Gobindgarh (approx. page 7). ' +
-      'Use the most recent weekly column.',
+      'Extract the right-most value.',
   },
   {
     key: 'fe_si_70_75_raipur',
@@ -348,7 +348,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Cast Iron Scrap (Bhavnagar), weekly average (Rs/tonne) from the ' +
       'Primary Material & Semi-finished Products table, Mandi ' +
-      'Gobindgarh (approx. page 7). Use the most recent weekly column.',
+      'Gobindgarh (approx. page 7). Extract the right-most value.',
   },
   {
     key: 'heavy_melting_scrap_mumbai_pune',
@@ -361,7 +361,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Heavy Melting Scrap (Mumbai/Pune) (old), weekly average ' +
       '(Rs/tonne) from the Primary Material table (approx. page 7). ' +
-      'Use the most recent weekly column.',
+      'Extract the right-most value.',
   },
   {
     key: 'pig_iron_foundry_grade_b_punjab',
@@ -374,7 +374,7 @@ export const COMPONENTS: Component[] = [
     promptDesc:
       'Pig Iron Foundry Grade - B (Punjab), weekly average (Rs/tonne) ' +
       'from the Raw Material section of the Primary Material table ' +
-      '(approx. page 7). Use the most recent weekly column.',
+      '(approx. page 7). Extract the right-most value.',
   },
   {
     key: 'steel_shots_mumbai',
