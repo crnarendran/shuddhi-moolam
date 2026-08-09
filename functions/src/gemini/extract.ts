@@ -1,4 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  GoogleGenerativeAI,
+  GenerationConfig,
+} from '@google/generative-ai';
 import { extractionRecordSchema, ExtractionRecord } from './schema';
 import { buildPromptFields } from './components';
 import * as logger from 'firebase-functions/logger';
@@ -15,8 +18,9 @@ const INITIAL_BACKOFF_MS = 1000;
  *     totalTokenCount: number;
  *     promptTokenCount: number;
  *     candidatesTokenCount: number;
+ *     thoughtsTokenCount: number;
  *   }
- * }>} The validated extraction record.
+ * }>} The validated extraction record and token usage.
  */
 export async function extractPricesFromPdf(
   pdfBuffer: Buffer
@@ -26,6 +30,7 @@ export async function extractPricesFromPdf(
     totalTokenCount: number;
     promptTokenCount: number;
     candidatesTokenCount: number;
+    thoughtsTokenCount: number;
   }
 }> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -34,11 +39,18 @@ export async function extractPricesFromPdf(
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
+  // Thinking/reasoning is disabled: this is structured table extraction,
+  // not multi-step reasoning, and thinking tokens are billed at the
+  // output rate — unbounded thinking was the cause of the SM-29 cost
+  // spike. `thinkingConfig` is not declared in this SDK version's types,
+  // so it is cast through; the REST API still honours the field.
+  const generationConfig = {
+    responseMimeType: 'application/json',
+    thinkingConfig: { thinkingBudget: 0 },
+  } as unknown as GenerationConfig;
   const model = genAI.getGenerativeModel({
     model: 'gemini-3.6-flash',
-    generationConfig: {
-      responseMimeType: 'application/json',
-    },
+    generationConfig,
   });
 
   const prompt =
@@ -85,6 +97,11 @@ export async function extractPricesFromPdf(
       const totalTokenCount = usageMetadata?.totalTokenCount || 0;
       const promptTokenCount = usageMetadata?.promptTokenCount || 0;
       const candidatesTokenCount = usageMetadata?.candidatesTokenCount || 0;
+      // Reasoning tokens are billed but reported separately (not in
+      // candidatesTokenCount) and are absent from this SDK's types.
+      const thoughtsTokenCount =
+        (usageMetadata as { thoughtsTokenCount?: number })
+          ?.thoughtsTokenCount || 0;
 
       // Parse JSON
       let parsedJson: unknown;
@@ -99,7 +116,12 @@ export async function extractPricesFromPdf(
       logger.info('Successfully extracted and validated data.');
       return {
         data: parsedData,
-        usage: { totalTokenCount, promptTokenCount, candidatesTokenCount }
+        usage: {
+          totalTokenCount,
+          promptTokenCount,
+          candidatesTokenCount,
+          thoughtsTokenCount,
+        }
       };
     } catch (error: unknown) {
       // Do not retry validation or parsing errors

@@ -76,9 +76,21 @@ export const processPendingPdf = onDocumentWritten(
         const now = Date.now();
         const tokensIn = usage.promptTokenCount || 0;
         const tokensOut = usage.candidatesTokenCount || 0;
-        const estimatedUsd = estimateGeminiCostUsd(tokensIn, tokensOut);
+        const thinkingTokens = usage.thoughtsTokenCount || 0;
+        const totalTokens = usage.totalTokenCount || 0;
+        const estimatedUsd = estimateGeminiCostUsd(
+          tokensIn,
+          tokensOut,
+          thinkingTokens
+        );
         await recordStage(fileId, 'appended', {
-          gemini: { tokensIn, tokensOut, estCostUsd: estimatedUsd },
+          gemini: {
+            tokensIn,
+            tokensOut,
+            thinkingTokens,
+            totalTokens,
+            estCostUsd: estimatedUsd,
+          },
           cost: { estimatedUsd },
           year: parseInt(record.date.split('/')[2] || '0', 10),
           targetTab: tabTitle,

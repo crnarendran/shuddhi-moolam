@@ -27,7 +27,13 @@ export interface PipelineRun {
   extractSummary?: Record<string, unknown>;
   error?: { stage: string; message: string; code?: string };
   attempts: number;
-  gemini?: { tokensIn: number; tokensOut: number; estCostUsd?: number };
+  gemini?: {
+    tokensIn: number;
+    tokensOut: number;
+    thinkingTokens?: number;
+    totalTokens?: number;
+    estCostUsd?: number;
+  };
   durationMs?: number;
   cost?: { estimatedUsd: number };
 }

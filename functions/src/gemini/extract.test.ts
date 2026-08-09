@@ -63,10 +63,29 @@ describe('Extract Prices from PDF', () => {
       usage: {
         totalTokenCount: 42,
         promptTokenCount: 0,
-        candidatesTokenCount: 0
+        candidatesTokenCount: 0,
+        thoughtsTokenCount: 0
       }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it('captures reasoning tokens from usageMetadata.thoughtsTokenCount', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: {
+          totalTokenCount: 500,
+          promptTokenCount: 100,
+          candidatesTokenCount: 20,
+          thoughtsTokenCount: 380,
+        },
+      },
+    });
+
+    const result = await extractPricesFromPdf(dummyBuffer);
+    expect(result.usage.thoughtsTokenCount).toBe(380);
+    expect(result.usage.candidatesTokenCount).toBe(20);
   });
 
   it(
@@ -106,7 +125,8 @@ describe('Extract Prices from PDF', () => {
       usage: {
         totalTokenCount: 10,
         promptTokenCount: 0,
-        candidatesTokenCount: 0
+        candidatesTokenCount: 0,
+        thoughtsTokenCount: 0
       }
     });
     expect(mockGenerateContent).toHaveBeenCalledTimes(3);
