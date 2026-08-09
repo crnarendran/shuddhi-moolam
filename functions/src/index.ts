@@ -11,7 +11,6 @@ import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
 import { PriceRecord } from './reporting/aggregate';
 
-import { initializeApp } from 'firebase-admin/app';
 import { sheetsClient } from './sheets/routing';
 import { MASTER_SHEET_ID } from './config';
 import { SHEET_HEADERS } from './sheets/constants';
