@@ -104,11 +104,20 @@ Metadata fields: `date` (issue date, `dd/MM/yyyy` — routes to the
 | `high_fe_mn_78_raipur` | Raipur Local, High Ferro Manganese 78% (8) | Rs/kg |
 | `graphite_petroleum_coke_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
 
+### Archived components (9 — Firestore only; not in Sheet or dashboards)
+
+Captured passively for possible future use (macro/global comparison,
+specialty grades) so they never require a backlog re-run to add later:
+`cu_lme` (Copper LME, USD/tonne global benchmark), `cast_iron_scrap_bhavnagar`,
+`heavy_melting_scrap_mumbai_pune`, `pig_iron_foundry_grade_b_punjab`,
+`steel_shots_mumbai`, `fe_mn_mc_mumbai` (page 7-8), and the domestic
+non-ferrous benchmarks `zinc_ingot`, `lead_ingot`, `nickel_ingot` (page 6).
+
 Prices are captured as **strings** (ranges preserved; a range yields the
 upper-bound value per the prompt). The exact prompt wording is generated from
 the registry's per-component `promptDesc`, so prompt tuning doesn't churn this
-doc. **Note:** `cu_lme` (Copper LME, a USD/international benchmark) was dropped
-in this revamp in favour of domestic `copper_cathode`.
+doc. **Note:** `cu_lme` moved core→archived (a USD/international benchmark, not
+a domestic cost); domestic `copper_cathode` replaces it in the reports.
 
 ## Invariants & edge cases (for the SDET / Reviewer)
 

@@ -8,12 +8,12 @@ import {
 } from './components';
 
 describe('component registry', () => {
-  it('has 23 components: 16 core + 6 extended + 1 archived', () => {
-    expect(COMPONENTS).toHaveLength(23);
+  it('has 31 components: 16 core + 6 extended + 9 archived', () => {
+    expect(COMPONENTS).toHaveLength(31);
     expect(CORE_KEYS).toHaveLength(16);
     expect(EXTENDED_KEYS).toHaveLength(6);
-    expect(ARCHIVED_KEYS).toHaveLength(1);
-    expect(ALL_KEYS).toHaveLength(23);
+    expect(ARCHIVED_KEYS).toHaveLength(9);
+    expect(ALL_KEYS).toHaveLength(31);
   });
 
   it('has unique keys', () => {
@@ -50,7 +50,7 @@ describe('component registry', () => {
 
   it('builds one prompt line per component', () => {
     const lines = buildPromptFields().split('\n');
-    expect(lines).toHaveLength(23);
+    expect(lines).toHaveLength(31);
     expect(lines[0]).toContain('aluminium_ingot');
   });
 });

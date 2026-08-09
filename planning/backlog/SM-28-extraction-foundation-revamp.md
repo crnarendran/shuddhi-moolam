@@ -26,9 +26,11 @@ Three visibility tiers:
 - **core (16)** → master Sheet + Firestore + dashboards (required strings).
 - **extended (6)** → Firestore + dashboards only, kept out of the Sheet
   (optional). Pending stakeholder sign-off to promote into the Sheet.
-- **archived (1)** → Firestore only, hidden from Sheet **and** dashboards
-  (optional). Currently `cu_lme` (Copper LME, USD benchmark) — captured
-  passively for possible future global comparison.
+- **archived (9)** → Firestore only, hidden from Sheet **and** dashboards
+  (optional). Captured passively for future use: `cu_lme` (Copper LME),
+  `cast_iron_scrap_bhavnagar`, `heavy_melting_scrap_mumbai_pune`,
+  `pig_iron_foundry_grade_b_punjab`, `steel_shots_mumbai`, `fe_mn_mc_mumbai`,
+  `zinc_ingot`, `lead_ingot`, `nickel_ingot`.
 
 Promoting a component up a tier later is a one-line `tier` change (+ optional
 Sheet backfill from data already held) — **never** a re-extraction.
@@ -66,11 +68,10 @@ renamed to `copper_cathode` (now explicitly the Pg6 domestic cathode).
    prod Sheet re-header.
 
 ## Open decisions (cheap to fold in BEFORE the prod re-extraction)
-- **More archived components?** Candidates raised with the user (Tier 1, most
-  foundry-relevant): Cast Iron Scrap, Heavy Melting Scrap, Steel Shots, Pig Iron
-  SG-B/Foundry-B (Punjab), Ferro Manganese MC. Tier 2 macro: Zinc/Lead/Nickel
-  ingot. Decision pending — add to the `archived` tier before re-extracting so
-  they never need a re-run.
+- **More archived components?** ✅ Resolved 2026-08-09 — Tier 1 (Cast Iron
+  Scrap, Heavy Melting Scrap, Pig Iron Foundry-B Punjab, Steel Shots, Ferro
+  Manganese MC) and Tier 2 (Zinc/Lead/Nickel ingot) added to the `archived`
+  tier. Registry now 31 components (16 core / 6 extended / 9 archived).
 - **Extended → Sheet promotion:** stakeholder to confirm which of the 6 extended
   components graduate into the master Sheet.
 - **Page-6 market:** Al/Cu/Tin currently taken as **Mumbai** (page lists Mumbai

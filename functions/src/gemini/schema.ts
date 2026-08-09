@@ -36,6 +36,14 @@ export const extractionRecordSchema = z.object({
   graphite_petroleum_coke_mumbai: z.string().optional(),
   // --- archived (Firestore only) ---
   cu_lme: z.string().optional(),
+  cast_iron_scrap_bhavnagar: z.string().optional(),
+  heavy_melting_scrap_mumbai_pune: z.string().optional(),
+  pig_iron_foundry_grade_b_punjab: z.string().optional(),
+  steel_shots_mumbai: z.string().optional(),
+  fe_mn_mc_mumbai: z.string().optional(),
+  zinc_ingot: z.string().optional(),
+  lead_ingot: z.string().optional(),
+  nickel_ingot: z.string().optional(),
   // --- metadata ---
   source_pages: z.string(),
   last_modified_date: z.string().optional(),

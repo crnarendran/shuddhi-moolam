@@ -333,6 +333,110 @@ export const COMPONENTS: Component[] = [
       'Copper Cathode. Captured for possible future global comparison; ' +
       'typically printed on a summary / front page.',
   },
+  // Tier 1: foundry-relevant references (page 7 metallics, page 8 alloys)
+  {
+    key: 'cast_iron_scrap_bhavnagar',
+    label: 'Cast Iron Scrap (Bhavnagar)',
+    page: 7,
+    category: 'Melting Scrap',
+    unit: 'Rs/tonne',
+    market: 'Bhavnagar',
+    tier: 'archived',
+    promptDesc:
+      'Cast Iron Scrap (Bhavnagar), weekly average (Rs/tonne) from the ' +
+      'Primary Material & Semi-finished Products table, Mandi ' +
+      'Gobindgarh (approx. page 7).',
+  },
+  {
+    key: 'heavy_melting_scrap_mumbai_pune',
+    label: 'Heavy Melting Scrap (Mumbai/Pune)',
+    page: 7,
+    category: 'Melting Scrap',
+    unit: 'Rs/tonne',
+    market: 'Mumbai/Pune',
+    tier: 'archived',
+    promptDesc:
+      'Heavy Melting Scrap (Mumbai/Pune) (old), weekly average ' +
+      '(Rs/tonne) from the Primary Material table (approx. page 7).',
+  },
+  {
+    key: 'pig_iron_foundry_grade_b_punjab',
+    label: 'Pig Iron Foundry Grade-B (Punjab)',
+    page: 7,
+    category: 'Raw Material',
+    unit: 'Rs/tonne',
+    market: 'Punjab',
+    tier: 'archived',
+    promptDesc:
+      'Pig Iron Foundry Grade - B (Punjab), weekly average (Rs/tonne) ' +
+      'from the Raw Material section of the Primary Material table ' +
+      '(approx. page 7).',
+  },
+  {
+    key: 'steel_shots_mumbai',
+    label: 'Steel Shots (Mumbai)',
+    page: 8,
+    category: 'Ferro Alloys',
+    unit: 'Rs/kg',
+    market: 'Mumbai',
+    tier: 'archived',
+    promptDesc:
+      'Steel Shots, weekly average (Rs/kg) from the Ferro Alloys & ' +
+      'Minor Metals - Mumbai table (approx. page 8).',
+  },
+  {
+    key: 'fe_mn_mc_mumbai',
+    label: 'Ferro Manganese MC (Mumbai)',
+    page: 8,
+    category: 'Ferro Alloys',
+    unit: 'Rs/kg',
+    market: 'Mumbai',
+    tier: 'archived',
+    promptDesc:
+      'Ferro Manganese MC (medium carbon), weekly average (Rs/kg) ' +
+      'from the Ferro Alloys & Minor Metals - Mumbai table (approx. ' +
+      'page 8).',
+  },
+  // Tier 2: domestic non-ferrous macro benchmarks (page 6, Rs/kg, Mumbai)
+  {
+    key: 'zinc_ingot',
+    label: 'Zinc Ingot',
+    page: 6,
+    category: 'Domestic Prices',
+    unit: 'Rs/kg',
+    market: 'Mumbai',
+    tier: 'archived',
+    promptDesc:
+      'Zinc - Ingot, Mumbai average rate (Rs/kg) from the Domestic ' +
+      'Prices table (approx. page 6). Use the "As on <date>" average ' +
+      'column.',
+  },
+  {
+    key: 'lead_ingot',
+    label: 'Lead Ingot',
+    page: 6,
+    category: 'Domestic Prices',
+    unit: 'Rs/kg',
+    market: 'Mumbai',
+    tier: 'archived',
+    promptDesc:
+      'Lead - Ingot, Mumbai average rate (Rs/kg) from the Domestic ' +
+      'Prices table (approx. page 6). Use the "As on <date>" average ' +
+      'column.',
+  },
+  {
+    key: 'nickel_ingot',
+    label: 'Nickel Ingot',
+    page: 6,
+    category: 'Domestic Prices',
+    unit: 'Rs/kg',
+    market: 'Mumbai',
+    tier: 'archived',
+    promptDesc:
+      'Nickel - Ingot, Mumbai average rate (Rs/kg) from the Domestic ' +
+      'Prices table (approx. page 6). Use the "As on <date>" average ' +
+      'column.',
+  },
 ];
 
 /** All component keys, in registry (display) order. */
