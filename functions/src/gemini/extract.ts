@@ -1,6 +1,7 @@
 import {
   GoogleGenerativeAI,
   GenerationConfig,
+  Part,
 } from '@google/generative-ai';
 import {
   GoogleAIFileManager,
@@ -14,6 +15,18 @@ const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 1000;
 const UPLOAD_POLL_INTERVAL_MS = 2000;
 const UPLOAD_TIMEOUT_MS = 120000;
+/**
+ * The max PDF size (bytes) sent inline; larger PDFs use the File API.
+ * Inline is the proven path; the File API only kicks in above the ~20 MB
+ * inline-request cap. Base64 inflates ~33%, so the 14 MB default stays
+ * safely under 20 MB encoded. Overridable via INLINE_MAX_MB.
+ * @returns {number} The inline size threshold in bytes.
+ */
+function inlineMaxBytes(): number {
+  const raw = process.env.INLINE_MAX_MB;
+  const mb = raw !== undefined && raw !== '' ? parseInt(raw, 10) : 14;
+  return (Number.isNaN(mb) ? 14 : mb) * 1024 * 1024;
+}
 
 /**
  * Uploads a PDF via the Gemini File API and waits until it is ACTIVE.
@@ -112,11 +125,26 @@ export async function extractPricesFromPdf(
     '"crca_bundle_mumbai: 7, lam_coke: 8"\n\n' +
     'Return ONLY valid JSON matching this schema exactly.';
 
-  const fileManager = new GoogleAIFileManager(apiKey);
-  const uploaded = await uploadPdfAndWait(fileManager, pdfBuffer);
-  const filePart = {
-    fileData: { fileUri: uploaded.uri, mimeType: uploaded.mimeType },
-  };
+  // Normal-sized issues go inline (the proven path); only oversized PDFs
+  // that would exceed the inline cap use the File API (SM-29 Phase 2).
+  let filePart: Part;
+  let fileManager: GoogleAIFileManager | undefined;
+  let uploadedName: string | undefined;
+  if (pdfBuffer.length <= inlineMaxBytes()) {
+    filePart = {
+      inlineData: {
+        data: pdfBuffer.toString('base64'),
+        mimeType: 'application/pdf',
+      },
+    };
+  } else {
+    fileManager = new GoogleAIFileManager(apiKey);
+    const uploaded = await uploadPdfAndWait(fileManager, pdfBuffer);
+    uploadedName = uploaded.name;
+    filePart = {
+      fileData: { fileUri: uploaded.uri, mimeType: uploaded.mimeType },
+    };
+  }
 
   let attempt = 0;
   let delayMs = INITIAL_BACKOFF_MS;
@@ -191,10 +219,12 @@ export async function extractPricesFromPdf(
 
     throw new Error('Unreachable code reached in extractPricesFromPdf');
   } finally {
-    await fileManager.deleteFile(uploaded.name).catch((e) => {
-      logger.warn('Failed to delete uploaded file from File API', {
-        error: e,
+    if (fileManager && uploadedName) {
+      await fileManager.deleteFile(uploadedName).catch((e) => {
+        logger.warn('Failed to delete uploaded file from File API', {
+          error: e,
+        });
       });
-    });
+    }
   }
 }

@@ -58,10 +58,16 @@ function mockUploadState(state: string): void {
 
 describe('Extract Prices from PDF', () => {
   const dummyBuffer = Buffer.from('dummy-pdf-content');
+  // Force the File API path without allocating a real large buffer:
+  // INLINE_MAX_MB=0 means any non-empty PDF exceeds the inline threshold.
+  const forceFileApi = () => {
+    process.env.INLINE_MAX_MB = '0';
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-api-key';
+    delete process.env.INLINE_MAX_MB; // default 14 MB → inline path
     // Default: upload succeeds and the file is immediately ACTIVE.
     mockUploadState('ACTIVE');
     mockDeleteFile.mockResolvedValue(undefined);
@@ -119,7 +125,25 @@ describe('Extract Prices from PDF', () => {
     expect(result.usage.candidatesTokenCount).toBe(20);
   });
 
-  it('uploads via the File API and deletes the file afterward', async () => {
+  it('uses inline data for normal-sized files (no File API)', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+
+    expect(mockUploadFile).not.toHaveBeenCalled();
+    const parts = mockGenerateContent.mock.calls[0][0];
+    expect(parts[1]).toEqual({
+      inlineData: expect.objectContaining({ mimeType: 'application/pdf' }),
+    });
+  });
+
+  it('uploads large files via the File API and deletes afterward', async () => {
+    forceFileApi();
     mockGenerateContent.mockResolvedValueOnce({
       response: {
         text: () => JSON.stringify(makeValidResponse('1')),
@@ -142,7 +166,8 @@ describe('Extract Prices from PDF', () => {
     expect(mockDeleteFile).toHaveBeenCalledWith('files/abc');
   });
 
-  it('polls until the uploaded file becomes ACTIVE', async () => {
+  it('polls until the uploaded (large) file becomes ACTIVE', async () => {
+    forceFileApi();
     mockUploadState('PROCESSING');
     mockGetFile.mockResolvedValueOnce({
       name: 'files/abc',
@@ -162,7 +187,8 @@ describe('Extract Prices from PDF', () => {
     expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   }, 10000);
 
-  it('throws if the File API reports a FAILED upload', async () => {
+  it('throws when a large-file File API upload FAILED', async () => {
+    forceFileApi();
     mockUploadState('FAILED');
     await expect(extractPricesFromPdf(dummyBuffer)).rejects.toThrow(
       /File API failed/

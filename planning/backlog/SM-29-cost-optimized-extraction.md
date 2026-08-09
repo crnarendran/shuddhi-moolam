@@ -102,6 +102,23 @@ mock-tested, never against the live API. If it errors at runtime it breaks
 **every** file (not just large ones) — consistent with a normal drop failing;
 the old inline path worked.
 
+**CONFIRMED error (rev 00040, 11:31Z):** `Extraction failed:
+[GoogleGenerativeAI Error] … models/gemini-3.6-flash:generateContent:
+[400 Bad Request] Request contains an invalid argument.` The File API upload
+succeeded; **`generateContent` rejected the request**. The two things the new
+code added to that call are the **`fileData` part** and
+**`thinkingConfig:{thinkingBudget:0}`** — one of them is the invalid argument.
+
+**FIX APPLIED (this commit):** made the File API **conditional** — normal PDFs
+(≤ `INLINE_MAX_MB`, default 14 MB) go back to the **proven inline path**; only
+oversized PDFs use the File API. `thinkingConfig` is kept. This restores the
+common case AND isolates the cause on the next dev drop:
+- **If the next drop succeeds** → `fileData` was the invalid arg; File API needs
+  a separate fix for large PDFs; and the cost fix (thinking off) is fine.
+- **If it still 400s** → `thinkingConfig`/`thinkingBudget:0` is the invalid arg
+  for this model; remove/adjust it next (may mean thinking can't be disabled via
+  this SDK/model — revisit the cost approach).
+
 **Diagnose (needs GCP/Firestore access):**
 1. Newest `pipeline_runs_dev` doc + `_system/dead_letters` → the error message.
 2. `_system/pending_pdfs` — is the file stuck pending (proc failed/hung)? If
