@@ -80,7 +80,7 @@ jobs:
             HOSTING="hosting:sai-shuddhi-moolam-dev"
           fi
           
-          FUNCS="functions:driveWebhook${SUFFIX},functions:processPendingPdf${SUFFIX},functions:helloWorld${SUFFIX},functions:registerWatch${SUFFIX},functions:renewWatch${SUFFIX},functions:chatEndpoint${SUFFIX}"
+          FUNCS="functions:driveWebhook${SUFFIX},functions:processPendingPdf${SUFFIX},functions:helloWorld${SUFFIX},functions:registerWatch${SUFFIX},functions:renewWatch${SUFFIX},functions:chatEndpoint${SUFFIX},functions:priceReviewAlert${SUFFIX},functions:clearTabs${SUFFIX}"
           
           npx firebase-tools deploy --only ${FUNCS},firestore,${HOSTING} --project sai-shuddhi-moolam --force
           

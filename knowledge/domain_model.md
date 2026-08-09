@@ -48,31 +48,76 @@ changes in the source PDFs without code changes.
 
 The Gemini call MUST use structured outputs
 (`response_mime_type: "application/json"`) constrained by this schema. In the
-Node/TS implementation it is expressed as a **Zod** schema and validated on the
-response before any Sheets write. Treat this table as the source of truth; keep
-the Zod schema, the Sheets column headers, and this doc in sync.
+Node/TS implementation the field set lives in a single **component registry**
+(`functions/src/gemini/components.ts`); the Zod schema, the Sheets headers, the
+Gemini prompt, and the dashboard commodity list are all **derived** from it, so
+they cannot drift. `components.test.ts` and `schema.test.ts` guard this.
+Update the registry (and its dashboard mirror,
+`dashboard/src/lib/components.ts`) — not the individual consumers.
 
-| Field | Type | Meaning |
+**Two-tier visibility.** Every component has a `tier`:
+
+- **`core`** — written to the master Sheet **and** Firestore **and** the
+  dashboards. Required string in the schema (explicit `""` when absent, so
+  missing data is visible, never silently dropped).
+- **`extended`** — written to Firestore and the dashboards **only**; kept out
+  of the master Sheet. Optional in the schema, so one missing supplementary
+  value never fails the whole extraction.
+
+Extraction **always captures every component** (core + extended) into
+Firestore. Promoting an extended component into the Sheet later is a one-line
+`tier` change in the registry (plus an optional Sheet backfill from data we
+already hold) — **never** a re-extraction.
+
+Metadata fields: `date` (issue date, `dd/MM/yyyy` — routes to the
+`<year>` tab), `source_pages` (field→page map), `filename`, `last_modified_date`.
+
+### Core components (16 — Sheet + Firestore + dashboards)
+
+| Key | Source (page) | Unit |
 |---|---|---|
-| `newsletter_issue_date` | string | Issue date range, e.g. `JULY 27-AUGUST 02, 2026` |
-| `year` | integer | 4-digit publication year — routes to the `Data_<year>` tab |
-| `crca_bundle_mumbai` | string | Melting Scrap (CRCA – Bundle) LSLP (Mumbai/Pune) |
-| `crca_bundle_chennai` | string | Melting Scrap (CRCA – Bundle) LSLP (Chennai) |
-| `melting_foundry_scrap_mumbai` | string | Melting Scrap (Mumbai/Pune) (Foundry) |
-| `fe_mn_hc_mumbai` | string | Ferro Manganese HC (Ferro Alloys & Minor Metals – Mumbai) |
-| `fe_si_70_75_mumbai` | string | Ferro Silicon (70–75%) (Ferro Alloys & Minor Metals – Mumbai) |
-| `low_sulp_cal_petro_coke` | string | Low Sulp. (max 1.5%) cal Petro. Coke 98% (Raipur Local Market) |
-| `fe_si_mg_mumbai` | string | Ferro Silicon Magnesium (Ferro Alloys – Mumbai) |
-| `cu_lme` | string | LME Settlement Rate, Copper Grade A |
-| `cu_domestic` | string | Domestic / MMR Landed price for Copper |
-| `fe_cr_mumbai` | string | Ferro Chromium (High or Low Carbon), Mumbai market |
-| `pig_iron_foundry_gr_pune` | string | Pig Iron Foundry Grade – A (Pune) |
+| `aluminium_ingot` | Domestic Prices, Mumbai (6) | Rs/kg |
+| `copper_cathode` | Domestic Prices, Mumbai (6) | Rs/kg |
+| `tin_ingot` | Domestic Prices, Mumbai (6) | Rs/kg |
+| `melting_foundry_scrap_mumbai` | Melting Scrap (Mumbai/Pune) Foundry (7) | Rs/tonne |
+| `crca_bundle_mumbai` | Melting Scrap CRCA-Bundle LSLP (Mumbai/Pune) (7) | Rs/tonne |
+| `crca_bundle_chennai` | Melting Scrap CRCA-Bundle LSLP (Chennai) (7) | Rs/tonne |
+| `pig_iron_sg_grade_a_pune` | Raw Material, Pig Iron SG Grade-A (Pune) (7) | Rs/tonne |
+| `pig_iron_foundry_gr_pune` | Raw Material, Pig Iron Foundry Grade-A (Pune) (7) | Rs/tonne |
+| `fe_si_70_75_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+| `fe_mn_hc_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+| `inoculant_2_6mm_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+| `fe_cr_mumbai` | Ferro Chromium HC 60-65%, Mumbai (8) | Rs/kg |
+| `fe_si_mg_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+| `low_sulp_cal_petro_coke` | Raipur Local, Import Low-Sulphur CPC 98% (8) | Rs/kg |
+| `calcinated_petroleum_coke_9_4mm` | Raipur Local, CPC 0-4mm Indian (8) | Rs/kg |
+| `lam_coke` | Coke Ex-Plant (8) | Rs/tonne |
 
-**All 13 fields are required.** If Gemini cannot find a value it must return an
-explicit empty string rather than omit the key, so validation stays strict and
-missing data is visible in the sheet rather than silently dropped. The exact
-prompt wording that targets each source table lives with the extraction code
-(ticket SM-05) — not here — so prompt tuning doesn't churn this contract.
+### Extended components (6 — Firestore + dashboards only)
+
+| Key | Source (page) | Unit |
+|---|---|---|
+| `sponge_iron_mg_punjab` | Raw Material, Sponge Iron (MG-Punjab) (7) | Rs/tonne |
+| `fe_si_70_75_raipur` | Raipur Local, Ferro Silicon 70/75 (8) | Rs/kg |
+| `fe_mn_70_75_raipur` | Raipur Local, Ferro Manganese 70/75 (8) | Rs/kg |
+| `silico_manganese_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+| `high_fe_mn_78_raipur` | Raipur Local, High Ferro Manganese 78% (8) | Rs/kg |
+| `graphite_petroleum_coke_mumbai` | Ferro Alloys, Mumbai (8) | Rs/kg |
+
+### Archived components (9 — Firestore only; not in Sheet or dashboards)
+
+Captured passively for possible future use (macro/global comparison,
+specialty grades) so they never require a backlog re-run to add later:
+`cu_lme` (Copper LME, USD/tonne global benchmark), `cast_iron_scrap_bhavnagar`,
+`heavy_melting_scrap_mumbai_pune`, `pig_iron_foundry_grade_b_punjab`,
+`steel_shots_mumbai`, `fe_mn_mc_mumbai` (page 7-8), and the domestic
+non-ferrous benchmarks `zinc_ingot`, `lead_ingot`, `nickel_ingot` (page 6).
+
+Prices are captured as **strings** (ranges preserved; a range yields the
+upper-bound value per the prompt). The exact prompt wording is generated from
+the registry's per-component `promptDesc`, so prompt tuning doesn't churn this
+doc. **Note:** `cu_lme` moved core→archived (a USD/international benchmark, not
+a domestic cost); domestic `copper_cathode` replaces it in the reports.
 
 ## Invariants & edge cases (for the SDET / Reviewer)
 

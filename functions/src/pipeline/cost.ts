@@ -8,15 +8,24 @@ export const GEMINI_OUTPUT_USD_PER_1M =
 
 /**
  * Estimates the USD cost of a Gemini call from its token usage.
+ *
+ * Thinking ("reasoning") tokens are billed at the output rate but are
+ * reported by the API in a separate `thoughtsTokenCount`, NOT inside
+ * `candidatesTokenCount`. Omitting them under-reports the true cost (the
+ * cause of the SM-29 bill surprise), so they are charged here alongside
+ * the candidate output tokens.
  * @param {number} tokensIn - Prompt (input) token count.
  * @param {number} tokensOut - Candidate (output) token count.
+ * @param {number} thinkingTokens - Reasoning tokens (billed as output).
  * @returns {number} Estimated cost in USD.
  */
 export function estimateGeminiCostUsd(
   tokensIn: number,
-  tokensOut: number
+  tokensOut: number,
+  thinkingTokens = 0
 ): number {
   const inCost = (tokensIn / 1_000_000) * GEMINI_INPUT_USD_PER_1M;
-  const outCost = (tokensOut / 1_000_000) * GEMINI_OUTPUT_USD_PER_1M;
+  const outTokens = tokensOut + thinkingTokens;
+  const outCost = (outTokens / 1_000_000) * GEMINI_OUTPUT_USD_PER_1M;
   return inCost + outCost;
 }
