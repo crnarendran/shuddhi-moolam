@@ -37,16 +37,21 @@ The single change that removes the cost multiplier + makes it observable:
 - **Verify on deploy**: re-run ONE file in dev and confirm `thoughtsTokenCount`
   ≈ 0 and per-file cost drops ~8x. This alone likely resolves the bill.
 
-### Phase 2 — Large-PDF handling (correctness, not just cost) — TODO
-Oversized issues (e.g. 16.7 MB) currently dead-letter and are missing from the
-data. Fix independent of cost:
-- Raise/adjust the **download** guard (`download.ts` `MAX_PDF_SIZE_BYTES`) so the
-  large original can be fetched (this is the Drive-download limit — distinct from
-  the Gemini upload limit).
-- Switch the Gemini upload from inline base64 to the **File API** (requires
-  migrating to `@google/genai` / `GoogleAIFileManager`), which also makes the
-  `thinkingConfig` path first-class instead of a cast.
-- Optionally a size-aware compression pre-step (Ghostscript downsample).
+### Phase 2 — Large-PDF handling (correctness) — DONE (dev)
+Oversized issues (e.g. 16.7 MB) previously dead-lettered and were missing from
+the data. Fixed:
+- `extract.ts` now uploads via the **Gemini File API**
+  (`GoogleAIFileManager` from `@google/generative-ai/server` — already in the
+  installed SDK, no migration needed): upload buffer → poll `FileState` until
+  ACTIVE → `generateContent` with a `fileData` part → delete the uploaded file
+  in a `finally`. This removes the ~20 MB inline-request cap.
+- `download.ts` `MAX_PDF_SIZE_BYTES` raised to **50 MB** (env-overridable via
+  `MAX_PDF_SIZE_MB`) — the Drive-download guard, distinct from the Gemini
+  upload path.
+- Tests mock the File API (upload/poll/FAILED/cleanup). functions tsc + suites
+  green.
+- A size-aware compression pre-step remains optional (not needed once slicing
+  lands, Phase 3).
 
 ### Phase 3 — Token minimization + QA gate (optional; measure Phase 1 first) — TODO
 Only pursue if Phase 1 cost isn't already near-zero:

@@ -1,7 +1,11 @@
 import { drive } from './watch';
 import * as logger from 'firebase-functions/logger';
 
-const MAX_PDF_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
+// Extraction uploads via the Gemini File API (SM-29 Phase 2), which
+// handles far larger files than the old ~20 MB inline cap, so this guard
+// only exists to reject clearly-bad inputs. Overridable via env.
+const MAX_PDF_SIZE_BYTES =
+  (parseInt(process.env.MAX_PDF_SIZE_MB || '', 10) || 50) * 1024 * 1024;
 
 /**
  * Downloads a PDF file from Google Drive into a Buffer.

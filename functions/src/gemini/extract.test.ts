@@ -15,6 +15,9 @@ function makeValidResponse(value: string): Record<string, string> {
 }
 
 const mockGenerateContent = jest.fn();
+const mockUploadFile = jest.fn();
+const mockGetFile = jest.fn();
+const mockDeleteFile = jest.fn();
 
 jest.mock('@google/generative-ai', () => {
   return {
@@ -28,12 +31,40 @@ jest.mock('@google/generative-ai', () => {
   };
 });
 
+jest.mock('@google/generative-ai/server', () => ({
+  GoogleAIFileManager: jest.fn().mockImplementation(() => ({
+    uploadFile: mockUploadFile,
+    getFile: mockGetFile,
+    deleteFile: mockDeleteFile,
+  })),
+  FileState: { PROCESSING: 'PROCESSING', ACTIVE: 'ACTIVE', FAILED: 'FAILED' },
+}));
+
+/**
+ * Sets the File-API mock to return a file already in the given state.
+ * @param {string} state - The FileState value to report.
+ * @return {void}
+ */
+function mockUploadState(state: string): void {
+  mockUploadFile.mockResolvedValue({
+    file: {
+      name: 'files/abc',
+      uri: 'https://generativelanguage.googleapis.com/v1/files/abc',
+      mimeType: 'application/pdf',
+      state,
+    },
+  });
+}
+
 describe('Extract Prices from PDF', () => {
   const dummyBuffer = Buffer.from('dummy-pdf-content');
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.GEMINI_API_KEY = 'test-api-key';
+    // Default: upload succeeds and the file is immediately ACTIVE.
+    mockUploadState('ACTIVE');
+    mockDeleteFile.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -86,6 +117,57 @@ describe('Extract Prices from PDF', () => {
     const result = await extractPricesFromPdf(dummyBuffer);
     expect(result.usage.thoughtsTokenCount).toBe(380);
     expect(result.usage.candidatesTokenCount).toBe(20);
+  });
+
+  it('uploads via the File API and deletes the file afterward', async () => {
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+
+    expect(mockUploadFile).toHaveBeenCalledTimes(1);
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      dummyBuffer,
+      expect.objectContaining({ mimeType: 'application/pdf' })
+    );
+    // The prompt is sent with a fileData part, not inline base64.
+    const parts = mockGenerateContent.mock.calls[0][0];
+    expect(parts[1]).toEqual({
+      fileData: expect.objectContaining({ mimeType: 'application/pdf' }),
+    });
+    expect(mockDeleteFile).toHaveBeenCalledWith('files/abc');
+  });
+
+  it('polls until the uploaded file becomes ACTIVE', async () => {
+    mockUploadState('PROCESSING');
+    mockGetFile.mockResolvedValueOnce({
+      name: 'files/abc',
+      uri: 'https://x/files/abc',
+      mimeType: 'application/pdf',
+      state: 'ACTIVE',
+    });
+    mockGenerateContent.mockResolvedValueOnce({
+      response: {
+        text: () => JSON.stringify(makeValidResponse('1')),
+        usageMetadata: { totalTokenCount: 10 },
+      },
+    });
+
+    await extractPricesFromPdf(dummyBuffer);
+    expect(mockGetFile).toHaveBeenCalledWith('files/abc');
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  }, 10000);
+
+  it('throws if the File API reports a FAILED upload', async () => {
+    mockUploadState('FAILED');
+    await expect(extractPricesFromPdf(dummyBuffer)).rejects.toThrow(
+      /File API failed/
+    );
+    expect(mockGenerateContent).not.toHaveBeenCalled();
   });
 
   it(
