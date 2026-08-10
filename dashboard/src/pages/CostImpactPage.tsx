@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   COMMODITIES,
@@ -6,16 +6,23 @@ import {
   quarterKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
+import { shouldMigrateWeights } from '../lib/userSettings';
 
 const STORE_KEY = 'cost_weights_v1';
 
-const loadWeights = (): Record<string, number> => {
+// Parsed browser weights, or null if none were ever saved (kept as a
+// signed-out fallback and the source for the one-off Firestore migration).
+const loadLocalWeights = (): Record<string, number> | null => {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
-  return Object.fromEntries(COMMODITIES.map((c) => [c.key, 1]));
+  return null;
 };
+
+const defaultWeights = (): Record<string, number> =>
+  Object.fromEntries(COMMODITIES.map((c) => [c.key, 1]));
 
 const fmt = (n: number | null, d = 1): string =>
   n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -23,12 +30,31 @@ const fmt = (n: number | null, d = 1): string =>
 export function CostImpactPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const [weights, setWeights] = useState<Record<string, number>>(loadWeights);
+  const { settings, update } = useUserSettings();
+  const [weights, setWeights] = useState<Record<string, number>>(
+    () => settings.costImpact?.weights ?? loadLocalWeights() ?? defaultWeights()
+  );
+
+  // Adopt weights once they arrive from Firestore (sign-in / other device).
+  useEffect(() => {
+    const stored = settings.costImpact?.weights;
+    if (stored) setWeights(stored);
+  }, [settings.costImpact?.weights]);
+
+  // One-off localStorage -> Firestore migration for existing users.
+  useEffect(() => {
+    const local = loadLocalWeights();
+    if (local && shouldMigrateWeights(settings, local)) {
+      void update({ costImpact: { weights: local } });
+    }
+  }, [settings, update]);
 
   const setWeight = (key: string, val: number) => {
     const next = { ...weights, [key]: isNaN(val) ? 0 : val };
     setWeights(next);
+    // Keep a local fallback (for signed-out use) and persist to the account.
     try { localStorage.setItem(STORE_KEY, JSON.stringify(next)); } catch { /* */ }
+    void update({ costImpact: { weights: next } });
   };
 
   const { rows, sum, latestQuarter } = useMemo(
@@ -184,7 +210,8 @@ export function CostImpactPage(
       </div>
       <p className="text-xs text-zinc-400">
         Weights are the kg of each commodity per unit of product; edit them above
-        (saved in your browser). Impact = net quarterly change × weight.
+        (saved to your account, synced across devices). Impact = net quarterly
+        change × weight.
       </p>
     </div>
   );

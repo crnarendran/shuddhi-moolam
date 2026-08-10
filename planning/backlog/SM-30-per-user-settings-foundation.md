@@ -3,11 +3,31 @@ id: SM-30
 title: Per-user settings foundation (Firestore + self-scoped rules)
 type: ticket
 points: 3
-status: backlog
+status: in-review
 depends_on: []
 tags: [backlog, personalization, firestore, auth, security-rules, foundation]
 ---
 # SM-30 — Per-user settings foundation
+
+## Implemented (dev)
+- `firestore.rules`: self-scoped `user_settings/{uid}` (read/write iff
+  `auth.uid == uid`) + `companies/{id}` (+ `materials` subcollection) scoped to
+  `ownerUid`. Reporting/monitor collections unchanged (allowlist read only).
+- `dashboard/src/lib/userSettings.ts`: `UserSettings` type, `DEFAULT_SETTINGS`,
+  pure `mergeSettings` + `shouldMigrateWeights` (vitest-tested, 6 cases).
+- `dashboard/src/hooks/useUserSettings.ts`: self-contained hook (tracks auth,
+  `onSnapshot` on `user_settings/{uid}`, optimistic debounced `update`, no-op
+  when signed out).
+- `CostImpactPage`: weights now read/write the account (Firestore) with a
+  one-off localStorage migration + signed-out localStorage fallback.
+- **vitest** added to the dashboard (`npm run test`) — first FE test harness,
+  reused by SM-31/32/33.
+- lint (oxlint) + tsc + vitest green.
+
+**Test gap (follow-up):** rules-unit-testing needs the Firestore emulator,
+which isn't configured yet. The only rule exercised now is the trivial
+`user_settings` uid-scope; the `companies` rules are forward-looking for SM-32
+and should get emulator tests when that lands.
 
 ## Goal
 Give each signed-in user private, cross-device settings stored in Firestore

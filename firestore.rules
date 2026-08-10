@@ -1,12 +1,33 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Per-user private settings (personalization, cost-impact weights, etc).
+    // A user can read/write ONLY their own document (keyed by their uid).
+    match /user_settings/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Companies and their materials (BOMs), each owned by one user.
+    match /companies/{companyId} {
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      match /materials/{materialId} {
+        allow read, write: if request.auth != null
+          && get(/databases/$(database)/documents/companies/$(companyId))
+               .data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // Reporting + monitor collections: read for the allowlist only; all
+    // writes are backend-only. (Union semantics: the per-user rules above
+    // still grant a user access to their own settings/companies.)
     match /{collection}/{document=**} {
-      // Allow authorized users to read the monitor (pipeline_runs*) and the
-      // reporting collections (historical_prices*).
       allow read: if (collection.matches('^pipeline_runs.*') || collection.matches('^historical_prices.*')) && request.auth != null && (request.auth.token.email == "crnarendran@gmail.com" || request.auth.token.email == "mvsaikishore@gmail.com");
-      // Only backend functions can write
-      allow write: if false; 
+      allow write: if false;
     }
   }
 }
