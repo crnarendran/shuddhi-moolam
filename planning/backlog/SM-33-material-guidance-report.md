@@ -3,11 +3,32 @@ id: SM-33
 title: Material guidance report — seasonal buying + substitution (v1)
 type: ticket
 points: 8
-status: backlog
+status: in-review
 depends_on: [SM-31, SM-32]
 tags: [backlog, guidance, prediction, seasonality, substitution, reports]
 ---
 # SM-33 — Material guidance report (statistical v1)
+
+## Implemented (dev)
+- **Guidance engine** (`guidance.ts`, pure, vitest-tested — 5 cases):
+  `blendedCostSeries` (monthly Σ ratio×price), `materialSeasonalIndex`
+  (cost-share-weighted seasonal MoM%), `cheapestMonths`,
+  `substitutionSuggestions` (cheapest **same-unit** member of a group + saving),
+  `costVsBaseline` (latest vs trailing 6-mo mean). `DEFAULT_SUB_GROUPS`
+  predefined (metallic charge, FeSi market, FeMn family, coke). `reporting.ts`
+  gains `ALL_COMMODITIES` (incl. archived) so substitution can price hidden
+  commodities.
+- **Guidance tab** (`GuidancePage`): company + material selectors; cost tiles
+  (blended cost, vs-baseline with up/down tone); blended-cost-over-time chart
+  with a baseline mark-line; seasonal buy-timing (cheapest months, grounded in
+  the weighted %); "cheaper alternatives right now" substitution list with the
+  per-unit saving. Empty states (sign-in / no company+material), short-history
+  guards. No AI chat on this tab.
+- vitest (21 total) + oxlint + tsc + production build green.
+
+**Follow-up (not built):** editable substitution groups (currently the
+predefined defaults) and the SM-19-style scheduled buy alert — both are SM-34
+territory. Substitution compares same-unit only (Rs/kg vs Rs/tonne never mixed).
 
 ## Goal
 For a selected company + material (SM-32), generate actionable purchasing

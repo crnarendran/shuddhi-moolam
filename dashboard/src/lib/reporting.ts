@@ -3,6 +3,7 @@
 // records read from Firestore `historical_prices`.
 
 import {
+  COMPONENTS,
   VISIBLE_COMPONENTS,
   CORE_COMPONENTS,
   type ComponentTier,
@@ -32,6 +33,16 @@ export interface Commodity {
 // drift. Carries tier so pages can badge the 'extended' (not-yet-in-Sheet)
 // commodities.
 export const COMMODITIES: Commodity[] = VISIBLE_COMPONENTS.map((c) => ({
+  key: c.key,
+  label: c.label,
+  category: c.category,
+  unit: c.unit,
+  tier: c.tier,
+}));
+
+// ALL commodities incl. archived (e.g. Copper LME, HMS) — used for
+// substitution pricing, which may point to commodities the reports hide.
+export const ALL_COMMODITIES: Commodity[] = COMPONENTS.map((c) => ({
   key: c.key,
   label: c.label,
   category: c.category,
