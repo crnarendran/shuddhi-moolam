@@ -3,11 +3,30 @@ id: SM-32
 title: Companies & Materials (BOM) management
 type: ticket
 points: 5
-status: backlog
+status: in-review
 depends_on: [SM-30]
 tags: [backlog, companies, bom, materials, cost-impact, ux]
 ---
 # SM-32 — Companies & Materials (bill-of-materials)
+
+## Implemented (dev)
+- **Pure math** (`materials.ts`): `Company`/`Material`/`Composition` types +
+  `blendedCost` and `contributions` (ratio×price, range-normalized, %
+  breakdown) — vitest-tested (4 cases).
+- **Firestore CRUD hooks** (`useCompanies`): companies owned by the user
+  (`where ownerUid == uid`), add/update/delete with a **materials cascade**
+  delete; `useMaterials(companyId)` for a company's materials (save/delete).
+- **Companies tab** (`CompaniesPage`): company list + add/delete; per-company
+  materials list; a `MaterialEditor` with name/unit + a composition table
+  (commodity picker + ratio rows + add/remove) and a **live blended-cost
+  preview** with per-row % contribution. Validation (name + positive ratios);
+  signed-out empty state; responsive two-column layout. No AI chat on this tab.
+- vitest (16 total) + oxlint + tsc + production build green.
+
+**Follow-up (minor, not built):** the one-click "create a company from my
+current Cost-Impact weights" seed. Cost-Impact still uses loose weights;
+pointing it at a selected company/material is the SM-33-era follow-up noted
+in Notes.
 
 ## Goal
 Let a user (typically a consultant) manage **multiple companies**, and for each

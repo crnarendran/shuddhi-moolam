@@ -4,7 +4,7 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator, Shuffle, Settings,
+  Calculator, Shuffle, Settings, Building2,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
@@ -13,23 +13,26 @@ import { SeasonalPage } from './pages/SeasonalPage';
 import { CostImpactPage } from './pages/CostImpactPage';
 import { SpreadsPage } from './pages/SpreadsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { CompaniesPage } from './pages/CompaniesPage';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
 type Tab =
   | 'price-review' | 'seasonal' | 'cost-impact' | 'spreads'
-  | 'monitor' | 'settings';
+  | 'companies' | 'monitor' | 'settings';
 const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'spreads', label: 'Spreads', icon: Shuffle },
+  { id: 'companies', label: 'Companies', icon: Building2 },
   { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const VALID_TABS: Tab[] = [
-  'price-review', 'seasonal', 'cost-impact', 'spreads', 'monitor', 'settings',
+  'price-review', 'seasonal', 'cost-impact', 'spreads', 'companies',
+  'monitor', 'settings',
 ];
 const tabFromHash = (): Tab => {
   const h = window.location.hash.replace('#', '') as Tab;
@@ -130,7 +133,8 @@ function App() {
     );
   }
 
-  const hasChat = activeTab !== 'monitor' && activeTab !== 'settings';
+  const hasChat = activeTab !== 'monitor' && activeTab !== 'settings'
+    && activeTab !== 'companies';
   const viewName =
     activeTab === 'seasonal' ? 'Seasonal analysis'
       : activeTab === 'cost-impact' ? 'Cost impact analysis'
@@ -199,6 +203,8 @@ function App() {
           <CostImpactPage records={records} isDark={isDark} />
         ) : activeTab === 'spreads' ? (
           <SpreadsPage records={records} isDark={isDark} />
+        ) : activeTab === 'companies' ? (
+          <CompaniesPage records={records} />
         ) : activeTab === 'settings' ? (
           <SettingsPage />
         ) : (
