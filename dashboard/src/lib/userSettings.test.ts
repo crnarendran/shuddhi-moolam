@@ -3,6 +3,9 @@ import {
   DEFAULT_SETTINGS,
   mergeSettings,
   shouldMigrateWeights,
+  effectiveKeys,
+  globallyAllowedKeys,
+  type Personalization,
 } from './userSettings';
 
 describe('mergeSettings', () => {
@@ -38,5 +41,48 @@ describe('shouldMigrateWeights', () => {
   it('does not migrate when there are no local weights', () => {
     expect(shouldMigrateWeights(DEFAULT_SETTINGS, null)).toBe(false);
     expect(shouldMigrateWeights(DEFAULT_SETTINGS, {})).toBe(false);
+  });
+});
+
+describe('effectiveKeys (exclusion cascade)', () => {
+  const all = ['a', 'b', 'c', 'd'];
+
+  it('returns all keys when personalization is undefined', () => {
+    expect(effectiveKeys(all, 'seasonal', undefined)).toEqual(all);
+  });
+
+  it('removes globally-excluded keys from every report', () => {
+    const p: Personalization = { globalExcluded: ['b'], reports: {} };
+    expect(effectiveKeys(all, 'seasonal', p)).toEqual(['a', 'c', 'd']);
+    expect(effectiveKeys(all, 'spreads', p)).toEqual(['a', 'c', 'd']);
+  });
+
+  it('removes report-excluded keys only from that report', () => {
+    const p: Personalization = {
+      globalExcluded: [],
+      reports: { seasonal: { excluded: ['c'] } },
+    };
+    expect(effectiveKeys(all, 'seasonal', p)).toEqual(['a', 'b', 'd']);
+    expect(effectiveKeys(all, 'spreads', p)).toEqual(all);
+  });
+
+  it('does not double-count a key excluded both globally and per-report', () => {
+    const p: Personalization = {
+      globalExcluded: ['a'],
+      reports: { seasonal: { excluded: ['a', 'b'] } },
+    };
+    expect(effectiveKeys(all, 'seasonal', p)).toEqual(['c', 'd']);
+  });
+
+  it('preserves input order', () => {
+    const p: Personalization = { globalExcluded: ['a'], reports: {} };
+    expect(effectiveKeys(all, 'seasonal', p)).toEqual(['b', 'c', 'd']);
+  });
+});
+
+describe('globallyAllowedKeys', () => {
+  it('is the report-level pool: all minus globalExcluded', () => {
+    const p: Personalization = { globalExcluded: ['b', 'd'], reports: {} };
+    expect(globallyAllowedKeys(['a', 'b', 'c', 'd'], p)).toEqual(['a', 'c']);
   });
 });

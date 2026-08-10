@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import {
   COMMODITIES,
   costImpact,
+  effectiveCommodities,
   quarterKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
@@ -57,8 +58,13 @@ export function CostImpactPage(
     void update({ costImpact: { weights: next } });
   };
 
+  const commodities = useMemo(
+    () => effectiveCommodities('cost-impact', settings.personalization),
+    [settings.personalization]
+  );
   const { rows, sum, latestQuarter } = useMemo(
-    () => costImpact(records, weights), [records, weights]
+    () => costImpact(records, weights, 4, commodities),
+    [records, weights, commodities]
   );
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
@@ -140,7 +146,7 @@ export function CostImpactPage(
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Commodities</p>
           <p className="text-2xl font-semibold mt-1 text-zinc-900
-            dark:text-zinc-100">{COMMODITIES.length}</p>
+            dark:text-zinc-100">{commodities.length}</p>
         </div>
       </div>
 

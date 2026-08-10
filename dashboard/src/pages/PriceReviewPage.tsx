@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  COMMODITIES,
+  effectiveCommodities,
   monthlyAverages,
   pctChange,
   monthKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
 
 type Status = 'Review' | 'Watch' | 'OK' | 'No data';
 
@@ -32,21 +33,26 @@ export function PriceReviewPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
   const [threshold, setThreshold] = useState(5);
+  const { settings } = useUserSettings();
+  const commodities = useMemo(
+    () => effectiveCommodities('price-review', settings.personalization),
+    [settings.personalization]
+  );
 
   const months = useMemo(() => {
     const set = new Set<string>();
-    for (const c of COMMODITIES) {
+    for (const c of commodities) {
       for (const k of monthlyAverages(records, c.key).keys()) set.add(k);
     }
     return [...set].sort();
-  }, [records]);
+  }, [records, commodities]);
 
   const last3 = months.slice(-3);
   const current = last3[last3.length - 1];
   const prev = last3[last3.length - 2];
 
   const rows: Row[] = useMemo(() => {
-    return COMMODITIES.map((c) => {
+    return commodities.map((c) => {
       const m = monthlyAverages(records, c.key);
       const avgs = last3.map((k) => m.get(k) ?? null);
       const cur = current ? m.get(current) ?? null : null;
@@ -60,7 +66,7 @@ export function PriceReviewPage(
       }
       return { label: c.label, avgs, delta, pct, status };
     });
-  }, [records, last3, current, prev, threshold]);
+  }, [records, commodities, last3, current, prev, threshold]);
 
   const flagged = rows.filter((r) => r.status === 'Review').length;
   const watch = rows.filter((r) => r.status === 'Watch').length;
@@ -115,7 +121,7 @@ export function PriceReviewPage(
   }
 
   const tiles = [
-    { label: 'Commodities', value: String(COMMODITIES.length), tone: '' },
+    { label: 'Commodities', value: String(commodities.length), tone: '' },
     { label: `Flagged ≥${threshold}%`, value: String(flagged),
       tone: flagged > 0 ? 'text-red-600 dark:text-red-400' : '' },
     { label: 'Watch 3–' + threshold + '%', value: String(watch),

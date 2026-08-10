@@ -1,12 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  COMMODITIES,
+  effectiveCommodities,
   monthlySpread,
   meanStd,
   monthKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
 
 const fmt = (n: number): string =>
   n.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -14,9 +15,23 @@ const fmt = (n: number): string =>
 export function SpreadsPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
+  const { settings } = useUserSettings();
+  const commodities = useMemo(
+    () => effectiveCommodities('spreads', settings.personalization),
+    [settings.personalization]
+  );
   // Default to the scrap vs pig-iron substitution spread (comparable scale).
   const [keyA, setKeyA] = useState('melting_foundry_scrap_mumbai');
   const [keyB, setKeyB] = useState('pig_iron_foundry_gr_pune');
+  // Keep both selections within the effective set.
+  useEffect(() => {
+    if (!commodities.some((c) => c.key === keyA)) {
+      setKeyA(commodities[0]?.key ?? '');
+    }
+    if (!commodities.some((c) => c.key === keyB)) {
+      setKeyB(commodities[1]?.key ?? commodities[0]?.key ?? '');
+    }
+  }, [commodities, keyA, keyB]);
 
   const spread = useMemo(
     () => monthlySpread(records, keyA, keyB), [records, keyA, keyB]
@@ -26,8 +41,8 @@ export function SpreadsPage(
   const { mean, std } = meanStd(values);
   const latest = values.length ? values[values.length - 1] : null;
   const z = latest !== null && std > 0 ? (latest - mean) / std : null;
-  const labelA = COMMODITIES.find((c) => c.key === keyA)?.label ?? keyA;
-  const labelB = COMMODITIES.find((c) => c.key === keyB)?.label ?? keyB;
+  const labelA = commodities.find((c) => c.key === keyA)?.label ?? keyA;
+  const labelB = commodities.find((c) => c.key === keyB)?.label ?? keyB;
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
@@ -86,7 +101,7 @@ export function SpreadsPage(
           <select value={keyA} onChange={(e) => setKeyA(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
               dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
@@ -94,7 +109,7 @@ export function SpreadsPage(
           <select value={keyB} onChange={(e) => setKeyB(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
               dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>

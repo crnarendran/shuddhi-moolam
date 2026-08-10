@@ -3,11 +3,31 @@ id: SM-31
 title: Commodity personalization — global + per-report exclusion cascade
 type: ticket
 points: 5
-status: backlog
+status: in-review
 depends_on: [SM-30]
 tags: [backlog, personalization, settings, reports, ux]
 ---
 # SM-31 — Commodity personalization (global + per-report)
+
+## Implemented (dev)
+- **Model** (`userSettings.ts`): `Personalization { globalExcluded,
+  reports.{id}.excluded }` + pure `effectiveKeys` (the cascade) and
+  `globallyAllowedKeys` — vitest-tested (order preserved, no double-count,
+  report can't re-show a globally-hidden key).
+- `reporting.ts`: `effectiveCommodities(reportId, personalization)`; `costImpact`
+  now accepts a commodity list.
+- **All four reports wired** (Price Review, Seasonal, Cost-Impact, Spreads) to
+  the effective list; selections (Seasonal metric, Spreads A/B) self-clamp when
+  the effective set changes; tile counts reflect the effective count.
+- **Settings tab** (`SettingsPage`): global commodity show/hide grouped by
+  category with tier badges + bulk "Show all / Hide all / Core only"; per-report
+  section that only lists globally-allowed commodities with per-report toggles
+  and a "showing N of M" count; signed-out empty state. No AI chat on Settings.
+- vitest (12) + oxlint + tsc + production build green.
+
+**Follow-up (not built):** the *inline* per-report "Filter ▾" popover in each
+report header (the Settings page covers global + per-report; the inline control
+is a convenience). Track as a small enhancement.
 
 ## Goal
 Let each user focus the dashboard on the commodities they care about, with a

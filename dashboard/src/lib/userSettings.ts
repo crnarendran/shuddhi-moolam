@@ -4,9 +4,25 @@
 // personalization/guidance epic (SM-31+); this module holds the types,
 // defaults, and the pure helpers (unit-tested) used by the hook.
 
+/** Reports whose commodity set can be personalized (SM-31). */
+export type ReportId = 'price-review' | 'seasonal' | 'cost-impact' | 'spreads';
+
+/**
+ * Two-level opt-out cascade: `globalExcluded` hides a commodity from every
+ * report; a report's `excluded` hides more, only within that report. A
+ * commodity is visible in report R iff NOT globally excluded AND NOT
+ * excluded in R — a report can never re-show a globally-hidden commodity.
+ */
+export interface Personalization {
+  globalExcluded: string[];
+  reports: Partial<Record<ReportId, { excluded: string[] }>>;
+}
+
 export interface UserSettings {
   /** Cost-Impact consumption weights (commodityKey -> kg per unit). */
   costImpact?: { weights?: Record<string, number> };
+  /** Global + per-report commodity exclusions (SM-31). */
+  personalization?: Personalization;
   /** Last write time (ms epoch), set on every update. */
   updatedAt?: number;
 }
@@ -51,4 +67,32 @@ export function shouldMigrateWeights(
   const hasStored = !!stored && Object.keys(stored).length > 0;
   const hasLocal = !!localWeights && Object.keys(localWeights).length > 0;
   return !hasStored && hasLocal;
+}
+
+/**
+ * Applies the exclusion cascade: returns the keys visible in `reportId`,
+ * i.e. those not globally excluded and not excluded in that report. Pure
+ * (takes the full key list) so it is unit-tested without the registry.
+ * @param {string[]} allKeys - All candidate commodity keys, in order.
+ * @param {ReportId} reportId - The report being filtered.
+ * @param {Personalization | undefined} p - The user's personalization.
+ * @returns {string[]} The visible keys for that report, order preserved.
+ */
+export function effectiveKeys(
+  allKeys: string[],
+  reportId: ReportId,
+  p: Personalization | undefined
+): string[] {
+  const global = new Set(p?.globalExcluded ?? []);
+  const reportEx = new Set(p?.reports?.[reportId]?.excluded ?? []);
+  return allKeys.filter((k) => !global.has(k) && !reportEx.has(k));
+}
+
+/** Keys globally allowed (not in `globalExcluded`) — the report-level pool. */
+export function globallyAllowedKeys(
+  allKeys: string[],
+  p: Personalization | undefined
+): string[] {
+  const global = new Set(p?.globalExcluded ?? []);
+  return allKeys.filter((k) => !global.has(k));
 }

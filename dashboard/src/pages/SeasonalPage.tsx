@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  COMMODITIES,
+  effectiveCommodities,
   MONTHS,
   monthlyByYear,
   seasonalIndex,
@@ -9,11 +9,23 @@ import {
   confidenceLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
 
 export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const [metric, setMetric] = useState(COMMODITIES[7].key); // Cu LME
+  const { settings } = useUserSettings();
+  const commodities = useMemo(
+    () => effectiveCommodities('seasonal', settings.personalization),
+    [settings.personalization]
+  );
+  const [metric, setMetric] = useState<string>('');
+  // Keep the selection valid as the effective set changes.
+  useEffect(() => {
+    if (!commodities.some((c) => c.key === metric)) {
+      setMetric(commodities[0]?.key ?? '');
+    }
+  }, [commodities, metric]);
 
   const years = yearsOfData(records);
   const confidence = confidenceLabel(years);
@@ -131,7 +143,7 @@ export function SeasonalPage(
               dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md
               py-2 px-3 text-sm"
           >
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>

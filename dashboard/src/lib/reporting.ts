@@ -7,6 +7,11 @@ import {
   CORE_COMPONENTS,
   type ComponentTier,
 } from './components';
+import {
+  effectiveKeys,
+  type ReportId,
+  type Personalization,
+} from './userSettings';
 
 export interface PriceRecord {
   date: string; // dd/MM/yyyy
@@ -42,6 +47,27 @@ export const CORE_COMMODITIES: Commodity[] = CORE_COMPONENTS.map((c) => ({
   unit: c.unit,
   tier: c.tier,
 }));
+
+/**
+ * The commodities visible in a report after applying the user's exclusion
+ * cascade (SM-31): global exclusions minus the report's own exclusions.
+ * @param {ReportId} reportId - The report being rendered.
+ * @param {Personalization | undefined} personalization - User settings.
+ * @returns {Commodity[]} The visible commodities, in registry order.
+ */
+export function effectiveCommodities(
+  reportId: ReportId,
+  personalization: Personalization | undefined
+): Commodity[] {
+  const keys = new Set(
+    effectiveKeys(
+      COMMODITIES.map((c) => c.key),
+      reportId,
+      personalization
+    )
+  );
+  return COMMODITIES.filter((c) => keys.has(c.key));
+}
 
 /** Normalizes a raw price cell to a number (range midpoint), or null. */
 export function normalizePrice(raw: unknown): number | null {
@@ -232,11 +258,12 @@ export interface ImpactRow {
 export function costImpact(
   records: PriceRecord[],
   weights: Record<string, number>,
-  window = 4
+  window = 4,
+  commodities: Commodity[] = COMMODITIES
 ): { rows: ImpactRow[]; sum: number; latestQuarter: string | null } {
   const allQuarters = new Set<string>();
   const perCommodity = new Map<string, Map<string, number>>();
-  for (const c of COMMODITIES) {
+  for (const c of commodities) {
     const q = quarterlyAverages(records, c.key);
     perCommodity.set(c.key, q);
     for (const k of q.keys()) allQuarters.add(k);
@@ -245,7 +272,7 @@ export function costImpact(
   const latestQuarter = sorted.length ? sorted[sorted.length - 1] : null;
 
   let sum = 0;
-  const rows: ImpactRow[] = COMMODITIES.map((c) => {
+  const rows: ImpactRow[] = commodities.map((c) => {
     const q = perCommodity.get(c.key)!;
     const baseMap = quarterlyRollingBaseline(q, window);
     const latest = latestQuarter ? q.get(latestQuarter) ?? null : null;
