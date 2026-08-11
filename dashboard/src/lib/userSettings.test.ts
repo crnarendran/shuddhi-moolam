@@ -25,6 +25,17 @@ describe('mergeSettings', () => {
     expect(r.costImpact?.weights).toEqual({ a: 1 });
     expect(r.updatedAt).toBe(5);
   });
+
+  it('never emits undefined fields (Firestore rejects them)', () => {
+    // First-time personalization write with no costImpact set.
+    const r = mergeSettings({}, {
+      personalization: { globalExcluded: ['a'], reports: {} },
+      updatedAt: 9,
+    });
+    expect('costImpact' in r).toBe(false);
+    expect(Object.values(r).every((v) => v !== undefined)).toBe(true);
+    expect(r.personalization?.globalExcluded).toEqual(['a']);
+  });
 });
 
 describe('shouldMigrateWeights', () => {

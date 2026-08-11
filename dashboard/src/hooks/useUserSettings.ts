@@ -64,7 +64,12 @@ export function useUserSettings(): UseUserSettings {
         updatedAt: Date.now(),
       });
       setSettings(next);
-      await setDoc(doc(db, 'user_settings', uid), next, { merge: true });
+      try {
+        await setDoc(doc(db, 'user_settings', uid), next, { merge: true });
+      } catch (e) {
+        // Surface instead of silently dropping the write.
+        console.error('Failed to save settings', e);
+      }
     },
     [uid]
   );

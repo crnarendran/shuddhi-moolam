@@ -41,13 +41,16 @@ export function mergeSettings(
   current: UserSettings,
   patch: Partial<UserSettings>
 ): UserSettings {
-  return {
-    ...current,
-    ...patch,
-    costImpact: patch.costImpact
-      ? { ...current.costImpact, ...patch.costImpact }
-      : current.costImpact,
-  };
+  const merged: UserSettings = { ...current, ...patch };
+  if (patch.costImpact) {
+    merged.costImpact = { ...current.costImpact, ...patch.costImpact };
+  }
+  // Firestore rejects writes containing `undefined` field values, so drop
+  // any key that ended up undefined (e.g. costImpact on a first-time write).
+  (Object.keys(merged) as (keyof UserSettings)[]).forEach((k) => {
+    if (merged[k] === undefined) delete merged[k];
+  });
+  return merged;
 }
 
 /**
