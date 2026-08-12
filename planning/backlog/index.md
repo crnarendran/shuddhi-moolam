@@ -14,6 +14,8 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
+| [SM-40](SM-40-price-unit-normalization.md) | Price unit normalization — canonical ₹/kg for charts & math | 3 | SM-18, SM-26, SM-33 |
+| [SM-41](SM-41-readonly-company-sharing.md) | Read-only company sharing — invite viewers, tracked expiring invites (epic) | 13 | SM-30, SM-32, SM-33 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
 
