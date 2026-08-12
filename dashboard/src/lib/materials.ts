@@ -25,6 +25,10 @@ export interface Company {
   notes?: string;
   createdAt?: number;
   updatedAt?: number;
+  /** uids granted read-only access via an accepted invitation (SM-41). */
+  viewerUids?: string[];
+  /** parallel emails of accepted viewers, for owner display (SM-41). */
+  viewerEmails?: string[];
 }
 
 export interface Contribution {

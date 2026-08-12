@@ -6,6 +6,12 @@ import { startDriveWatch, stopDriveWatch, getWatchState } from './drive/watch';
 import { driveWebhook as _driveWebhook } from './drive/webhook';
 import { processPendingPdf as _processPendingPdf } from './pipeline/process';
 import { chatEndpoint as _chatEndpoint } from './analytics/chat';
+import {
+  createInvitation as _createInvitation,
+  acceptInvitation as _acceptInvitation,
+  resendInvitation as _resendInvitation,
+  revokeInvitation as _revokeInvitation,
+} from './sharing/invitations';
 import { getFirestore } from 'firebase-admin/firestore';
 import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
@@ -131,6 +137,10 @@ module.exports = {
   [`chatEndpoint${suffix}`]: _chatEndpoint,
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
   [`reprocessPendingPdf${suffix}`]: _reprocessPendingPdf,
+  [`createInvitation${suffix}`]: _createInvitation,
+  [`acceptInvitation${suffix}`]: _acceptInvitation,
+  [`resendInvitation${suffix}`]: _resendInvitation,
+  [`revokeInvitation${suffix}`]: _revokeInvitation,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');

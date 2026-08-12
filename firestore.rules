@@ -2,31 +2,68 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Per-user private settings (personalization, cost-impact weights, etc).
-    // A user can read/write ONLY their own document (keyed by their uid).
-    match /user_settings/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdminEmail() {
+      return isSignedIn() && (
+        request.auth.token.email == "crnarendran@gmail.com"
+        || request.auth.token.email == "mvsaikishore@gmail.com"
+      );
     }
 
-    // Companies and their materials (BOMs), each owned by one user.
+    // Per-user private settings (personalization, weights, view state).
+    // A user reads/writes ONLY their own document (keyed by uid).
+    match /user_settings/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Companies + their materials (BOMs). The owner has full control; a user
+    // whose uid is in `viewerUids` (via an accepted invitation, SM-41) gets
+    // read-only access. Writes stay owner-only; the accept flow adds viewers
+    // through a trusted Admin-SDK callable, not client writes.
     match /companies/{companyId} {
-      allow read, update, delete: if request.auth != null
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerUid
+        || request.auth.uid in resource.data.get('viewerUids', [])
+      );
+      allow update, delete: if isSignedIn()
         && request.auth.uid == resource.data.ownerUid;
-      allow create: if request.auth != null
+      allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
 
       match /materials/{materialId} {
-        allow read, write: if request.auth != null
-          && get(/databases/$(database)/documents/companies/$(companyId))
-               .data.ownerUid == request.auth.uid;
+        function company() {
+          return get(
+            /databases/$(database)/documents/companies/$(companyId)
+          ).data;
+        }
+        allow read: if isSignedIn() && (
+          request.auth.uid == company().ownerUid
+          || request.auth.uid in company().get('viewerUids', [])
+        );
+        allow write: if isSignedIn()
+          && request.auth.uid == company().ownerUid;
       }
     }
 
-    // Reporting + monitor collections: read for the allowlist only; all
-    // writes are backend-only. (Union semantics: the per-user rules above
-    // still grant a user access to their own settings/companies.)
+    // Invitations: the owner reads their own; only the backend (Admin SDK,
+    // which bypasses rules) writes them. No client writes, no public listing.
+    match /invitations/{inviteId} {
+      allow read: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // Reporting + monitor collections. Commodity prices are the same public
+    // newsletter data for every signed-in user (SM-41), so historical_prices
+    // is readable by any authenticated user; pipeline_runs (operational)
+    // stays admin-only. All writes are backend-only.
     match /{collection}/{document=**} {
-      allow read: if (collection.matches('^pipeline_runs.*') || collection.matches('^historical_prices.*')) && request.auth != null && (request.auth.token.email == "crnarendran@gmail.com" || request.auth.token.email == "mvsaikishore@gmail.com");
+      allow read: if isSignedIn() && (
+        collection.matches('^historical_prices.*')
+        || (collection.matches('^pipeline_runs.*') && isAdminEmail())
+      );
       allow write: if false;
     }
   }
