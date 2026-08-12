@@ -112,26 +112,32 @@ A user with no shares sees no switcher (just their own workspace, as today).
 - Clear "Read-only — viewing `<company>` shared by `<owner email>`" banner with
   a "Back to my workspace" affordance.
 
-## Email — DECIDED: Firebase "Trigger Email" extension
-`firebase/firestore-send-email`: our backend writes a doc to the `mail`
-collection and the extension delivers it via the configured provider, stamping
-`delivery.state` back. **`mail` is locked to `allow read, write: if false`** so
-only the Admin SDK (our callables) can send.
+## Email — DECIDED: send directly from the Cloud Function (no extension)
+**Firebase Extensions are being retired (installs/edits end 31 Mar 2027), so we
+do NOT use the "Trigger Email" extension.** Instead the `createInvitation` /
+`resendInvitation` callables send the email **directly** by calling a
+transactional-email provider's API (the extension did exactly this internally;
+we just own the ~30 lines). Provider-agnostic; the API key lives in **Secret
+Manager**, not in code. The provider's API response → delivery status stored on
+the invitation doc. No `mail` collection needed.
+
+**Provider:** any transactional-email API — **Resend** (`resend` SDK, simple,
+~3k/mo free) or **SendGrid** (`@sendgrid/mail`, ~100/day free) recommended;
+Mailgun / Amazon SES also fine. Swap-able behind a thin `sendEmail()` helper.
 
 **User-provisioned prerequisites (billing/credentials — ESCALATION, not the
 agent's to do):**
-1. Confirm the project is on **Blaze** (extensions require it; Functions are
-   already deployed, so likely already Blaze).
-2. Pick an email provider + creds — **SendGrid** recommended (verify a sender,
-   create an API key; ~100/day free), or any SMTP.
-3. Install "Trigger Email from Firestore" on `sai-shuddhi-moolam` (one install
-   covers all envs — shared project). Params: SMTP URI
-   (`smtps://apikey:<KEY>@smtp.sendgrid.net:465` for SendGrid, key in Secret
-   Manager), default FROM (verified sender), documents collection = `mail`.
+1. Confirm the project is on **Blaze** — required for a Function to make
+   outbound calls to a non-Google API. Functions are already deployed, so
+   likely already Blaze.
+2. Create the provider account, **verify a sending domain/sender**, and mint an
+   **API key**.
+3. Store it as a secret: `firebase functions:secrets:set RESEND_API_KEY`
+   (or `SENDGRID_API_KEY`). One secret covers all envs (shared project).
 
-Until the extension is installed, invites still create + track; the accept link
-is shown to copy manually (degraded mode). The backend `mail`-write code (41b)
-can land first and light up automatically once the extension is installed.
+The agent adds the provider SDK to `functions/` deps and the `sendEmail()`
+helper. Until the key is provisioned, invites still create + track and show a
+copyable accept link (degraded mode); email lights up once the secret exists.
 
 ## Suggested phasing (≤5-pt batches)
 - **SM-41a (5):** data model + security rules (`viewerUids`, `invitations`,
@@ -158,9 +164,10 @@ can land first and light up automatically once the extension is installed.
   someone else's invite.
 
 ## Decisions
-1. **Email** — ✅ DECIDED: Firebase "Trigger Email" extension. Remaining
-   user action: provision Blaze + a provider (SendGrid recommended) + install
-   the extension (see Email section).
+1. **Email** — ✅ DECIDED: send directly from the Cloud Function via a
+   transactional-email API (NOT the deprecated Trigger Email extension).
+   Remaining user action: provision Blaze + a provider (Resend/SendGrid) +
+   set the API-key secret (see Email section).
 2. **`historical_prices` read** — ✅ DECIDED: any authenticated user.
 3. **"Only linked commodities"** — ✅ DECIDED: UX-only (no hard isolation).
 
