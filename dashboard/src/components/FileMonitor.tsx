@@ -59,8 +59,34 @@ const formatDuration = (ms?: number) => {
   return `${(ms / 1000).toFixed(1)}s`;
 };
 
+type StatusFilter = 'all' | 'attention' | 'in_progress' | 'completed';
+
+const IN_PROGRESS_STATUSES: PipelineStatus[] = [
+  'detected', 'downloaded', 'extracting', 'extracted', 'validating', 'routing',
+];
+
+const STATUS_FILTERS: { id: StatusFilter, label: string }[] = [
+  { id: 'all', label: 'All files' },
+  { id: 'attention', label: 'Needs attention' },
+  { id: 'in_progress', label: 'In progress' },
+  { id: 'completed', label: 'Completed' },
+];
+
+const matchesStatusFilter = (
+  status: PipelineStatus, filter: StatusFilter,
+): boolean => {
+  switch (filter) {
+    case 'attention': return status === 'failed' || status === 'dead_letter';
+    case 'in_progress': return IN_PROGRESS_STATUSES.includes(status);
+    case 'completed': return status === 'appended';
+    default: return true;
+  }
+};
+
 export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: boolean }) => {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRun, setSelectedRun] = useState<PipelineRun | null>(null);
 
   useEffect(() => {
@@ -70,10 +96,11 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
     }
   }, [runs, selectedRun]);
 
-  const filteredRuns = runs.filter(run => 
-    (run.fileName?.toLowerCase() || "").includes(search.toLowerCase())
+  const filteredRuns = runs.filter(run =>
+    (run.fileName?.toLowerCase() || "").includes(search.toLowerCase()) &&
+    matchesStatusFilter(run.status, statusFilter)
   );
-  
+
   const failedCount = runs.filter(r => r.status === 'failed' || r.status === 'dead_letter').length;
 
   return (
@@ -81,10 +108,18 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
       <div className={`flex-1 flex flex-col bg-white dark:bg-zinc-800/80 shadow-sm rounded-lg overflow-hidden transition-all duration-300 border border-gray-200 dark:border-zinc-700 ${selectedRun ? 'md:mr-[35%]' : ''}`}>
         
         {failedCount > 0 && (
-          <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 text-sm font-medium flex items-center gap-2 border-b border-red-100 dark:border-red-900/30 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+          <button
+            onClick={() => setStatusFilter(
+              statusFilter === 'attention' ? 'all' : 'attention'
+            )}
+            className="w-full text-left bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 px-4 py-3 text-sm font-medium flex items-center gap-2 border-b border-red-100 dark:border-red-900/30 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          >
             <AlertCircle className="h-4 w-4" />
             {failedCount} files need attention
-          </div>
+            <span className="ml-auto text-xs font-normal opacity-80">
+              {statusFilter === 'attention' ? 'show all' : 'view'}
+            </span>
+          </button>
         )}
 
         <div className="p-4 border-b border-gray-200 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/30">
@@ -98,10 +133,45 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-md transition-colors font-medium">
-            <Filter className="h-4 w-4" />
-            Filters
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setFilterOpen((o) => !o)}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors font-medium ${
+                statusFilter !== 'all'
+                  ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700'
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              {statusFilter === 'all'
+                ? 'Filters'
+                : STATUS_FILTERS.find((f) => f.id === statusFilter)?.label}
+            </button>
+            {filterOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setFilterOpen(false)}
+                />
+                <div className="absolute right-0 mt-1 z-20 w-48 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg py-1">
+                  {STATUS_FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => { setStatusFilter(f.id); setFilterOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-zinc-700 ${
+                        statusFilter === f.id
+                          ? 'text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-gray-700 dark:text-gray-200'
+                      }`}
+                    >
+                      {f.label}
+                      {statusFilter === f.id && <CheckCircle2 className="h-4 w-4" />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -115,10 +185,29 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
               <div className="bg-gray-100 dark:bg-zinc-700 p-4 rounded-full mb-4">
                 <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No files processed yet</h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-sm text-sm">
-                Drop a PDF into the watched Drive folder and it'll appear here automatically.
-              </p>
+              {runs.length > 0 ? (
+                <>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No matching files</h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-sm text-sm">
+                    No files match the current search or filter.
+                    {(search || statusFilter !== 'all') && (
+                      <button
+                        onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                        className="ml-1 text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No files processed yet</h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-sm text-sm">
+                    Drop a PDF into the watched Drive folder and it'll appear here automatically.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <table className="w-full min-w-[720px] text-left text-sm text-gray-600 dark:text-gray-400">
