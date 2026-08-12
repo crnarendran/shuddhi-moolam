@@ -22,3 +22,4 @@ export const HISTORICAL_COLLECTION =
   isProd ? 'historical_prices' :
     APP_ENV === 'staging' ? 'historical_prices_staging' :
       'historical_prices_dev';
+
