@@ -49,6 +49,13 @@ revoked — then adds the caller's uid to `company.viewerUids`, sets
 `status=accepted`, `acceptedUid`, `acceptedAt`. (A viewer can't self-grant via
 rules; the function is the trusted writer.)
 
+**The invitee may already be a Shuddhi-Moolam user** — this is the common
+case, not a special one. Accept works identically (same Google sign-in, same
+callable); there is **no second account**. The shared company simply appears
+in that user's **context switcher** (below). So a person can simultaneously
+own their own companies AND be a read-only viewer of others' — the invite just
+adds a uid to the shared company's `viewerUids`.
+
 ### Track status (owner)
 Per invite: **Waiting** (pending, not expired) · **Accepted** (shows
 acceptedAt + last-seen) · **Expired** (pending past expiry). "Accepted &
@@ -79,13 +86,31 @@ firebase-security-rules-auditor skill)
   (bigger; out of scope for v1).
 
 ## Read-only viewer UX
-- A **"Shared with me"** entry (under Settings ▸ Companies, or the company
-  picker) lists companies shared with the viewer.
-- Selecting one shows its materials + Guidance + the report charts, but the
+
+### Context switcher ("view as") — for existing users
+A **workspace/context switcher** (in the header or the company picker) lets a
+user flip between:
+- **My workspace** — their own companies/materials, full edit (unchanged).
+- **Shared: `<company>` · by `<owner email>`** — one entry per accepted share,
+  read-only.
+
+Switching is client-side context only (no re-login): it changes which
+company/commodity scope the dashboard renders and toggles read-only. The
+switcher is the "switch view as other user" ability — an existing user never
+logs into a second account; they just change context and switch back anytime.
+A user with no shares sees no switcher (just their own workspace, as today).
+
+### While in a shared context
+- Shows the shared company's materials + Guidance + the report charts, but the
   **commodity set is restricted** to the company's linked commodities; global
   "create company / add material / edit" actions are **hidden**, and writes are
   denied by rules as defence-in-depth.
-- Clear "Read-only — shared by <owner email>" banner.
+- The viewer's own commodity personalization/exclusions do **not** apply here —
+  they see the owner's linked commodity scope.
+- Persisted per-report view state (SM-39) is namespaced per context so a
+  shared view doesn't clobber the viewer's own-workspace selections.
+- Clear "Read-only — viewing `<company>` shared by `<owner email>`" banner with
+  a "Back to my workspace" affordance.
 
 ## Email (infra — ESCALATION per human-escalation-policy)
 Sending invite emails needs a provider. Recommended: the Firebase **"Trigger
@@ -101,14 +126,18 @@ copy manually (degraded mode).
 - **SM-41b (5):** backend callables — `createInvitation`, `acceptInvitation`,
   `resendInvitation`, `revokeInvitation`, expiry handling + email hook.
 - **SM-41c (3):** UX — owner share/manage panel (status, resend, revoke) +
-  read-only viewer experience (shared-with-me, restricted commodities,
-  hidden writes, banner).
+  read-only viewer experience: **context switcher** (my workspace ↔ each
+  shared company), restricted commodities, hidden writes, read-only banner,
+  context-namespaced view state.
 
 ## Acceptance
 - Owner invites by email; invite is pending with a 7-day expiry; email sent
   (or link shown in degraded mode).
 - Invitee accepts via the callable; owner sees Accepted + last-seen; viewer
   sees only that company, its materials, and its linked commodities, read-only.
+- An **existing user** who accepts gets the shared company in a **context
+  switcher** (no second account) and can flip between their own workspace
+  (editable) and the shared company (read-only), without re-login.
 - Expired invites show as expired and can be re-invited/resent; revoke removes
   access.
 - Rules verified (auditor): a viewer can read the shared company/materials but
