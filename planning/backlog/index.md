@@ -83,6 +83,7 @@ this is not org-wide multi-tenancy, just per-account data.
 | [SM-32](SM-32-companies-and-materials.md) | Companies & Materials (BOM) management | 5 | SM-30 |
 | [SM-33](SM-33-material-guidance-report.md) | Material guidance report — seasonal buying + substitution (v1) | 8 | SM-31, SM-32 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, alerts, sharing (later) | 8 | SM-33 |
+| [SM-35](SM-35-in-product-documentation.md) | In-product documentation — report intros, how-to-read, term tooltips | 3 | SM-18, SM-31, SM-32, SM-33 |
 
 **Reporting & UX epic (SM-18…SM-24):** Price Review & Insights reporting
 (SM-18), quarterly/seasonal alerts (SM-19), historical & seasonal analysis

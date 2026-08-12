@@ -8,6 +8,9 @@ import {
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { InfoTip } from '../components/InfoTip';
+import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number): string =>
   n.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -88,15 +91,11 @@ export function SpreadsPage(
 
   return (
     <div className="flex flex-col gap-6">
+      <ReportIntro help={REPORT_HELP['spreads']} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Spread monitor
-          </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {labelA} − {labelB}, monthly, with mean ±1σ band
-          </p>
-        </div>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {labelA} − {labelB}, monthly, with mean ±1σ band
+        </p>
         <div className="flex items-center gap-2">
           <select value={keyA} onChange={(e) => setKeyA(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
@@ -126,17 +125,20 @@ export function SpreadsPage(
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: 'Latest spread', value: latest !== null
-                ? fmt(latest) : '—' },
-              { label: 'Mean', value: fmt(mean) },
-              { label: 'Std dev', value: fmt(std) },
+                ? fmt(latest) : '—', tip: 'Spread' as const },
+              { label: 'Mean', value: fmt(mean),
+                tip: undefined },
+              { label: 'Std dev', value: fmt(std), tip: undefined },
               { label: 'Deviation', value: z !== null
                 ? `${z > 0 ? '+' : ''}${z.toFixed(1)}σ` : '—',
-              tone: deviates ? 'text-amber-600 dark:text-amber-400' : '' },
+              tone: deviates ? 'text-amber-600 dark:text-amber-400' : '',
+              tip: 'Deviation (σ)' as const },
             ].map((t) => (
               <div key={t.label} className="bg-zinc-50 dark:bg-zinc-800/60
                 rounded-lg p-4">
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {t.label}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400
+                  flex items-center gap-1">
+                  {t.label}{t.tip && <InfoTip term={t.tip} />}</p>
                 <p className={`text-2xl font-semibold mt-1 ${t.tone ||
                   'text-zinc-900 dark:text-zinc-100'}`}>{t.value}</p>
               </div>

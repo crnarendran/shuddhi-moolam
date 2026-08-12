@@ -9,6 +9,9 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { shouldMigrateWeights } from '../lib/userSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { InfoTip } from '../components/InfoTip';
+import { REPORT_HELP } from '../lib/help';
 
 const STORE_KEY = 'cost_weights_v1';
 
@@ -113,21 +116,21 @@ export function CostImpactPage(
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Cost impact
-        </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
-          baseline, weighted by per-kg consumption
-        </p>
-      </div>
+      <ReportIntro help={REPORT_HELP['cost-impact']} />
+      <p className="-mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+        {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
+        baseline, weighted by per-kg consumption
+      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4
           col-span-2 md:col-span-1">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
             Sum of impact / kg
+            <InfoTip content={'The total per-unit cost change: each ' +
+              'commodity’s net price move × its consumption weight, summed. ' +
+              'Red = costlier, green = cheaper.'} />
           </p>
           <p className={`text-2xl font-semibold mt-1 ${sumTone ||
             'text-zinc-900 dark:text-zinc-100'}`}>
@@ -166,9 +169,17 @@ export function CostImpactPage(
               border-zinc-200 dark:border-zinc-700">
               <th className="px-4 py-3 font-medium">Commodity</th>
               <th className="px-4 py-3 font-medium text-right">Latest Q</th>
-              <th className="px-4 py-3 font-medium text-right">Baseline</th>
+              <th className="px-4 py-3 font-medium text-right">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  Baseline<InfoTip term="Rolling baseline" />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Net Δ</th>
-              <th className="px-4 py-3 font-medium text-right">Weight (kg)</th>
+              <th className="px-4 py-3 font-medium text-right">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  Weight (kg)<InfoTip term="Consumption weight" />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Impact / kg</th>
             </tr>
           </thead>

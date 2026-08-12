@@ -7,6 +7,8 @@ import { useCompanies, useMaterials } from '../hooks/useCompanies';
 import {
   blendedCost, contributions, type Material,
 } from '../lib/materials';
+import { ReportIntro } from '../components/ReportIntro';
+import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number | null): string =>
   n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -148,7 +150,9 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
   }
 
   return (
-    <div className="grid md:grid-cols-[260px_1fr] gap-6">
+    <div className="flex flex-col gap-6">
+      <ReportIntro help={REPORT_HELP['companies']} />
+      <div className="grid md:grid-cols-[260px_1fr] gap-6">
       {/* Companies list */}
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100
@@ -258,6 +262,7 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
             })}
           </>
         )}
+      </div>
       </div>
     </div>
   );

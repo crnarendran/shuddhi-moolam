@@ -10,6 +10,8 @@ import {
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { REPORT_HELP } from '../lib/help';
 
 export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
@@ -123,15 +125,8 @@ export function SeasonalPage(
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Historical &amp; seasonal analysis
-          </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            year-over-year overlay and the typical seasonal pattern
-          </p>
-        </div>
+      <ReportIntro help={REPORT_HELP['seasonal']} />
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <span className={`px-2 py-1 rounded text-xs font-medium ${confTone}`}>
             confidence: {confidence}

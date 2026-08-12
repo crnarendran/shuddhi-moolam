@@ -9,6 +9,9 @@ import {
   blendedCostSeries, materialSeasonalIndex, cheapestMonths,
   substitutionSuggestions, costVsBaseline, DEFAULT_SUB_GROUPS,
 } from '../lib/guidance';
+import { ReportIntro } from '../components/ReportIntro';
+import { InfoTip } from '../components/InfoTip';
+import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number | null): string =>
   n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -111,6 +114,7 @@ export function GuidancePage(
 
   return (
     <div className="flex flex-col gap-6">
+      <ReportIntro help={REPORT_HELP['guidance']} />
       <div className="flex flex-wrap items-center gap-2">
         <select className={selCls} value={active ?? ''}
           onChange={(e) => { setCompanyId(e.target.value); setMaterialId(null); }}>
@@ -129,14 +133,17 @@ export function GuidancePage(
       {/* Cost vs baseline */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Blended cost / {material?.unit ?? 'unit'}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
+            Blended cost / {material?.unit ?? 'unit'}
+            <InfoTip term="Blended cost" /></p>
           <p className="text-2xl font-semibold mt-1 text-zinc-900
             dark:text-zinc-100">{fmt(baseline.latest)}</p>
         </div>
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            vs 6-mo baseline</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
+            vs 6-mo baseline<InfoTip term="Rolling baseline" /></p>
           <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
             ${baseline.pct === null ? 'text-zinc-400'
               : upTone ? 'text-red-600 dark:text-red-400'

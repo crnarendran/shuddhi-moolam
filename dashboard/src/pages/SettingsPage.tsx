@@ -6,6 +6,8 @@ import {
   type Personalization,
   type ReportId,
 } from '../lib/userSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { REPORT_HELP } from '../lib/help';
 
 const REPORTS: { id: ReportId; label: string }[] = [
   { id: 'price-review', label: 'Price Review' },
@@ -87,6 +89,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <ReportIntro help={REPORT_HELP['settings']} />
       {/* Global exclusions */}
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
