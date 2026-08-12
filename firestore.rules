@@ -5,7 +5,13 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    // Admins (operational data: pipeline_runs) — a strict subset of founders.
     function isAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email == "crnarendran@gmail.com";
+    }
+    // Founders are grandfathered premium (both co-founders).
+    function isFounderEmail() {
       return isSignedIn() && (
         request.auth.token.email == "crnarendran@gmail.com"
         || request.auth.token.email == "mvsaikishore@gmail.com"
@@ -17,7 +23,7 @@ service cloud.firestore {
     // webhook). Free users can still view companies shared with them.
     function isPremium() {
       return isSignedIn() && (
-        isAdminEmail()
+        isFounderEmail()
         || (exists(/databases/$(database)/documents/entitlements/$(request.auth.uid))
             && get(/databases/$(database)/documents/entitlements/$(request.auth.uid))
                  .data.plan == 'premium')

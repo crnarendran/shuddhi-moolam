@@ -4,7 +4,10 @@ import {
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const ADMIN_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
+// Admins can grant plans / list users. Founders are grandfathered premium
+// but are not necessarily admins (SM-42).
+const ADMIN_EMAILS = ['crnarendran@gmail.com'];
+const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
 
 /**
  * Admin-only callable to set a user's plan entitlement (SM-42). Resolves the
@@ -66,7 +69,7 @@ export const listUserPlans = onCall(async (request: CallableRequest) => {
     const res = await getAuth().listUsers(1000, pageToken);
     res.users.forEach((u) => {
       const email = (u.email || '').toLowerCase();
-      const premium = ADMIN_EMAILS.includes(email)
+      const premium = FOUNDER_EMAILS.includes(email)
         || plans.get(u.uid) === 'premium';
       users.push({
         uid: u.uid, email: u.email || '(no email)',

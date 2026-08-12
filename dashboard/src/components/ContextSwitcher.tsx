@@ -1,20 +1,28 @@
 import { useState } from 'react';
 import { Building2, ChevronDown, Eye, Check } from 'lucide-react';
 import { useCompanies } from '../hooks/useCompanies';
+import { usePlan } from '../hooks/usePlan';
 import { useView } from '../context/ViewContext';
 
 /**
- * Header "view as" switcher (SM-41): flip between the user's own workspace and
- * any company shared with them (read-only). Renders nothing when the user has
- * no shares, so it stays invisible for the common single-workspace case.
+ * Header "view as" switcher (SM-41/42): premium users flip between their own
+ * workspace and companies shared with them; free users (no own workspace) just
+ * pick among the companies shared with them. Hidden when there's nothing to
+ * switch between.
  */
 export function ContextSwitcher() {
   const { shared: sharedCompanies } = useCompanies();
+  const { premium } = usePlan();
   const { shared, setShared } = useView();
   const [open, setOpen] = useState(false);
 
+  // Free users have no "My workspace"; hide the whole control unless there's a
+  // real choice (they only have shares). Premium always shows it (to reach
+  // their own workspace) once at least one company is shared with them.
   if (sharedCompanies.length === 0) return null;
-  const current = shared ? shared.companyName : 'My workspace';
+  if (!premium && sharedCompanies.length < 2) return null;
+  const current = shared ? shared.companyName
+    : premium ? 'My workspace' : sharedCompanies[0]?.name ?? '';
 
   return (
     <div className="relative">
@@ -39,16 +47,18 @@ export function ContextSwitcher() {
           <div className="absolute right-0 mt-1 z-50 w-64 rounded-md border
             border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800
             shadow-lg py-1">
-            <button
-              onClick={() => { setShared(null); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-sm flex items-center
-                justify-between hover:bg-zinc-100 dark:hover:bg-zinc-700
-                text-zinc-800 dark:text-zinc-100"
-            >
-              <span className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />My workspace</span>
-              {!shared && <Check className="h-4 w-4 text-blue-600" />}
-            </button>
+            {premium && (
+              <button
+                onClick={() => { setShared(null); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-sm flex items-center
+                  justify-between hover:bg-zinc-100 dark:hover:bg-zinc-700
+                  text-zinc-800 dark:text-zinc-100"
+              >
+                <span className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />My workspace</span>
+                {!shared && <Check className="h-4 w-4 text-blue-600" />}
+              </button>
+            )}
             <p className="px-3 pt-2 pb-1 text-xs font-medium text-zinc-400
               uppercase tracking-wide">Shared with me</p>
             {sharedCompanies.map((c) => (

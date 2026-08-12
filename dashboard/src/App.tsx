@@ -18,7 +18,8 @@ import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
 import { ContextSwitcher } from './components/ContextSwitcher';
 import { useView } from './context/ViewContext';
-import { useIsAdmin } from './hooks/usePlan';
+import { useIsAdmin, usePlan } from './hooks/usePlan';
+import { useCompanies } from './hooks/useCompanies';
 import { acceptInvite } from './hooks/useSharing';
 import { toCanonicalPriceRecord, type PriceRecord } from './lib/reporting';
 
@@ -77,7 +78,21 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { shared, setShared } = useView();
   const isAdmin = useIsAdmin();
+  const { premium } = usePlan();
+  const { shared: sharedCompanies } = useCompanies();
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+
+  // Free users have no workspace of their own — drop them straight into the
+  // company shared with them, so there's no confusing "My workspace" (SM-42).
+  useEffect(() => {
+    if (loading || premium || shared) return;
+    const c = sharedCompanies[0];
+    if (c?.id) {
+      setShared({
+        companyId: c.id, companyName: c.name, ownerEmail: c.ownerEmail ?? '',
+      });
+    }
+  }, [loading, premium, shared, sharedCompanies, setShared]);
   // Monitor is operational/admin-only (SM-42); founders only.
   const visibleSections = isAdmin
     ? SECTIONS : SECTIONS.filter((s) => s.id !== 'monitor');
@@ -282,8 +297,10 @@ function App() {
             Read-only — viewing <b>{shared.companyName}</b>
             {shared.ownerEmail ? ` shared by ${shared.ownerEmail}` : ''}
           </span>
-          <button onClick={() => setShared(null)}
-            className="font-medium underline">Back to my workspace</button>
+          {premium && (
+            <button onClick={() => setShared(null)}
+              className="font-medium underline">Back to my workspace</button>
+          )}
         </div>
       )}
 

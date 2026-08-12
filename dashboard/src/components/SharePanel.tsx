@@ -61,6 +61,11 @@ export function SharePanel(
       <h4 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">
         Share read-only access
       </h4>
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 -mt-1">
+        The invitee can view this company’s materials, charts and guidance
+        (read-only, its commodities only) — they can’t edit or create their
+        own. Invites expire in 7 days; resend or revoke below.
+      </p>
       <div className="flex gap-2">
         <input
           type="email" placeholder="invitee@email.com" value={email}

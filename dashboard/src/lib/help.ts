@@ -88,12 +88,21 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
     description:
       'Model the companies you work with and the materials each ' +
       'manufactures. A material is a recipe: a set of commodities with a ' +
-      'ratio (how much of each goes into a unit). This becomes the input to ' +
-      'the Guidance report.',
+      'ratio (how much of each goes into a unit) — the input to the Guidance ' +
+      'report. You can also share a company read-only with someone else.',
     howToRead: [
-      'Add a company, then add materials to it.',
-      'A material’s composition is commodity + ratio rows; the editor ' +
-        'shows the live blended cost and each commodity’s % share.',
+      'Add a company, then add materials to it. (Creating your own companies ' +
+        'is a premium feature.)',
+      'A material’s composition is commodity + ratio rows; the editor shows ' +
+        'the live blended cost and each commodity’s % share.',
+      'Share read-only: click Share on a company and invite by email. The ' +
+        'invitee gets a link (and an email) to VIEW — not edit — that ' +
+        'company’s materials and its charts/guidance, limited to its ' +
+        'commodities. They can’t create their own companies unless premium.',
+      'Track each invite (Waiting → Accepted, or Expired) and Resend, ' +
+        'Re-invite, or Revoke anytime. Invitations expire after 7 days. An ' +
+        'invited person who is already a user switches to the shared company ' +
+        'via the "view as" selector at the top — no second account.',
       'Everything is private to your account and synced across your devices.',
     ],
   },

@@ -8,6 +8,8 @@ export type Plan = 'free' | 'premium';
 // Founders are grandfathered premium; everyone else is gated by an
 // entitlements/{uid} doc (SM-42). Mirrors firestore.rules isPremium().
 const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
+// Admins (Monitor tab + Admin plans panel) are a strict subset of founders.
+const ADMIN_EMAILS = ['crnarendran@gmail.com'];
 
 /**
  * The signed-in user's plan (SM-42). Premium unlocks creating your own
@@ -55,5 +57,5 @@ export function useIsAdmin(): boolean {
     () => onAuthStateChanged(auth, (u) => setEmail(u?.email ?? null)),
     []
   );
-  return !!email && FOUNDER_EMAILS.includes(email.toLowerCase());
+  return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
 }
