@@ -29,6 +29,8 @@ export interface Company {
   viewerUids?: string[];
   /** parallel emails of accepted viewers, for owner display (SM-41). */
   viewerEmails?: string[];
+  /** owner's email, denormalized on first share so viewers can see it. */
+  ownerEmail?: string;
 }
 
 export interface Contribution {

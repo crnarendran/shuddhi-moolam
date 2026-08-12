@@ -7,12 +7,13 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { type Company, type Material } from '../lib/materials';
 
-/** Companies owned by the signed-in user, with CRUD. */
+/** Companies owned by the signed-in user, with CRUD; plus shared-with-me. */
 export function useCompanies() {
   const [uid, setUid] = useState<string | null>(
     auth.currentUser?.uid ?? null
   );
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [shared, setShared] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(
@@ -46,6 +47,25 @@ export function useCompanies() {
     );
   }, [uid]);
 
+  // Companies shared with me (my uid is in viewerUids) — read-only (SM-41).
+  useEffect(() => {
+    if (!uid) {
+      setShared([]);
+      return;
+    }
+    const q = query(
+      collection(db, 'companies'),
+      where('viewerUids', 'array-contains', uid)
+    );
+    return onSnapshot(
+      q,
+      (snap) => setShared(
+        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Company, 'id'>) }))
+      ),
+      () => setShared([])
+    );
+  }, [uid]);
+
   const addCompany = async (name: string, notes = '') => {
     if (!uid) return;
     await addDoc(collection(db, 'companies'), {
@@ -65,7 +85,7 @@ export function useCompanies() {
   };
 
   return {
-    companies, loading, signedIn: !!uid,
+    companies, shared, loading, signedIn: !!uid, uid,
     addCompany, updateCompany, deleteCompany,
   };
 }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  effectiveCommodities,
+  commoditiesForView,
   monthlySpread,
   meanStd,
   monthKeyLabel,
@@ -9,6 +9,7 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useViewState } from '../hooks/useViewState';
+import { useView } from '../context/ViewContext';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
 import { PrintButton } from '../components/PrintButton';
@@ -27,9 +28,10 @@ export function SpreadsPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
   const { settings } = useUserSettings();
+  const { scopeKeys } = useView();
   const commodities = useMemo(
-    () => effectiveCommodities('spreads', settings.personalization),
-    [settings.personalization]
+    () => commoditiesForView('spreads', settings.personalization, scopeKeys),
+    [settings.personalization, scopeKeys]
   );
   const has = (k: string) => commodities.some((c) => c.key === k);
   const labelOf = (k: string) =>

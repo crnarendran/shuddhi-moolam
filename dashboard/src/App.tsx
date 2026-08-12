@@ -4,7 +4,7 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator, Shuffle, Settings, Lightbulb,
+  Calculator, Shuffle, Settings, Lightbulb, Eye,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
@@ -16,6 +16,9 @@ import { SettingsSection } from './components/SettingsSection';
 import { GuidancePage } from './pages/GuidancePage';
 import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
+import { ContextSwitcher } from './components/ContextSwitcher';
+import { useView } from './context/ViewContext';
+import { acceptInvite } from './hooks/useSharing';
 import { toCanonicalPriceRecord, type PriceRecord } from './lib/reporting';
 
 // Top-level sections keep the primary nav to three items (no scroll).
@@ -71,6 +74,8 @@ function App() {
   const [route, setRoute] = useState(parseHash);
   const { section, report } = route;
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { shared, setShared } = useView();
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -79,6 +84,29 @@ function App() {
     });
     return unsubscribe;
   }, []);
+
+  // Accept an invitation link (?invite=token) once the user is signed in,
+  // then clean the URL and switch into the shared company (SM-41).
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('invite');
+    if (!token) return;
+    acceptInvite(token).then((res) => {
+      params.delete('invite');
+      const qs = params.toString();
+      window.history.replaceState(
+        {}, '',
+        window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash
+      );
+      setShared({
+        companyId: res.companyId, companyName: res.companyName, ownerEmail: '',
+      });
+      setInviteMsg(`You now have read-only access to ${res.companyName}.`);
+    }).catch((e: { message?: string }) => {
+      setInviteMsg(`Invitation error: ${e.message ?? 'could not accept'}.`);
+    });
+  }, [user, setShared]);
 
   // The URL hash is the source of truth for navigation (survives refresh,
   // shareable). Keep component state in sync with it.
@@ -198,7 +226,8 @@ function App() {
                 ))}
               </nav>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <ContextSwitcher />
               <button
                 onClick={() => setIsDark(!isDark)}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
@@ -220,6 +249,29 @@ function App() {
           </div>
         </div>
       </header>
+
+      {inviteMsg && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800
+          dark:text-blue-200 text-sm px-4 py-2 flex items-center justify-between
+          print:hidden">
+          <span>{inviteMsg}</span>
+          <button onClick={() => setInviteMsg(null)}
+            className="text-blue-600 dark:text-blue-300 font-medium">Dismiss</button>
+        </div>
+      )}
+      {shared && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800
+          dark:text-amber-200 text-sm px-4 py-2 flex flex-wrap items-center
+          justify-between gap-2 print:hidden">
+          <span className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Read-only — viewing <b>{shared.companyName}</b>
+            {shared.ownerEmail ? ` shared by ${shared.ownerEmail}` : ''}
+          </span>
+          <button onClick={() => setShared(null)}
+            className="font-medium underline">Back to my workspace</button>
+        </div>
+      )}
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Print-only document header so a saved PDF is self-describing. */}

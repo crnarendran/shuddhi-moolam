@@ -80,6 +80,29 @@ export function effectiveCommodities(
   return COMMODITIES.filter((c) => keys.has(c.key));
 }
 
+/**
+ * Commodities to show in a report for the current view (SM-41): in a shared
+ * (read-only) context, restrict to the shared company's linked commodities
+ * (ignoring the viewer's own personalization); otherwise the normal
+ * personalized set. Uses ALL_COMMODITIES for scope so a company that
+ * references an archived commodity still shows it.
+ * @param {ReportId} reportId - The report being rendered.
+ * @param {Personalization | undefined} personalization - User settings.
+ * @param {string[] | null} scopeKeys - Shared-company scope, or null.
+ * @returns {Commodity[]} The commodities to show, in registry order.
+ */
+export function commoditiesForView(
+  reportId: ReportId,
+  personalization: Personalization | undefined,
+  scopeKeys: string[] | null
+): Commodity[] {
+  if (scopeKeys) {
+    const set = new Set(scopeKeys);
+    return ALL_COMMODITIES.filter((c) => set.has(c.key));
+  }
+  return effectiveCommodities(reportId, personalization);
+}
+
 /** Normalizes a raw price cell to a number (range midpoint), or null. */
 export function normalizePrice(raw: unknown): number | null {
   if (typeof raw !== 'string') {

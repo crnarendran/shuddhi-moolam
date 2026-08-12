@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  effectiveCommodities,
+  commoditiesForView,
   MONTHS,
   monthlyByYear,
   seasonalIndex,
@@ -11,6 +11,7 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useViewState } from '../hooks/useViewState';
+import { useView } from '../context/ViewContext';
 import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
 import { MultiSelect } from '../components/MultiSelect';
@@ -26,9 +27,10 @@ export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
   const { settings } = useUserSettings();
+  const { scopeKeys } = useView();
   const commodities = useMemo(
-    () => effectiveCommodities('seasonal', settings.personalization),
-    [settings.personalization]
+    () => commoditiesForView('seasonal', settings.personalization, scopeKeys),
+    [settings.personalization, scopeKeys]
   );
 
   const { value: sv, setValue: setSv } = useViewState(

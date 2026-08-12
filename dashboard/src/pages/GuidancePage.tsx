@@ -5,7 +5,8 @@ import {
   ALL_COMMODITIES, monthKeyLabel, parseIssueDate, type PriceRecord,
 } from '../lib/reporting';
 import { useCompanies, useMaterials } from '../hooks/useCompanies';
-import { type Material } from '../lib/materials';
+import { useView } from '../context/ViewContext';
+import { type Company, type Material } from '../lib/materials';
 import {
   blendedCostSeries, materialSeasonalIndex, cheapestMonths,
   substitutionSuggestions, costVsBaseline, DEFAULT_SUB_GROUPS,
@@ -151,17 +152,28 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
 export function GuidancePage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const { companies, signedIn } = useCompanies();
+  const { companies, shared: sharedCompanies, signedIn } = useCompanies();
+  const { shared: viewShared } = useView();
   const { value: gv, setValue: setGv } = useViewState(
     'guidance', GUIDANCE_DEFAULTS
   );
 
+  // Owned + shared-with-me companies, deduped, in a stable order.
+  const allCompanies = useMemo(() => {
+    const map = new Map<string, Company>();
+    [...companies, ...sharedCompanies].forEach(
+      (c) => c.id && map.set(c.id, c)
+    );
+    return [...map.values()];
+  }, [companies, sharedCompanies]);
+
   const active = useMemo(() => {
-    if (gv.companyId && companies.some((c) => c.id === gv.companyId)) {
+    if (viewShared) return viewShared.companyId;
+    if (gv.companyId && allCompanies.some((c) => c.id === gv.companyId)) {
       return gv.companyId;
     }
-    return companies[0]?.id ?? null;
-  }, [gv.companyId, companies]);
+    return allCompanies[0]?.id ?? null;
+  }, [viewShared, gv.companyId, allCompanies]);
   const { materials } = useMaterials(active);
 
   const activeMaterialIds = useMemo(() => {
@@ -255,7 +267,7 @@ export function GuidancePage(
         text-center">Sign in to view purchasing guidance.</div>
     );
   }
-  if (companies.length === 0 || materials.length === 0) {
+  if (allCompanies.length === 0 || materials.length === 0) {
     return (
       <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
         text-center">
@@ -270,8 +282,9 @@ export function GuidancePage(
       <ReportIntro help={REPORT_HELP['guidance']} />
       <div className="flex flex-wrap items-center gap-2">
         <select className={selCls} value={active ?? ''}
+          disabled={!!viewShared}
           onChange={(e) => setCompany(e.target.value)}>
-          {companies.map((c) => (
+          {allCompanies.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>

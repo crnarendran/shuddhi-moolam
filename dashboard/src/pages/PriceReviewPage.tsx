@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  effectiveCommodities,
+  commoditiesForView,
   monthlyAverages,
   pctChange,
   monthKeyLabel,
@@ -9,6 +9,7 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useViewState } from '../hooks/useViewState';
+import { useView } from '../context/ViewContext';
 import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
@@ -43,9 +44,12 @@ export function PriceReviewPage(
   const threshold = prView.threshold ?? 5;
   const setThreshold = (n: number) => setPrView({ threshold: n });
   const { settings } = useUserSettings();
+  const { scopeKeys } = useView();
   const commodities = useMemo(
-    () => effectiveCommodities('price-review', settings.personalization),
-    [settings.personalization]
+    () => commoditiesForView(
+      'price-review', settings.personalization, scopeKeys
+    ),
+    [settings.personalization, scopeKeys]
   );
 
   const months = useMemo(() => {

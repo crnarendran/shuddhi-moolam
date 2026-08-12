@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Plus, Trash2, Building2, Package } from 'lucide-react';
+import { Plus, Trash2, Building2, Package, Share2 } from 'lucide-react';
 import {
   COMMODITIES, parseIssueDate, type PriceRecord,
 } from '../lib/reporting';
@@ -8,6 +8,8 @@ import {
   blendedCost, contributions, type Material,
 } from '../lib/materials';
 import { ReportIntro } from '../components/ReportIntro';
+import { SharePanel } from '../components/SharePanel';
+import { useView } from '../context/ViewContext';
 import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number | null): string =>
@@ -131,12 +133,15 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
   const {
     companies, signedIn, addCompany, deleteCompany,
   } = useCompanies();
+  const { shared: viewShared } = useView();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const record = useMemo(() => latestRecord(records), [records]);
 
-  const active = selectedId
-    ?? (companies.length ? companies[0].id ?? null : null);
+  const active = viewShared
+    ? viewShared.companyId
+    : selectedId ?? (companies.length ? companies[0].id ?? null : null);
   const { materials, saveMaterial, deleteMaterial } = useMaterials(active);
   const [editing, setEditing] = useState<Material | null>(null);
 
@@ -145,6 +150,46 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
       <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
         text-center">
         Sign in to manage companies and their materials.
+      </div>
+    );
+  }
+
+  // Read-only view of a company shared with the user (SM-41).
+  if (viewShared) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-900
+            dark:text-zinc-100 flex items-center gap-2">
+            <Building2 className="h-5 w-5" />{viewShared.companyName}
+          </h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Read-only · shared by {viewShared.ownerEmail || 'the owner'}
+          </p>
+        </div>
+        {materials.length === 0 ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 py-8">
+            This company has no materials yet.
+          </p>
+        ) : materials.map((m) => {
+          const cost = blendedCost(m.composition, record);
+          return (
+            <div key={m.id} className="bg-white dark:bg-zinc-800 rounded-lg
+              border border-zinc-200 dark:border-zinc-700 p-3">
+              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                {m.name}
+                <span className="text-xs font-normal text-zinc-400 ml-2">
+                  {m.composition.length} commodities · {fmt(cost)} / {m.unit}
+                </span>
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                {m.composition
+                  .map((r) => `${labelOf(r.commodityKey)} ×${r.ratio}`)
+                  .join(' · ')}
+              </p>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -208,12 +253,28 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
                 dark:text-zinc-100 flex items-center gap-2">
                 <Package className="h-4 w-4" />Materials</h3>
               {!editing && (
-                <button className="text-sm flex items-center gap-1 px-3 py-1.5
-                  rounded-md bg-blue-600 text-white"
-                  onClick={() => setEditing(emptyMaterial())}>
-                  <Plus className="h-4 w-4" />Add material</button>
+                <div className="flex items-center gap-2">
+                  <button className="text-sm flex items-center gap-1 px-3 py-1.5
+                    rounded-md border border-zinc-300 dark:border-zinc-700
+                    text-zinc-700 dark:text-zinc-200"
+                    onClick={() => setSharingId(
+                      sharingId === active ? null : active
+                    )}>
+                    <Share2 className="h-4 w-4" />Share</button>
+                  <button className="text-sm flex items-center gap-1 px-3 py-1.5
+                    rounded-md bg-blue-600 text-white"
+                    onClick={() => setEditing(emptyMaterial())}>
+                    <Plus className="h-4 w-4" />Add material</button>
+                </div>
               )}
             </div>
+
+            {sharingId === active && active && (
+              <SharePanel companyId={active}
+                companyName={
+                  companies.find((c) => c.id === active)?.name ?? ''
+                } />
+            )}
 
             {editing && (
               <MaterialEditor initial={editing} record={record}

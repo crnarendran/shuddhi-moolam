@@ -3,11 +3,12 @@ import ReactECharts from 'echarts-for-react';
 import {
   COMMODITIES,
   costImpact,
-  effectiveCommodities,
+  commoditiesForView,
   quarterKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useView } from '../context/ViewContext';
 import { shouldMigrateWeights } from '../lib/userSettings';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
@@ -62,9 +63,12 @@ export function CostImpactPage(
     void update({ costImpact: { weights: next } });
   };
 
+  const { scopeKeys } = useView();
   const commodities = useMemo(
-    () => effectiveCommodities('cost-impact', settings.personalization),
-    [settings.personalization]
+    () => commoditiesForView(
+      'cost-impact', settings.personalization, scopeKeys
+    ),
+    [settings.personalization, scopeKeys]
   );
   const { rows, sum, latestQuarter } = useMemo(
     () => costImpact(records, weights, 4, commodities),
