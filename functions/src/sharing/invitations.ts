@@ -56,7 +56,9 @@ function newToken(): string {
  * @returns {Promise<object>} { success, inviteId, emailSent, acceptUrl }.
  */
 export const createInvitation = onCall(
-  { secrets: ['RESEND_API_KEY'] },
+  // SM-41: re-add { secrets: ['RESEND_API_KEY'] } once the deploy service
+  // account has Secret Manager access; until then email is degraded (the UI
+  // shows a copyable accept link).
   async (request) => {
     const { uid, email } = callerOf(request);
     const data = request.data as { companyId?: string; inviteeEmail?: string };
@@ -166,7 +168,8 @@ export const acceptInvitation = onCall(async (request) => {
  * @returns {Promise<object>} { success, emailSent, acceptUrl }.
  */
 export const resendInvitation = onCall(
-  { secrets: ['RESEND_API_KEY'] },
+  // SM-41: re-add { secrets: ['RESEND_API_KEY'] } once the deploy SA has
+  // Secret Manager access (see createInvitation).
   async (request) => {
     const { uid } = callerOf(request);
     const inviteId = ((request.data as { inviteId?: string }).inviteId || '')
