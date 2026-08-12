@@ -39,6 +39,13 @@ body {
    here we widen the report and keep charts/tables from splitting pages.
    PrintButton also forces light mode so the PDF is ink-friendly. */
 @media print {
+  /* Landscape gives wide data tables (Cost Impact, Price Review) ~40% more
+     width so every column fits without truncation. */
+  @page {
+    size: landscape;
+    margin: 12mm;
+  }
+
   html,
   body {
     background: #ffffff !important;
@@ -51,8 +58,7 @@ body {
   }
 
   /* Wide data tables: fit the page instead of scrolling off it. Drop the
-     min-width, shrink type/padding, and let cells wrap so all columns land
-     on the sheet. */
+     min-width, let cells wrap so all columns land on the sheet. */
   .overflow-x-auto {
     overflow: visible !important;
   }
@@ -60,13 +66,22 @@ body {
   table {
     width: 100% !important;
     min-width: 0 !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
   }
 
   th,
   td {
     padding: 4px 6px !important;
     white-space: normal !important;
+  }
+
+  /* Repeat the header on each page and never split a row across pages. */
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    break-inside: avoid;
   }
 
   /* Editable inputs (e.g. cost-impact weights) read as plain values on paper. */
