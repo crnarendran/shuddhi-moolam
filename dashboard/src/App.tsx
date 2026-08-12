@@ -4,7 +4,7 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator, Shuffle, Settings, Building2, Lightbulb,
+  Calculator, Shuffle, Settings, Lightbulb,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
@@ -12,32 +12,31 @@ import { PriceReviewPage } from './pages/PriceReviewPage';
 import { SeasonalPage } from './pages/SeasonalPage';
 import { CostImpactPage } from './pages/CostImpactPage';
 import { SpreadsPage } from './pages/SpreadsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { CompaniesPage } from './pages/CompaniesPage';
+import { SettingsSection } from './components/SettingsSection';
 import { GuidancePage } from './pages/GuidancePage';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
 type Tab =
   | 'price-review' | 'seasonal' | 'cost-impact' | 'spreads'
-  | 'companies' | 'guidance' | 'monitor' | 'settings';
+  | 'guidance' | 'monitor' | 'settings';
 const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'spreads', label: 'Spreads', icon: Shuffle },
-  { id: 'companies', label: 'Companies', icon: Building2 },
   { id: 'guidance', label: 'Guidance', icon: Lightbulb },
   { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const VALID_TABS: Tab[] = [
-  'price-review', 'seasonal', 'cost-impact', 'spreads', 'companies',
+  'price-review', 'seasonal', 'cost-impact', 'spreads',
   'guidance', 'monitor', 'settings',
 ];
+// The base tab is the part before any sub-path (e.g. `settings/companies`).
 const tabFromHash = (): Tab => {
-  const h = window.location.hash.replace('#', '') as Tab;
+  const h = window.location.hash.replace('#', '').split('/')[0] as Tab;
   return VALID_TABS.includes(h) ? h : 'price-review';
 };
 
@@ -68,8 +67,10 @@ function App() {
   }, []);
 
   // Keep the active tab in the URL so it survives a refresh / is shareable.
+  // Compare only the base tab so a sub-path (e.g. settings/companies) set by
+  // a section isn't clobbered when activeTab hasn't actually changed.
   useEffect(() => {
-    if (window.location.hash.replace('#', '') !== activeTab) {
+    if (window.location.hash.replace('#', '').split('/')[0] !== activeTab) {
       window.location.hash = activeTab;
     }
   }, [activeTab]);
@@ -136,7 +137,7 @@ function App() {
   }
 
   const hasChat = activeTab !== 'monitor' && activeTab !== 'settings'
-    && activeTab !== 'companies' && activeTab !== 'guidance';
+    && activeTab !== 'guidance';
   const viewName =
     activeTab === 'seasonal' ? 'Seasonal analysis'
       : activeTab === 'cost-impact' ? 'Cost impact analysis'
@@ -205,12 +206,10 @@ function App() {
           <CostImpactPage records={records} isDark={isDark} />
         ) : activeTab === 'spreads' ? (
           <SpreadsPage records={records} isDark={isDark} />
-        ) : activeTab === 'companies' ? (
-          <CompaniesPage records={records} />
         ) : activeTab === 'guidance' ? (
           <GuidancePage records={records} isDark={isDark} />
         ) : activeTab === 'settings' ? (
-          <SettingsPage />
+          <SettingsSection records={records} />
         ) : (
           <>
             <SummaryMetrics runs={runs} />

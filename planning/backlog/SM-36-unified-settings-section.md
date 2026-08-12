@@ -3,11 +3,24 @@ id: SM-36
 title: Unified Settings section — one place, two tabs (Preferences + Companies)
 type: ticket
 points: 3
-status: planned
+status: in-review
 depends_on: [SM-31, SM-32]
 tags: [backlog, ux, settings, navigation, consolidation]
 ---
 # SM-36 — Unified Settings section
+
+## Implemented (dev)
+- `components/SettingsSection.tsx`: two sub-tabs (Commodities → `SettingsPage`,
+  Companies & Materials → `CompaniesPage`) with an underline sub-tab bar,
+  `aria-current`, and hash-driven sub-routing (`#settings`,
+  `#settings/companies`) that survives refresh via a `hashchange` listener.
+- `App.tsx`: removed the standalone `Companies` and second `Settings` top-tabs;
+  single `Settings` tab renders `SettingsSection`. `tabFromHash` and the
+  hash-sync effect now compare only the base tab so the sub-path isn't
+  clobbered. `hasChat` updated (companies check dropped; chat still excluded on
+  settings/guidance/monitor).
+- tsc + oxlint + vitest (22) + build green. Each sub-page keeps its own
+  `ReportIntro` (`REPORT_HELP['settings']` / companies).
 
 ## Goal
 Today configuration is split across two top-level tabs — **Settings**
