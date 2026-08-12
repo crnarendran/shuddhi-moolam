@@ -18,6 +18,7 @@ import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
 import { ContextSwitcher } from './components/ContextSwitcher';
 import { useView } from './context/ViewContext';
+import { useIsAdmin } from './hooks/usePlan';
 import { acceptInvite } from './hooks/useSharing';
 import { toCanonicalPriceRecord, type PriceRecord } from './lib/reporting';
 
@@ -75,7 +76,11 @@ function App() {
   const { section, report } = route;
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { shared, setShared } = useView();
+  const isAdmin = useIsAdmin();
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  // Monitor is operational/admin-only (SM-42); founders only.
+  const visibleSections = isAdmin
+    ? SECTIONS : SECTIONS.filter((s) => s.id !== 'monitor');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -108,6 +113,13 @@ function App() {
     });
   }, [user, setShared]);
 
+  // Monitor is founder-only: bounce non-admins who land on #monitor.
+  useEffect(() => {
+    if (!loading && section === 'monitor' && !isAdmin) {
+      window.location.hash = `reports/${DEFAULT_REPORT}`;
+    }
+  }, [loading, section, isAdmin]);
+
   // The URL hash is the source of truth for navigation (survives refresh,
   // shareable). Keep component state in sync with it.
   useEffect(() => {
@@ -128,8 +140,10 @@ function App() {
   };
 
   useEffect(() => {
-    if (!user) {
+    // pipeline_runs is admin-only (rules + Monitor tab); skip for others.
+    if (!user || !isAdmin) {
       setRuns([]);
+      setRunsLoading(false);
       return;
     }
     const collectionName =
@@ -143,7 +157,7 @@ function App() {
       })) as PipelineRun[]);
       setRunsLoading(false);
     });
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (!user) {
@@ -209,7 +223,7 @@ function App() {
               <LayoutDashboard className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <span className="font-semibold text-lg text-gray-900 dark:text-white mr-6 hidden sm:inline">Metals Prices</span>
               <nav className="flex space-x-1 sm:space-x-4">
-                {SECTIONS.map(({ id, label, icon: Icon }) => (
+                {visibleSections.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
                     onClick={() => goToSection(id)}
@@ -283,7 +297,7 @@ function App() {
             Generated {new Date().toLocaleString()}
           </div>
         </div>
-        {section === 'monitor' ? (
+        {section === 'monitor' && isAdmin ? (
           <>
             <SummaryMetrics runs={runs} />
             <FileMonitor runs={runs} loading={runsLoading} />
