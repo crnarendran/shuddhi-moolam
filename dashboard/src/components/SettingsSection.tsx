@@ -7,15 +7,19 @@ import { type PriceRecord } from '../lib/reporting';
 type SubTab = 'commodities' | 'companies';
 
 const SUB_TABS: { id: SubTab; label: string; icon: typeof Sliders }[] = [
-  { id: 'commodities', label: 'Commodities', icon: Sliders },
   { id: 'companies', label: 'Companies & Materials', icon: Building2 },
+  { id: 'commodities', label: 'Commodities', icon: Sliders },
 ];
 
-/** Read the settings sub-tab from the URL hash (`#settings/companies`). */
+/**
+ * Read the settings sub-tab from the URL hash. Companies & Materials is the
+ * default landing tab (`#settings`); `#settings/commodities` selects the
+ * commodity preferences.
+ */
 function subFromHash(): SubTab {
-  return window.location.hash.split('/')[1] === 'companies'
-    ? 'companies'
-    : 'commodities';
+  return window.location.hash.split('/')[1] === 'commodities'
+    ? 'commodities'
+    : 'companies';
 }
 
 /**
