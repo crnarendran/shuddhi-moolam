@@ -73,17 +73,17 @@ firebase-security-rules-auditor skill)
   `uid in resource.data.viewerUids`. Writes stay owner-only.
 - `invitations`: owner can read/create/update **their** company's invites; the
   invitee reads via the callable (or a token-scoped read). No public listing.
-- **`historical_prices` access**: a viewer must read price data. Options:
-  (a) broaden read to **any authenticated user** (price data is the same public
-  newsletter for everyone — simplest); (b) keep the allowlist and have a
-  backend function serve filtered data. **Recommend (a)** with a note that
-  commodity prices are not per-user-private.
-- **"Only linked commodities viewable" is a UI constraint, not a hard rule:**
-  Firestore can't hide fields within a `historical_prices` doc (each doc holds
-  all commodities for a date). The viewer's effective commodity list is the
-  union of the shared company's materials' commodities, enforced in the UI. If
-  hard field-level isolation is required, that needs a backend read API
-  (bigger; out of scope for v1).
+- **`historical_prices` access — DECIDED: broaden read to any authenticated
+  user.** Commodity prices are the same public newsletter for everyone, so
+  they are not per-user-private. Replace the hard-coded 2-email allowlist on
+  `historical_prices*` with `request.auth != null`. (`pipeline_runs*` /
+  monitor can stay allowlisted — that's operational, not shared.)
+- **"Only linked commodities viewable" — DECIDED: UX-only, no hard rule.** The
+  restriction is about not *displaying* other commodities to the viewer, not a
+  security boundary. The viewer's effective commodity list is the union of the
+  shared company's materials' commodities, enforced in the UI. (Firestore
+  can't hide fields within a price doc anyway; a hard field-level API is
+  explicitly not wanted.)
 
 ## Read-only viewer UX
 
@@ -112,13 +112,26 @@ A user with no shares sees no switcher (just their own workspace, as today).
 - Clear "Read-only — viewing `<company>` shared by `<owner email>`" banner with
   a "Back to my workspace" affordance.
 
-## Email (infra — ESCALATION per human-escalation-policy)
-Sending invite emails needs a provider. Recommended: the Firebase **"Trigger
-Email" extension** (writes to a `mail` collection → SendGrid/SMTP), or a
-function calling an email API. **Provisioning the provider + its API key/SMTP
-creds is a billing/credentials step the agent must NOT self-serve** — flag and
-hand to the user. Until wired, invites can be created and the link shown to
-copy manually (degraded mode).
+## Email — DECIDED: Firebase "Trigger Email" extension
+`firebase/firestore-send-email`: our backend writes a doc to the `mail`
+collection and the extension delivers it via the configured provider, stamping
+`delivery.state` back. **`mail` is locked to `allow read, write: if false`** so
+only the Admin SDK (our callables) can send.
+
+**User-provisioned prerequisites (billing/credentials — ESCALATION, not the
+agent's to do):**
+1. Confirm the project is on **Blaze** (extensions require it; Functions are
+   already deployed, so likely already Blaze).
+2. Pick an email provider + creds — **SendGrid** recommended (verify a sender,
+   create an API key; ~100/day free), or any SMTP.
+3. Install "Trigger Email from Firestore" on `sai-shuddhi-moolam` (one install
+   covers all envs — shared project). Params: SMTP URI
+   (`smtps://apikey:<KEY>@smtp.sendgrid.net:465` for SendGrid, key in Secret
+   Manager), default FROM (verified sender), documents collection = `mail`.
+
+Until the extension is installed, invites still create + track; the accept link
+is shown to copy manually (degraded mode). The backend `mail`-write code (41b)
+can land first and light up automatically once the extension is installed.
 
 ## Suggested phasing (≤5-pt batches)
 - **SM-41a (5):** data model + security rules (`viewerUids`, `invitations`,
@@ -144,13 +157,12 @@ copy manually (degraded mode).
   cannot write or read other owners' companies; a random user can't accept
   someone else's invite.
 
-## Decisions (need sign-off)
-1. **Email provider** (Trigger Email extension vs email API) — and OK to
-   provision it (billing/credentials = your action).
-2. **`historical_prices` read**: broaden to any authenticated user
-   (recommended) vs keep allowlist + backend-served data.
-3. **"Only linked commodities"**: UI-enforced (recommended for v1) vs hard
-   backend-enforced isolation (bigger).
+## Decisions
+1. **Email** — ✅ DECIDED: Firebase "Trigger Email" extension. Remaining
+   user action: provision Blaze + a provider (SendGrid recommended) + install
+   the extension (see Email section).
+2. **`historical_prices` read** — ✅ DECIDED: any authenticated user.
+3. **"Only linked commodities"** — ✅ DECIDED: UX-only (no hard isolation).
 
 ## Out of scope (v1)
 - Editable/co-owner sharing; org-wide multi-tenancy; per-material (vs
