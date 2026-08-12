@@ -36,9 +36,10 @@ simple per-user `plan` flag so either model can drive it later without rework.
   shared read-only view and reports are unaffected.
 
 ## Granting premium (interim)
-Admin calls `setUserPlan` (e.g. from a small admin action or the Functions
-shell) with the user's email + `premium`. The user must have signed in once so
-a Firebase Auth account exists.
+A **founder-only Admin panel** (`Settings ▸ Admin`, rendered only for founder
+emails via `useIsAdmin`) grants/revokes premium by email — calls `setUserPlan`.
+No CLI needed. The user must have signed in once so a Firebase Auth account
+exists.
 
 ## Acceptance
 - A free (non-founder) user cannot create a company — blocked by rules AND the

@@ -45,3 +45,15 @@ export function usePlan(): { plan: Plan; premium: boolean; loading: boolean } {
 
   return { plan, premium: plan === 'premium', loading };
 }
+
+/** True when the signed-in user is a founder/admin (SM-42 admin panel). */
+export function useIsAdmin(): boolean {
+  const [email, setEmail] = useState<string | null>(
+    auth.currentUser?.email ?? null
+  );
+  useEffect(
+    () => onAuthStateChanged(auth, (u) => setEmail(u?.email ?? null)),
+    []
+  );
+  return !!email && FOUNDER_EMAILS.includes(email.toLowerCase());
+}
