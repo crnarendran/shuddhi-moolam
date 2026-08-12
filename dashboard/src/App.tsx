@@ -29,25 +29,27 @@ const SECTIONS: { id: Section; label: string; icon: typeof BarChart3 }[] = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
+// Guidance leads — it's the default landing report under Reports.
 const REPORT_TABS: SubTab<Report>[] = [
+  { id: 'guidance', label: 'Guidance', icon: Lightbulb },
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'spreads', label: 'Spreads', icon: Shuffle },
-  { id: 'guidance', label: 'Guidance', icon: Lightbulb },
 ];
 const REPORT_IDS = REPORT_TABS.map((t) => t.id) as Report[];
+const DEFAULT_REPORT: Report = 'guidance';
 
 // Hash is `#<section>[/<sub>]`, e.g. `#reports/seasonal`, `#settings`.
 const parseHash = (): { section: Section; report: Report } => {
   const [base, sub] = window.location.hash.replace('#', '').split('/');
-  if (base === 'monitor') return { section: 'monitor', report: 'price-review' };
+  if (base === 'monitor') return { section: 'monitor', report: DEFAULT_REPORT };
   if (base === 'settings') {
-    return { section: 'settings', report: 'price-review' };
+    return { section: 'settings', report: DEFAULT_REPORT };
   }
   const report = REPORT_IDS.includes(sub as Report)
     ? (sub as Report)
-    : 'price-review';
+    : DEFAULT_REPORT;
   return { section: 'reports', report };
 };
 
@@ -87,7 +89,7 @@ function App() {
   }, []);
   // Normalise an empty hash to the default report so deep-links are stable.
   useEffect(() => {
-    if (!window.location.hash) window.location.hash = 'reports/price-review';
+    if (!window.location.hash) window.location.hash = `reports/${DEFAULT_REPORT}`;
   }, []);
 
   const goToSection = (id: Section) => {

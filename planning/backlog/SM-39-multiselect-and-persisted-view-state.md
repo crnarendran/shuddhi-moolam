@@ -3,11 +3,31 @@ id: SM-39
 title: Multi-select line overlays + persisted per-report view state
 type: ticket
 points: 8
-status: planned
+status: in-review
 depends_on: [SM-20, SM-21, SM-31, SM-33, SM-38]
 tags: [backlog, ux, charts, multi-select, persistence, continuity]
 ---
 # SM-39 — Multi-select line overlays + persisted view state
+
+## Implemented (dev)
+- **Persistence:** `UserSettings.viewState` slice (`priceReview`, `seasonal`,
+  `spreads`, `guidance`) + `mergeSettings` two-level deep-merge;
+  `useViewState(report, defaults)` hook hydrates once then debounces (~500ms)
+  Firestore writes. Wired into Price Review (threshold), Seasonal, Spreads,
+  Guidance — selections now persist across refresh and devices.
+- **MultiSelect** control (`components/MultiSelect.tsx`) + shared palette
+  (`lib/chartColors.ts`).
+- **Seasonal:** multi-commodity; the pattern chart draws one normalized %
+  line per commodity (bar when single); YoY overlay stays single-commodity
+  (primary, labelled).
+- **Spreads:** reference + multi-compare; each Aᵢ−ref is a line; mean±σ band +
+  deviation tiles only in the single-compare case.
+- **Guidance:** multi-material; blended-cost-over-time overlays one line per
+  material; tiles/seasonal/substitution use the primary (labelled).
+- Also in this batch: print tables fit the page (no h-scroll on print),
+  Spreads print button pinned right via `ml-auto`, report/settings sub-tabs
+  use `SubTabs` (flex-wrap, mobile shows only the active label — no h-scroll).
+- tsc + oxlint + vitest (22) + build green.
 
 ## Part A — Persisted per-report view state (cross-device)
 Today each report's picks are local `useState` and reset on refresh. Persist

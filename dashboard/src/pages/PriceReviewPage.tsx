@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   effectiveCommodities,
@@ -8,9 +8,12 @@ import {
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useViewState } from '../hooks/useViewState';
 import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
+
+const PRICE_REVIEW_DEFAULTS = { threshold: 5 };
 
 type Status = 'Review' | 'Watch' | 'OK' | 'No data';
 
@@ -35,7 +38,10 @@ const statusStyle: Record<Status, string> = {
 export function PriceReviewPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const [threshold, setThreshold] = useState(5);
+  const { value: prView, setValue: setPrView } =
+    useViewState('priceReview', PRICE_REVIEW_DEFAULTS);
+  const threshold = prView.threshold ?? 5;
+  const setThreshold = (n: number) => setPrView({ threshold: n });
   const { settings } = useUserSettings();
   const commodities = useMemo(
     () => effectiveCommodities('price-review', settings.personalization),

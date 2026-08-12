@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   effectiveCommodities,
@@ -10,9 +10,14 @@ import {
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useViewState } from '../hooks/useViewState';
 import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
+import { MultiSelect } from '../components/MultiSelect';
+import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
+
+const SEASONAL_DEFAULTS: { keys: string[] } = { keys: [] };
 
 export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
@@ -22,33 +27,49 @@ export function SeasonalPage(
     () => effectiveCommodities('seasonal', settings.personalization),
     [settings.personalization]
   );
-  const [metric, setMetric] = useState<string>('');
-  // Keep the selection valid as the effective set changes.
-  useEffect(() => {
-    if (!commodities.some((c) => c.key === metric)) {
-      setMetric(commodities[0]?.key ?? '');
-    }
-  }, [commodities, metric]);
+
+  const { value: sv, setValue: setSv } = useViewState(
+    'seasonal', SEASONAL_DEFAULTS
+  );
+  // Render-time selection: always a valid, non-empty subset of the effective
+  // commodities (falls back to the first) without rewriting storage.
+  const activeKeys = useMemo(() => {
+    const valid = (sv.keys ?? []).filter(
+      (k) => commodities.some((c) => c.key === k)
+    );
+    if (valid.length) return valid;
+    return commodities[0] ? [commodities[0].key] : [];
+  }, [sv.keys, commodities]);
+  const setKeys = (next: string[]) => setSv({ keys: next });
+
+  const primary = activeKeys[0];
+  const labelOf = (k: string) =>
+    commodities.find((c) => c.key === k)?.label ?? k;
 
   const years = yearsOfData(records);
   const confidence = confidenceLabel(years);
 
-  const byYear = useMemo(() => monthlyByYear(records, metric), [records, metric]);
-  const seasonal = useMemo(() => seasonalIndex(records, metric), [records, metric]);
+  const byYear = useMemo(
+    () => monthlyByYear(records, primary), [records, primary]
+  );
+  const patternByKey = useMemo(
+    () => activeKeys.map((k) => ({
+      key: k, label: labelOf(k), idx: seasonalIndex(records, k),
+    })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [records, activeKeys]
+  );
 
   const yearKeys = [...byYear.keys()].sort();
   const latestYear = yearKeys[yearKeys.length - 1];
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
+  const multi = activeKeys.length > 1;
 
   const overlayOption = {
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
-    legend: {
-      data: yearKeys.map(String),
-      textStyle: { color: axisColor },
-      top: 0,
-    },
+    legend: { data: yearKeys.map(String), textStyle: { color: axisColor }, top: 0 },
     xAxis: {
       type: 'category',
       data: MONTHS,
@@ -76,13 +97,24 @@ export function SeasonalPage(
     })),
   };
 
+  const patternData = (idx: Map<number, number>) =>
+    MONTHS.map((_, i) => {
+      const v = idx.get(i + 1);
+      return v == null ? null : Number(v.toFixed(2));
+    });
+
   const seasonalOption = {
-    grid: { left: 8, right: 16, top: 8, bottom: 8, containLabel: true },
+    grid: { left: 8, right: 16, top: multi ? 28 : 8, bottom: 8,
+      containLabel: true },
     tooltip: {
       trigger: 'axis',
       valueFormatter: (v: number) =>
         v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`,
     },
+    legend: multi
+      ? { data: patternByKey.map((p) => p.label), textStyle:
+        { color: axisColor }, top: 0 }
+      : undefined,
     xAxis: {
       type: 'category',
       data: MONTHS,
@@ -94,12 +126,21 @@ export function SeasonalPage(
       axisLabel: { formatter: '{value}%', color: axisColor },
       splitLine: { lineStyle: { color: gridColor } },
     },
-    series: [
-      {
+    series: multi
+      ? patternByKey.map((p, ci) => ({
+        name: p.label,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        data: patternData(p.idx),
+        lineStyle: { color: SERIES_COLORS[ci % SERIES_COLORS.length], width: 2 },
+        itemStyle: { color: SERIES_COLORS[ci % SERIES_COLORS.length] },
+      }))
+      : [{
         type: 'bar',
         barMaxWidth: 22,
         data: MONTHS.map((_, i) => {
-          const v = seasonal.get(i + 1);
+          const v = patternByKey[0]?.idx.get(i + 1);
           if (v == null) return null;
           return {
             value: Number(v.toFixed(2)),
@@ -109,8 +150,7 @@ export function SeasonalPage(
             },
           };
         }),
-      },
-    ],
+      }],
   };
 
   if (yearKeys.length === 0) {
@@ -132,17 +172,12 @@ export function SeasonalPage(
           <span className={`px-2 py-1 rounded text-xs font-medium ${confTone}`}>
             confidence: {confidence}
           </span>
-          <select
-            value={metric}
-            onChange={(e) => setMetric(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
-              dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md
-              py-2 px-3 text-sm"
-          >
-            {commodities.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
+          <MultiSelect
+            label="Commodities"
+            options={commodities.map((c) => ({ value: c.key, label: c.label }))}
+            selected={activeKeys}
+            onChange={setKeys}
+          />
           <PrintButton />
         </div>
       </div>
@@ -150,7 +185,13 @@ export function SeasonalPage(
       <div className="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
-          mb-2">Year-over-year overlay</h3>
+          mb-2">
+          Year-over-year overlay
+          <span className="font-normal text-zinc-400">
+            {' · '}{labelOf(primary)}
+            {multi ? ' (first selection)' : ''}
+          </span>
+        </h3>
         <ReactECharts option={overlayOption} opts={{ renderer: 'svg' }}
           style={{ height: 320, width: '100%' }} />
       </div>
@@ -158,7 +199,10 @@ export function SeasonalPage(
       <div className="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
-          mb-2">Typical seasonal pattern · avg month-over-month change</h3>
+          mb-2">
+          Typical seasonal pattern · avg month-over-month change
+          {multi ? ' · one line per commodity' : ''}
+        </h3>
         <ReactECharts option={seasonalOption} opts={{ renderer: 'svg' }}
           style={{ height: 260, width: '100%' }} />
         {years < 3 && (

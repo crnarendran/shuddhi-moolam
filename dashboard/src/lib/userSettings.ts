@@ -18,11 +18,25 @@ export interface Personalization {
   reports: Partial<Record<ReportId, { excluded: string[] }>>;
 }
 
+/**
+ * Persisted per-report UI selections (SM-39) so each report reopens where
+ * the user left it, across devices. Each slice is optional and written whole
+ * by its report.
+ */
+export interface ViewState {
+  priceReview?: { threshold?: number };
+  seasonal?: { keys?: string[]; metric?: string };
+  spreads?: { reference?: string; compare?: string[] };
+  guidance?: { companyId?: string; materialIds?: string[] };
+}
+
 export interface UserSettings {
   /** Cost-Impact consumption weights (commodityKey -> kg per unit). */
   costImpact?: { weights?: Record<string, number> };
   /** Global + per-report commodity exclusions (SM-31). */
   personalization?: Personalization;
+  /** Persisted per-report UI selections (SM-39). */
+  viewState?: ViewState;
   /** Last write time (ms epoch), set on every update. */
   updatedAt?: number;
 }
@@ -44,6 +58,15 @@ export function mergeSettings(
   const merged: UserSettings = { ...current, ...patch };
   if (patch.costImpact) {
     merged.costImpact = { ...current.costImpact, ...patch.costImpact };
+  }
+  if (patch.viewState) {
+    // Deep-merge two levels so a patch to one report's slice (e.g. seasonal)
+    // keeps the other reports' slices AND that report's untouched fields.
+    const next: ViewState = { ...current.viewState };
+    (Object.keys(patch.viewState) as (keyof ViewState)[]).forEach((k) => {
+      next[k] = { ...current.viewState?.[k], ...patch.viewState?.[k] };
+    });
+    merged.viewState = next;
   }
   // Firestore rejects writes containing `undefined` field values, so drop
   // any key that ended up undefined (e.g. costImpact on a first-time write).

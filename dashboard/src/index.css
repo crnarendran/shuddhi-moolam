@@ -50,8 +50,33 @@ body {
     padding: 0 !important;
   }
 
-  .echarts-for-react,
+  /* Wide data tables: fit the page instead of scrolling off it. Drop the
+     min-width, shrink type/padding, and let cells wrap so all columns land
+     on the sheet. */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
   table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 10px !important;
+  }
+
+  th,
+  td {
+    padding: 4px 6px !important;
+    white-space: normal !important;
+  }
+
+  /* Editable inputs (e.g. cost-impact weights) read as plain values on paper. */
+  input {
+    border-color: transparent !important;
+    background: transparent !important;
+  }
+
+  /* Keep charts from splitting across pages (tables may flow naturally). */
+  .echarts-for-react {
     break-inside: avoid;
   }
 }

@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Sliders, Building2 } from 'lucide-react';
 import { SettingsPage } from '../pages/SettingsPage';
 import { CompaniesPage } from '../pages/CompaniesPage';
+import { SubTabs, type SubTab } from './SubTabs';
 import { type PriceRecord } from '../lib/reporting';
 
-type SubTab = 'commodities' | 'companies';
+type SettingsSub = 'commodities' | 'companies';
 
-const SUB_TABS: { id: SubTab; label: string; icon: typeof Sliders }[] = [
+const SETTINGS_TABS: SubTab<SettingsSub>[] = [
   { id: 'companies', label: 'Companies & Materials', icon: Building2 },
   { id: 'commodities', label: 'Commodities', icon: Sliders },
 ];
@@ -16,7 +17,7 @@ const SUB_TABS: { id: SubTab; label: string; icon: typeof Sliders }[] = [
  * default landing tab (`#settings`); `#settings/commodities` selects the
  * commodity preferences.
  */
-function subFromHash(): SubTab {
+function subFromHash(): SettingsSub {
   return window.location.hash.split('/')[1] === 'commodities'
     ? 'commodities'
     : 'companies';
@@ -24,8 +25,8 @@ function subFromHash(): SubTab {
 
 /**
  * The unified Settings section (SM-36): one place for all configuration,
- * split into two sub-tabs — commodity preferences and company/material
- * management. Sub-tab is reflected in the URL hash so it survives refresh
+ * split into two sub-tabs — company/material management and commodity
+ * preferences. Sub-tab is reflected in the URL hash so it survives refresh
  * and is shareable.
  * @param props Latest price records (for the companies/materials
  *   blended-cost preview).
@@ -33,7 +34,7 @@ function subFromHash(): SubTab {
 export function SettingsSection(
   { records }: { records: PriceRecord[] }
 ) {
-  const [sub, setSub] = useState<SubTab>(subFromHash);
+  const [sub, setSub] = useState<SettingsSub>(subFromHash);
 
   useEffect(() => {
     const onHash = () => setSub(subFromHash());
@@ -41,32 +42,15 @@ export function SettingsSection(
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const select = (id: SubTab) => {
+  const select = (id: SettingsSub) => {
     setSub(id);
     window.location.hash = id === 'companies' ? 'settings/companies'
-      : 'settings';
+      : 'settings/commodities';
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-700">
-        {SUB_TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => select(id)}
-            aria-current={sub === id ? 'page' : undefined}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium
-              border-b-2 -mb-px transition-colors whitespace-nowrap ${
-              sub === id
-                ? 'border-blue-600 text-blue-700 dark:text-blue-400'
-                : 'border-transparent text-zinc-500 hover:text-zinc-800 ' +
-                  'dark:text-zinc-400 dark:hover:text-zinc-200'
-            }`}
-          >
-            <Icon className="h-4 w-4" />{label}
-          </button>
-        ))}
-      </div>
+      <SubTabs tabs={SETTINGS_TABS} active={sub} onSelect={select} />
       {sub === 'companies'
         ? <CompaniesPage records={records} />
         : <SettingsPage />}
