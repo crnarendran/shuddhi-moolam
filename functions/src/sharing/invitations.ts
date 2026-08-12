@@ -56,7 +56,8 @@ function newToken(): string {
  * @returns {Promise<object>} { success, inviteId, emailSent, acceptUrl }.
  */
 export const createInvitation = onCall(
-  { secrets: ['RESEND_API_KEY'] },
+  // Secret binding pending: the deploy SA needs Secret Manager access on
+  // RESEND_API_KEY. Until then, email is degraded (UI shows the accept link).
   async (request) => {
     const { uid, email } = callerOf(request);
     const data = request.data as { companyId?: string; inviteeEmail?: string };
@@ -167,7 +168,7 @@ export const acceptInvitation = onCall(async (request) => {
  * @returns {Promise<object>} { success, emailSent, acceptUrl }.
  */
 export const resendInvitation = onCall(
-  { secrets: ['RESEND_API_KEY'] },
+  // Secret binding pending (see createInvitation).
   async (request) => {
     const { uid } = callerOf(request);
     const inviteId = ((request.data as { inviteId?: string }).inviteId || '')
