@@ -1,7 +1,17 @@
 export const APP_ENV = process.env.APP_ENV || 'dev';
-// The deploy workflow sets APP_ENV from the branch name, so production
-// arrives as 'main' (not 'prod'). Treat both as production.
-const isProd = APP_ENV === 'prod' || APP_ENV === 'main';
+
+/**
+ * Whether an environment name denotes production. The deploy workflow sets
+ * APP_ENV from the branch name, so production arrives as 'main' (not 'prod');
+ * both must map to production. See knowledge/infrastructure.md.
+ * @param {string} env The APP_ENV value (branch name at deploy time).
+ * @returns {boolean} True for production ('prod' or 'main').
+ */
+export function isProduction(env: string): boolean {
+  return env === 'prod' || env === 'main';
+}
+
+const isProd = isProduction(APP_ENV);
 
 export const DRIVE_ROOT_FOLDER_ID =
   isProd ? '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb' :
