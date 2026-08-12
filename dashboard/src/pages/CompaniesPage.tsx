@@ -10,6 +10,7 @@ import {
 import { ReportIntro } from '../components/ReportIntro';
 import { SharePanel } from '../components/SharePanel';
 import { useView } from '../context/ViewContext';
+import { usePlan } from '../hooks/usePlan';
 import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number | null): string =>
@@ -131,9 +132,10 @@ function MaterialEditor({
 
 export function CompaniesPage({ records }: { records: PriceRecord[] }) {
   const {
-    companies, signedIn, addCompany, deleteCompany,
+    companies, shared: sharedCompanies, signedIn, addCompany, deleteCompany,
   } = useCompanies();
   const { shared: viewShared } = useView();
+  const { premium, loading: planLoading } = usePlan();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [sharingId, setSharingId] = useState<string | null>(null);
@@ -190,6 +192,36 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
             </div>
           );
         })}
+      </div>
+    );
+  }
+
+  // Free plan: creating your own companies/materials is premium (SM-42).
+  if (!planLoading && !premium) {
+    return (
+      <div className="flex flex-col gap-4">
+        <ReportIntro help={REPORT_HELP['companies']} />
+        <div className="rounded-lg border border-amber-200
+          dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 p-5">
+          <h3 className="text-base font-semibold text-amber-800
+            dark:text-amber-200 flex items-center gap-2">
+            <Building2 className="h-5 w-5" />Creating companies is a premium
+            feature</h3>
+          <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+            Modelling your own companies and materials (BOMs) and generating
+            guidance from them is available on a paid plan. Contact the team to
+            get access.
+          </p>
+          {sharedCompanies.length > 0 && (
+            <p className="text-sm text-amber-700 dark:text-amber-300 mt-2">
+              You have {sharedCompanies.length} compan
+              {sharedCompanies.length === 1 ? 'y' : 'ies'} shared with you —
+              switch to {sharedCompanies.length === 1 ? 'it' : 'one'} using the
+              <b> view selector</b> at the top right to see its materials and
+              charts (read-only).
+            </p>
+          )}
+        </div>
       </div>
     );
   }

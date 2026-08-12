@@ -11,6 +11,24 @@ service cloud.firestore {
         || request.auth.token.email == "mvsaikishore@gmail.com"
       );
     }
+    // Premium entitlement gates creating your own companies/materials (SM-42).
+    // Founders are grandfathered; everyone else needs an entitlement doc
+    // (written only by the backend / admin — e.g. a license grant or billing
+    // webhook). Free users can still view companies shared with them.
+    function isPremium() {
+      return isSignedIn() && (
+        isAdminEmail()
+        || (exists(/databases/$(database)/documents/entitlements/$(request.auth.uid))
+            && get(/databases/$(database)/documents/entitlements/$(request.auth.uid))
+                 .data.plan == 'premium')
+      );
+    }
+
+    // Per-user plan/entitlement. User reads their own; backend/admin writes.
+    match /entitlements/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
 
     // Per-user private settings (personalization, weights, view state).
     // A user reads/writes ONLY their own document (keyed by uid).
@@ -29,8 +47,10 @@ service cloud.firestore {
       );
       allow update, delete: if isSignedIn()
         && request.auth.uid == resource.data.ownerUid;
+      // Creating your own company requires a premium entitlement (SM-42).
       allow create: if isSignedIn()
-        && request.resource.data.ownerUid == request.auth.uid;
+        && request.resource.data.ownerUid == request.auth.uid
+        && isPremium();
 
       match /materials/{materialId} {
         function company() {
