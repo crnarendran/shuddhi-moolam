@@ -86,6 +86,8 @@ this is not org-wide multi-tenancy, just per-account data.
 | [SM-35](SM-35-in-product-documentation.md) | In-product documentation — report intros, how-to-read, term tooltips | 3 | SM-18, SM-31, SM-32, SM-33 |
 | [SM-36](SM-36-unified-settings-section.md) | Unified Settings section — one place, two tabs (Preferences + Companies) | 3 | SM-31, SM-32 |
 | [SM-37](SM-37-report-print-pdf-export.md) | Print / PDF export for all reports | 3 | SM-18, SM-33, SM-35 |
+| [SM-38](SM-38-reports-nav-consolidation.md) | Reports nav consolidation — group reports under one section | 3 | SM-36 |
+| [SM-39](SM-39-multiselect-and-persisted-view-state.md) | Multi-select line overlays + persisted per-report view state | 8 | SM-20, SM-21, SM-33, SM-38 |
 
 **Reporting & UX epic (SM-18…SM-24):** Price Review & Insights reporting
 (SM-18), quarterly/seasonal alerts (SM-19), historical & seasonal analysis

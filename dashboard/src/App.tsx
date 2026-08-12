@@ -14,30 +14,41 @@ import { CostImpactPage } from './pages/CostImpactPage';
 import { SpreadsPage } from './pages/SpreadsPage';
 import { SettingsSection } from './components/SettingsSection';
 import { GuidancePage } from './pages/GuidancePage';
+import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
-type Tab =
-  | 'price-review' | 'seasonal' | 'cost-impact' | 'spreads'
-  | 'guidance' | 'monitor' | 'settings';
-const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
+// Top-level sections keep the primary nav to three items (no scroll).
+type Section = 'reports' | 'monitor' | 'settings';
+type Report =
+  | 'price-review' | 'seasonal' | 'cost-impact' | 'spreads' | 'guidance';
+
+const SECTIONS: { id: Section; label: string; icon: typeof BarChart3 }[] = [
+  { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
+const REPORT_TABS: SubTab<Report>[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'spreads', label: 'Spreads', icon: Shuffle },
   { id: 'guidance', label: 'Guidance', icon: Lightbulb },
-  { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ];
+const REPORT_IDS = REPORT_TABS.map((t) => t.id) as Report[];
 
-const VALID_TABS: Tab[] = [
-  'price-review', 'seasonal', 'cost-impact', 'spreads',
-  'guidance', 'monitor', 'settings',
-];
-// The base tab is the part before any sub-path (e.g. `settings/companies`).
-const tabFromHash = (): Tab => {
-  const h = window.location.hash.replace('#', '').split('/')[0] as Tab;
-  return VALID_TABS.includes(h) ? h : 'price-review';
+// Hash is `#<section>[/<sub>]`, e.g. `#reports/seasonal`, `#settings`.
+const parseHash = (): { section: Section; report: Report } => {
+  const [base, sub] = window.location.hash.replace('#', '').split('/');
+  if (base === 'monitor') return { section: 'monitor', report: 'price-review' };
+  if (base === 'settings') {
+    return { section: 'settings', report: 'price-review' };
+  }
+  const report = REPORT_IDS.includes(sub as Report)
+    ? (sub as Report)
+    : 'price-review';
+  return { section: 'reports', report };
 };
 
 const HISTORICAL =
@@ -55,7 +66,8 @@ function App() {
   const [runs, setRuns] = useState<PipelineRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(true);
   const [records, setRecords] = useState<PriceRecord[]>([]);
-  const [activeTab, setActiveTab] = useState<Tab>(tabFromHash);
+  const [route, setRoute] = useState(parseHash);
+  const { section, report } = route;
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
@@ -66,19 +78,24 @@ function App() {
     return unsubscribe;
   }, []);
 
-  // Keep the active tab in the URL so it survives a refresh / is shareable.
-  // Compare only the base tab so a sub-path (e.g. settings/companies) set by
-  // a section isn't clobbered when activeTab hasn't actually changed.
+  // The URL hash is the source of truth for navigation (survives refresh,
+  // shareable). Keep component state in sync with it.
   useEffect(() => {
-    if (window.location.hash.replace('#', '').split('/')[0] !== activeTab) {
-      window.location.hash = activeTab;
-    }
-  }, [activeTab]);
-  useEffect(() => {
-    const onHash = () => setActiveTab(tabFromHash());
+    const onHash = () => setRoute(parseHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+  // Normalise an empty hash to the default report so deep-links are stable.
+  useEffect(() => {
+    if (!window.location.hash) window.location.hash = 'reports/price-review';
+  }, []);
+
+  const goToSection = (id: Section) => {
+    window.location.hash = id === 'reports' ? `reports/${report}` : id;
+  };
+  const goToReport = (id: Report) => {
+    window.location.hash = `reports/${id}`;
+  };
 
   useEffect(() => {
     if (!user) {
@@ -136,15 +153,14 @@ function App() {
     );
   }
 
-  const hasChat = activeTab !== 'monitor' && activeTab !== 'settings'
-    && activeTab !== 'guidance';
+  const hasChat = section === 'reports' && report !== 'guidance';
   const viewName =
-    activeTab === 'seasonal' ? 'Seasonal analysis'
-      : activeTab === 'cost-impact' ? 'Cost impact analysis'
-        : activeTab === 'spreads' ? 'Spread monitor'
-          : activeTab === 'guidance' ? 'Purchasing guidance'
-            : activeTab === 'monitor' ? 'Pipeline monitor'
-              : activeTab === 'settings' ? 'Settings'
+    section === 'monitor' ? 'Pipeline monitor'
+      : section === 'settings' ? 'Settings'
+        : report === 'seasonal' ? 'Seasonal analysis'
+          : report === 'cost-impact' ? 'Cost impact analysis'
+            : report === 'spreads' ? 'Spread monitor'
+              : report === 'guidance' ? 'Purchasing guidance'
                 : 'Price Review';
   const chatContext =
     `The user is viewing the ${viewName} of the metals price dashboard. ` +
@@ -159,13 +175,13 @@ function App() {
             <div className="flex items-center space-x-2 min-w-0">
               <LayoutDashboard className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <span className="font-semibold text-lg text-gray-900 dark:text-white mr-6 hidden sm:inline">Metals Prices</span>
-              <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto">
-                {TABS.map(({ id, label, icon: Icon }) => (
+              <nav className="flex space-x-1 sm:space-x-4">
+                {SECTIONS.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setActiveTab(id)}
+                    onClick={() => goToSection(id)}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0 ${
-                      activeTab === id
+                      section === id
                         ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-zinc-700/50'
                     }`}
@@ -210,23 +226,28 @@ function App() {
             Generated {new Date().toLocaleString()}
           </div>
         </div>
-        {activeTab === 'price-review' ? (
-          <PriceReviewPage records={records} isDark={isDark} />
-        ) : activeTab === 'seasonal' ? (
-          <SeasonalPage records={records} isDark={isDark} />
-        ) : activeTab === 'cost-impact' ? (
-          <CostImpactPage records={records} isDark={isDark} />
-        ) : activeTab === 'spreads' ? (
-          <SpreadsPage records={records} isDark={isDark} />
-        ) : activeTab === 'guidance' ? (
-          <GuidancePage records={records} isDark={isDark} />
-        ) : activeTab === 'settings' ? (
-          <SettingsSection records={records} />
-        ) : (
+        {section === 'monitor' ? (
           <>
             <SummaryMetrics runs={runs} />
             <FileMonitor runs={runs} loading={runsLoading} />
           </>
+        ) : section === 'settings' ? (
+          <SettingsSection records={records} />
+        ) : (
+          <div className="flex flex-col gap-6">
+            <SubTabs tabs={REPORT_TABS} active={report} onSelect={goToReport} />
+            {report === 'seasonal' ? (
+              <SeasonalPage records={records} isDark={isDark} />
+            ) : report === 'cost-impact' ? (
+              <CostImpactPage records={records} isDark={isDark} />
+            ) : report === 'spreads' ? (
+              <SpreadsPage records={records} isDark={isDark} />
+            ) : report === 'guidance' ? (
+              <GuidancePage records={records} isDark={isDark} />
+            ) : (
+              <PriceReviewPage records={records} isDark={isDark} />
+            )}
+          </div>
         )}
       </main>
 

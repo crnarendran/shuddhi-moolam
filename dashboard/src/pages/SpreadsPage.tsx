@@ -94,27 +94,29 @@ export function SpreadsPage(
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['spreads']} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {labelA} − {labelB}, monthly, with mean ±1σ band
-        </p>
-        <div className="flex items-center gap-2">
-          <select value={keyA} onChange={(e) => setKeyA(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
-              dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {commodities.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
-          <span className="text-zinc-400">−</span>
-          <select value={keyB} onChange={(e) => setKeyB(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
-              dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {commodities.map((c) => (
-              <option key={c.key} value={c.key}>{c.label}</option>
-            ))}
-          </select>
-          <PrintButton />
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {labelA} − {labelB}, monthly, with mean ±1σ band
+          </p>
+          <div className="flex items-center gap-2">
+            <select value={keyA} onChange={(e) => setKeyA(e.target.value)}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
+              {commodities.map((c) => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
+            </select>
+            <span className="text-zinc-400">−</span>
+            <select value={keyB} onChange={(e) => setKeyB(e.target.value)}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
+              {commodities.map((c) => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
+        <PrintButton />
       </div>
 
       {monthsKeys.length < 2 ? (
