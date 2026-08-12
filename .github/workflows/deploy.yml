@@ -45,14 +45,6 @@ jobs:
         working-directory: ./functions
         run: npm run lint
 
-      # Temporarily disabled to unblock deployment
-      # - name: Test
-      #   if: steps.check_secret.outputs.has_secret == 'true'
-      #   working-directory: ./functions
-      #   env:
-      #     NODE_ENV: test
-      #   run: npm test -- --forceExit
-
       - name: Build
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./functions
@@ -60,11 +52,16 @@ jobs:
           sed -i "s/process.env.APP_ENV || 'dev'/('${{ github.ref_name }}' as string)/g" src/index.ts src/config.ts
           npm run build
 
+      - name: Test
+        if: steps.check_secret.outputs.has_secret == 'true'
+        working-directory: ./functions
+        run: npm test
+
       - name: Build Dashboard
         if: steps.check_secret.outputs.has_secret == 'true'
         working-directory: ./dashboard
         run: |
-          npm install
+          npm ci
           npm run build -- --mode ${{ github.ref_name }}
 
       - name: Deploy to Firebase
