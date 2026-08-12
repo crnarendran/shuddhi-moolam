@@ -23,6 +23,29 @@ Firestore, Drive folders, and Functions config).
 | Staging | `staging` | `sai-shuddhi-moolam` | Active (Isolated via config/prefixing) |
 | Development | `dev` | `sai-shuddhi-moolam` | Active (Isolated via config/prefixing) |
 
+### Environment resolution (CRITICAL — read before touching `config.ts`)
+
+`.github/workflows/deploy.yml` injects the environment by **`sed`-replacing**
+`process.env.APP_ENV || 'dev'` with the **branch name** (`github.ref_name`) at
+build time. So at runtime **production has `APP_ENV === 'main'`, NOT
+`'prod'`** (staging = `'staging'`, dev = `'dev'`).
+
+Any environment-conditional code MUST therefore treat **both `'main'` and
+`'prod'`** as production, e.g. `functions/src/config.ts`:
+
+```ts
+const isProd = APP_ENV === 'prod' || APP_ENV === 'main';
+```
+
+If a conditional only checks `=== 'prod'`, production falls through to the
+**dev** branch and reads/writes the dev Drive folder, master sheet, and
+Firestore collections — a silent, catastrophic misroute. `config.test.ts`
+asserts `'main'`→prod to guard this. This near-miss is recorded in
+`knowledge/archive/retro-2026-08-12.md`.
+
+Function names are similarly env-suffixed (`_dev`/`_staging`; none for prod)
+and hosting targets differ per env — see `deploy.yml`.
+
 ## Services (target architecture)
 
 Once provisioned, each environment's Firebase project runs:

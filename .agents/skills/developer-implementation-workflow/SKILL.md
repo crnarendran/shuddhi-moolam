@@ -40,3 +40,17 @@ Only the Developer agent (invoked as a subagent) writes production code. The Arc
 ## Step 4: Handoff
 - Update the backlog file's `status` tag from `pending` to `in-review`.
 - Notify the Architect that the feature is ready for the `Reviewer` agent.
+
+## Tooling note: multi-line commit messages
+- This repo is worked from tools whose shell differs (Git Bash on Claude
+  Code, others elsewhere). Do NOT use PowerShell here-string syntax
+  (`@'...'@`) to pass a commit message in Git Bash — it leaks a literal `@`
+  as the commit subject. Use a real heredoc piped to `git commit -F -`:
+  ```sh
+  git commit -F - <<'EOF'
+  feat(scope): subject line
+  
+  Body paragraph.
+  EOF
+  ```
+  (retro-2026-08-12 #5.)

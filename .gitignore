@@ -1,6 +1,9 @@
 node_modules/
 *.log
 functions/lib/
+# Throwaway diagnostic / one-off scripts — never commit these.
+scratch/
+functions/scratch/
 .env*
 !dashboard/.env.dev
 !dashboard/.env.staging
