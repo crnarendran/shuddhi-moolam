@@ -121,9 +121,10 @@ we just own the ~30 lines). Provider-agnostic; the API key lives in **Secret
 Manager**, not in code. The provider's API response → delivery status stored on
 the invitation doc. No `mail` collection needed.
 
-**Provider:** any transactional-email API — **Resend** (`resend` SDK, simple,
-~3k/mo free) or **SendGrid** (`@sendgrid/mail`, ~100/day free) recommended;
-Mailgun / Amazon SES also fine. Swap-able behind a thin `sendEmail()` helper.
+**Provider:** ✅ **Resend** (`resend` SDK), behind a thin swappable
+`sendEmail()` helper. **Sending domain: `narensportal.com`** (added in Resend);
+default FROM `Shuddhi-Moolam <no-reply@narensportal.com>`. API key stored as the
+`RESEND_API_KEY` Firebase secret.
 
 **User-provisioned prerequisites (billing/credentials — ESCALATION, not the
 agent's to do):**
