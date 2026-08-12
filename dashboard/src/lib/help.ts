@@ -29,15 +29,18 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
   'seasonal': {
     title: 'Seasonal analysis',
     description:
-      'How a commodity typically behaves across the calendar year — which ' +
-      'months it tends to rise or fall — built from the average move in each ' +
-      'month across all years of history. Useful for anticipating recurring ' +
-      'cost swings rather than reacting to them.',
+      'How commodities typically behave across the calendar year — which ' +
+      'months they tend to rise or fall — built from the average move in each ' +
+      'month across all years of history. Select one or more commodities to ' +
+      'compare their seasonal patterns and anticipate recurring cost swings.',
     howToRead: [
-      'Pick a commodity; the chart overlays each year so seasonal patterns ' +
-        'line up.',
-      'The seasonal index is the average month-over-month % change for each ' +
-        'calendar month across years.',
+      'Use the Commodities menu to pick one or more (Select all / Clear for ' +
+        'speed); your choice is remembered across sessions and devices.',
+      'Typical seasonal pattern draws one line per commodity — the average ' +
+        'month-over-month % change per calendar month. They are percentages, ' +
+        'so different metals compare cleanly on one axis.',
+      'The year-over-year overlay shows the first selected commodity, one ' +
+        'line per year.',
       'Confidence is labelled by how many years of history exist — treat a ' +
         'low-confidence read as indicative only.',
     ],
@@ -62,16 +65,20 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
   'spreads': {
     title: 'Spread monitor',
     description:
-      'The price gap between two commodities over time, against its own ' +
-      'normal range. Handy for substitution and sourcing decisions — e.g. ' +
-      'scrap vs pig iron, or the same alloy across two markets — where the ' +
-      'relationship matters more than either absolute price.',
+      'The price gap between commodities over time, against its own normal ' +
+      'range. Handy for substitution and sourcing decisions — e.g. scrap vs ' +
+      'pig iron, or the same alloy across two markets — where the ' +
+      'relationship matters more than either absolute price. Compare one or ' +
+      'several commodities against a common reference.',
     howToRead: [
-      'Pick two commodities; the line is (A − B) each month.',
-      'The dashed line is the mean; the shaded band is ±1 standard deviation ' +
-        '(the normal range).',
-      'The deviation tile shows how many σ the latest spread is from its ' +
-        'mean — beyond ±2σ is flagged as unusual.',
+      'Pick a reference commodity (the "vs" selector), then one or more to ' +
+        'Compare (Select all / Clear available); each line is Compare − ' +
+        'reference. Your selection is remembered.',
+      'With a single comparison you also get the mean (dashed) ±1σ band and ' +
+        'a deviation tile — how many σ the latest spread is from its mean ' +
+        '(beyond ±2σ is flagged as unusual).',
+      'With several, each spread is its own line for side-by-side comparison ' +
+        '(the band/tiles show only in the single-comparison case).',
     ],
   },
   'companies': {
@@ -91,18 +98,19 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
   'guidance': {
     title: 'Purchasing guidance',
     description:
-      'Actionable, statistical guidance for one of your materials: how its ' +
-      'blended cost is trending, when in the year it is typically cheapest ' +
-      'to buy, and which commodities have a cheaper same-unit alternative ' +
-      'right now. It is a decision starting point built from history and ' +
-      'current prices — not a forecast.',
+      'Actionable, statistical guidance for one or more of your materials: ' +
+      'how blended cost is trending, when in the year it is typically ' +
+      'cheapest to buy, and which commodities have a cheaper same-unit ' +
+      'alternative right now. A decision starting point built from history ' +
+      'and current prices — not a forecast.',
     howToRead: [
-      'Pick a company + material; tiles show the current blended cost and ' +
-        'how it compares to its 6-month baseline.',
-      'Seasonal buy-timing lists the months prices typically fall into, ' +
-        'weighted by each commodity’s share of the material.',
-      'Cheaper alternatives suggest a same-unit substitute and the per-unit ' +
-        'saving if you swapped today.',
+      'Pick a company, then one or more Materials (Select all / Clear). The ' +
+        'blended-cost-over-time chart overlays one line per material; your ' +
+        'selection is remembered.',
+      'Each selected material gets its own card: current blended cost vs its ' +
+        '6-month baseline, seasonal buy-timing (weighted by each commodity’s ' +
+        'share), and cheaper same-unit substitutions with the per-unit saving.',
+      'A coloured dot on each card matches its line in the chart above.',
     ],
   },
   'settings': {

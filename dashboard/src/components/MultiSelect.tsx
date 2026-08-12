@@ -7,34 +7,34 @@ export interface Option {
 }
 
 /**
- * A compact multi-select checklist dropdown. Shows a summary button; opens a
- * checkbox list; closes on outside click. Enforces an optional `max` (unchecked
- * options disable once the cap is hit) and never lets the selection drop below
- * one item, so charts always have at least one series.
- * @param props options, current selection, change handler, and optional cap.
+ * A compact multi-select checklist dropdown with Select-all / Clear shortcuts.
+ * Closes on outside click. The selection may be empty (callers show an
+ * empty-state); colours cycle so any number of series is allowed.
+ * @param props options, current selection, change handler, optional label.
  */
 export function MultiSelect(
-  { options, selected, onChange, max = 6, label }: {
+  { options, selected, onChange, label }: {
     options: Option[];
     selected: string[];
     onChange: (next: string[]) => void;
-    max?: number;
     label?: string;
   }
 ) {
   const [open, setOpen] = useState(false);
+  const allValues = options.map((o) => o.value);
+  const allSelected = options.length > 0 && selected.length === options.length;
 
   const toggle = (value: string) => {
-    if (selected.includes(value)) {
-      if (selected.length > 1) onChange(selected.filter((v) => v !== value));
-    } else if (selected.length < max) {
-      onChange([...selected, value]);
-    }
+    onChange(selected.includes(value)
+      ? selected.filter((v) => v !== value)
+      : [...selected, value]);
   };
 
-  const summary = selected.length === 1
-    ? options.find((o) => o.value === selected[0])?.label ?? '1 selected'
-    : `${selected.length} selected`;
+  const summary = selected.length === 0
+    ? 'None'
+    : selected.length === 1
+      ? options.find((o) => o.value === selected[0])?.label ?? '1 selected'
+      : `${selected.length} selected`;
 
   return (
     <div className="relative">
@@ -51,20 +51,32 @@ export function MultiSelect(
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 z-20 w-64 max-h-72 overflow-auto
+          <div className="absolute right-0 mt-1 z-20 w-64 max-h-80 overflow-auto
             rounded-md border border-zinc-200 dark:border-zinc-700 bg-white
             dark:bg-zinc-800 shadow-lg py-1">
+            <div className="flex gap-3 px-3 py-2 border-b border-zinc-100
+              dark:border-zinc-700 text-xs">
+              <button
+                onClick={() => onChange(allValues)}
+                disabled={allSelected}
+                className="text-blue-600 dark:text-blue-400 hover:underline
+                  disabled:opacity-40 disabled:no-underline"
+              >Select all</button>
+              <button
+                onClick={() => onChange([])}
+                disabled={selected.length === 0}
+                className="text-zinc-500 dark:text-zinc-400 hover:underline
+                  disabled:opacity-40 disabled:no-underline"
+              >Clear</button>
+            </div>
             {options.map((o) => {
               const on = selected.includes(o.value);
-              const disabled = !on && selected.length >= max;
               return (
                 <button
                   key={o.value}
                   onClick={() => toggle(o.value)}
-                  disabled={disabled}
                   className={`w-full text-left px-3 py-2 text-sm flex items-center
                     gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
-                    disabled ? 'opacity-40 cursor-not-allowed' : ''} ${
                     on ? 'text-blue-700 dark:text-blue-300 font-medium'
                       : 'text-zinc-700 dark:text-zinc-200'}`}
                 >
@@ -75,9 +87,6 @@ export function MultiSelect(
                 </button>
               );
             })}
-            <p className="px-3 py-1.5 text-xs text-zinc-400">
-              Up to {max} at a time.
-            </p>
           </div>
         </>
       )}

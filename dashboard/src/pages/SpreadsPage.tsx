@@ -19,10 +19,9 @@ import { REPORT_HELP } from '../lib/help';
 const fmt = (n: number): string =>
   n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
-const SPREADS_DEFAULTS: { reference: string; compare: string[] } = {
-  reference: 'pig_iron_foundry_gr_pune',
-  compare: ['melting_foundry_scrap_mumbai'],
-};
+// Empty defaults so first run (unset) is distinguishable from an explicit
+// clear ([]); first run picks sensible defaults, clear shows an empty-state.
+const SPREADS_DEFAULTS: { reference?: string; compare?: string[] } = {};
 
 export function SpreadsPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
@@ -41,13 +40,20 @@ export function SpreadsPage(
   );
   const reference = has(sv.reference ?? '')
     ? (sv.reference as string)
-    : (commodities[0]?.key ?? '');
+    : has('pig_iron_foundry_gr_pune')
+      ? 'pig_iron_foundry_gr_pune'
+      : (commodities[0]?.key ?? '');
   const compare = useMemo(() => {
-    const valid = (sv.compare ?? []).filter(has);
-    if (valid.length) return valid;
-    const first = commodities.find((c) => c.key !== reference)?.key
-      ?? commodities[0]?.key;
-    return first ? [first] : [];
+    if (sv.compare === undefined) {
+      // First run: default to the scrap-vs-pig-iron spread if available.
+      if (has('melting_foundry_scrap_mumbai')) {
+        return ['melting_foundry_scrap_mumbai'];
+      }
+      const first = commodities.find((c) => c.key !== reference)?.key
+        ?? commodities[0]?.key;
+      return first ? [first] : [];
+    }
+    return sv.compare.filter(has);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sv.compare, commodities, reference]);
   const setReference = (k: string) => setSv({ reference: k });
@@ -164,7 +170,12 @@ export function SpreadsPage(
         <div className="ml-auto"><PrintButton /></div>
       </div>
 
-      {allMonths.length < 2 ? (
+      {compare.length === 0 ? (
+        <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
+          text-center">
+          Select one or more commodities to compare against the reference.
+        </div>
+      ) : allMonths.length < 2 ? (
         <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
           text-center">
           Not enough overlapping history for this selection.
@@ -208,7 +219,7 @@ export function SpreadsPage(
           <div className="bg-white dark:bg-zinc-800 rounded-lg border
             border-zinc-200 dark:border-zinc-700 p-4">
             <ReactECharts option={option} opts={{ renderer: 'svg' }}
-              style={{ height: 340, width: '100%' }} />
+              notMerge style={{ height: 340, width: '100%' }} />
           </div>
         </>
       )}

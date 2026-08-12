@@ -42,6 +42,112 @@ const GUIDANCE_DEFAULTS: { companyId: string; materialIds: string[] } = {
   companyId: '', materialIds: [],
 };
 
+interface MaterialGuidance {
+  material: Material;
+  color: string;
+  series: Map<string, number>;
+  baseline: ReturnType<typeof costVsBaseline>;
+  cheapest: ReturnType<typeof cheapestMonths>;
+  swaps: ReturnType<typeof substitutionSuggestions>;
+}
+
+/**
+ * Full guidance block for a single material: cost-vs-baseline tiles, seasonal
+ * buy-timing, and cheaper-alternative substitutions. Rendered once per
+ * selected material so guidance covers every comparison, not just the first.
+ * @param props The pre-computed guidance for one material.
+ */
+function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean }) {
+  const { material, color, baseline, cheapest, swaps } = g;
+  const up = baseline.pct !== null && baseline.pct > 0;
+  return (
+    <div className={card}>
+      <h3 className="text-base font-semibold text-zinc-800 dark:text-zinc-100
+        mb-3 flex items-center gap-2">
+        {showDot && (
+          <span className="h-2.5 w-2.5 rounded-full shrink-0"
+            style={{ background: color }} />
+        )}
+        {material.name}
+      </h3>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
+            Blended cost / {material.unit ?? 'unit'}
+            <InfoTip term="Blended cost" /></p>
+          <p className="text-2xl font-semibold mt-1 text-zinc-900
+            dark:text-zinc-100">{fmt(baseline.latest)}</p>
+        </div>
+        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
+            vs 6-mo baseline<InfoTip term="Rolling baseline" /></p>
+          <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
+            ${baseline.pct === null ? 'text-zinc-400'
+              : up ? 'text-red-600 dark:text-red-400'
+                : 'text-green-600 dark:text-green-400'}`}>
+            {baseline.pct === null ? '—' : (
+              <>{up ? <TrendingUp className="h-5 w-5" />
+                : <TrendingDown className="h-5 w-5" />}
+              {baseline.pct > 0 ? '+' : ''}{baseline.pct.toFixed(1)}%</>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
+          mb-2 flex items-center gap-2">
+          <CalendarClock className="h-4 w-4" />Seasonal buy-timing</h4>
+        {cheapest.length === 0 || cheapest.every((c) => c.pct >= 0) ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No clear seasonal buying window from the available history.
+          </p>
+        ) : (
+          <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-1">
+            {cheapest.filter((c) => c.pct < 0).map((c) => (
+              <li key={c.month}>
+                <span className="font-medium">{c.label}</span> — prices
+                typically move {c.pct.toFixed(1)}% into this month
+                (weighted across the material).
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
+          mb-2 flex items-center gap-2">
+          <Shuffle className="h-4 w-4" />Cheaper alternatives right now</h4>
+        {swaps.length === 0 ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No cheaper same-unit substitute this month — the material already
+            uses the best-priced option in each group.
+          </p>
+        ) : (
+          <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-2">
+            {swaps.map((s) => (
+              <li key={s.from.key} className="flex items-start gap-2">
+                <span className="text-green-600 dark:text-green-400
+                  font-semibold">−{fmt(s.saving)}</span>
+                <span>
+                  Swap <span className="font-medium">{s.from.label}</span> →{' '}
+                  <span className="font-medium">{s.to.label}</span>{' '}
+                  <span className="text-xs text-zinc-400">
+                    ({s.groupName}, saving / {material.unit})</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function GuidancePage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
@@ -72,7 +178,6 @@ export function GuidancePage(
       .filter((m): m is Material => !!m),
     [activeMaterialIds, materials]
   );
-  const primary = chartMaterials[0] ?? null;
   const multi = chartMaterials.length > 1;
 
   const setCompany = (id: string) =>
@@ -80,46 +185,38 @@ export function GuidancePage(
   const setMaterialIds = (ids: string[]) => setGv({ materialIds: ids });
 
   const record = useMemo(() => latestRecord(records), [records]);
-  const seriesByMat = useMemo(
-    () => chartMaterials.map((m) => ({
-      id: m.id, name: m.name,
-      series: blendedCostSeries(m.composition, records),
-    })),
-    [chartMaterials, records]
-  );
-  const baseline = useMemo(
-    () => costVsBaseline(seriesByMat[0]?.series ?? new Map<string, number>()),
-    [seriesByMat]
-  );
-  const seasonal = useMemo(
-    () => primary
-      ? materialSeasonalIndex(primary.composition, records, record)
-      : new Map<number, number>(),
-    [primary, records, record]
-  );
-  const cheapest = cheapestMonths(seasonal, 3);
-  const swaps = useMemo(
-    () => primary
-      ? substitutionSuggestions(
-        primary.composition, DEFAULT_SUB_GROUPS, ALL_COMMODITIES, record)
-      : [],
-    [primary, record]
+  // Full guidance computed per selected material.
+  const guidance: MaterialGuidance[] = useMemo(
+    () => chartMaterials.map((m, i) => {
+      const series = blendedCostSeries(m.composition, records);
+      const seasonal = materialSeasonalIndex(m.composition, records, record);
+      return {
+        material: m,
+        color: SERIES_COLORS[i % SERIES_COLORS.length],
+        series,
+        baseline: costVsBaseline(series),
+        cheapest: cheapestMonths(seasonal, 3),
+        swaps: substitutionSuggestions(
+          m.composition, DEFAULT_SUB_GROUPS, ALL_COMMODITIES, record),
+      };
+    }),
+    [chartMaterials, records, record]
   );
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
   const allMonths = useMemo(
     () => Array.from(
-      new Set(seriesByMat.flatMap((s) => [...s.series.keys()]))
+      new Set(guidance.flatMap((g) => [...g.series.keys()]))
     ).sort(),
-    [seriesByMat]
+    [guidance]
   );
   const option = {
     grid: { left: 8, right: 16, top: multi ? 28 : 16, bottom: 8,
       containLabel: true },
     tooltip: { trigger: 'axis' },
     legend: multi
-      ? { data: seriesByMat.map((s) => s.name), textStyle:
+      ? { data: guidance.map((g) => g.material.name), textStyle:
         { color: axisColor }, top: 0 }
       : undefined,
     xAxis: {
@@ -131,20 +228,20 @@ export function GuidancePage(
       type: 'value', scale: true, axisLabel: { color: axisColor },
       splitLine: { lineStyle: { color: gridColor } },
     },
-    series: seriesByMat.map((s, i) => {
-      const color = multi ? SERIES_COLORS[i % SERIES_COLORS.length] : '#2563eb';
+    series: guidance.map((g) => {
+      const color = multi ? g.color : '#2563eb';
       return {
-        name: s.name,
+        name: g.material.name,
         type: 'line', smooth: true, symbol: 'none', connectNulls: false,
         data: allMonths.map((k) => {
-          const v = s.series.get(k);
+          const v = g.series.get(k);
           return v == null ? null : Number(v.toFixed(0));
         }),
         lineStyle: { color, width: 2.5 },
         itemStyle: { color },
-        markLine: !multi && baseline.baseline !== null ? {
+        markLine: !multi && g.baseline.baseline !== null ? {
           symbol: 'none',
-          data: [{ yAxis: Number(baseline.baseline.toFixed(0)) }],
+          data: [{ yAxis: Number(g.baseline.baseline.toFixed(0)) }],
           lineStyle: { color: axisColor, type: 'dashed' },
           label: { color: axisColor, formatter: 'baseline' },
         } : undefined,
@@ -168,9 +265,6 @@ export function GuidancePage(
     );
   }
 
-  const upTone = baseline.pct !== null && baseline.pct > 0;
-  const primaryNote = multi ? ` · primary: ${primary?.name}` : '';
-
   return (
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['guidance']} />
@@ -190,94 +284,20 @@ export function GuidancePage(
         <div className="ml-auto"><PrintButton /></div>
       </div>
 
-      {/* Cost vs baseline (primary material) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400
-            flex items-center gap-1">
-            Blended cost / {primary?.unit ?? 'unit'}
-            <InfoTip term="Blended cost" /></p>
-          <p className="text-2xl font-semibold mt-1 text-zinc-900
-            dark:text-zinc-100">{fmt(baseline.latest)}</p>
-        </div>
-        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400
-            flex items-center gap-1">
-            vs 6-mo baseline<InfoTip term="Rolling baseline" /></p>
-          <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
-            ${baseline.pct === null ? 'text-zinc-400'
-              : upTone ? 'text-red-600 dark:text-red-400'
-                : 'text-green-600 dark:text-green-400'}`}>
-            {baseline.pct === null ? '—' : (
-              <>{upTone ? <TrendingUp className="h-5 w-5" />
-                : <TrendingDown className="h-5 w-5" />}
-              {baseline.pct > 0 ? '+' : ''}{baseline.pct.toFixed(1)}%</>
-            )}
-          </p>
-        </div>
-      </div>
-
       {allMonths.length >= 2 && (
         <div className={card}>
           <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
             mb-3">Blended cost over time
             {multi ? ' · one line per material' : ''}</h3>
           <ReactECharts option={option} opts={{ renderer: 'svg' }}
-            style={{ height: 300 }} />
+            notMerge style={{ height: 300 }} />
         </div>
       )}
 
-      {/* Seasonal buy-timing (primary material) */}
-      <div className={card}>
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
-          mb-3 flex items-center gap-2">
-          <CalendarClock className="h-4 w-4" />Seasonal buy-timing
-          <span className="font-normal text-zinc-400">{primaryNote}</span></h3>
-        {cheapest.length === 0 || cheapest.every((c) => c.pct >= 0) ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No clear seasonal buying window from the available history.
-          </p>
-        ) : (
-          <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-1">
-            {cheapest.filter((c) => c.pct < 0).map((c) => (
-              <li key={c.month}>
-                <span className="font-medium">{c.label}</span> — prices
-                typically move {c.pct.toFixed(1)}% into this month
-                (weighted across the material).
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Substitution (primary material) */}
-      <div className={card}>
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
-          mb-3 flex items-center gap-2">
-          <Shuffle className="h-4 w-4" />Cheaper alternatives right now
-          <span className="font-normal text-zinc-400">{primaryNote}</span></h3>
-        {swaps.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No cheaper same-unit substitute this month — the material already
-            uses the best-priced option in each group.
-          </p>
-        ) : (
-          <ul className="text-sm text-zinc-700 dark:text-zinc-300 space-y-2">
-            {swaps.map((s) => (
-              <li key={s.from.key} className="flex items-start gap-2">
-                <span className="text-green-600 dark:text-green-400
-                  font-semibold">−{fmt(s.saving)}</span>
-                <span>
-                  Swap <span className="font-medium">{s.from.label}</span> →{' '}
-                  <span className="font-medium">{s.to.label}</span>{' '}
-                  <span className="text-xs text-zinc-400">
-                    ({s.groupName}, saving / {primary?.unit})</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* Full guidance per selected material. */}
+      {guidance.map((g) => (
+        <MaterialCard key={g.material.id} g={g} showDot={multi} />
+      ))}
 
       <p className="text-xs text-zinc-400">
         Guidance is statistical (seasonality, current prices, same-unit

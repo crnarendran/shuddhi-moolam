@@ -200,6 +200,7 @@ export function PriceReviewPage(
         <ReactECharts
           option={chartOption}
           opts={{ renderer: 'svg' }}
+          notMerge
           style={{ height: Math.max(240, chartRows.length * 34), width: '100%' }}
         />
       </div>

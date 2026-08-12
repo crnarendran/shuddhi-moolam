@@ -17,7 +17,10 @@ import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
 
-const SEASONAL_DEFAULTS: { keys: string[] } = { keys: [] };
+// Empty defaults so an unset selection (first run) is distinguishable from an
+// explicitly cleared one ([]): the former defaults to the first commodity,
+// the latter shows an empty-state.
+const SEASONAL_DEFAULTS: { keys?: string[] } = {};
 
 export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
@@ -31,14 +34,13 @@ export function SeasonalPage(
   const { value: sv, setValue: setSv } = useViewState(
     'seasonal', SEASONAL_DEFAULTS
   );
-  // Render-time selection: always a valid, non-empty subset of the effective
-  // commodities (falls back to the first) without rewriting storage.
+  // Unset (first run) -> default to the first commodity; otherwise use the
+  // stored selection filtered to what's still visible (may be empty).
   const activeKeys = useMemo(() => {
-    const valid = (sv.keys ?? []).filter(
-      (k) => commodities.some((c) => c.key === k)
-    );
-    if (valid.length) return valid;
-    return commodities[0] ? [commodities[0].key] : [];
+    if (sv.keys === undefined) {
+      return commodities[0] ? [commodities[0].key] : [];
+    }
+    return sv.keys.filter((k) => commodities.some((c) => c.key === k));
   }, [sv.keys, commodities]);
   const setKeys = (next: string[]) => setSv({ keys: next });
 
@@ -153,13 +155,6 @@ export function SeasonalPage(
       }],
   };
 
-  if (yearKeys.length === 0) {
-    return (
-      <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
-        text-center">No history yet for seasonal analysis.</div>
-    );
-  }
-
   const confTone = years >= 3
     ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
     : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
@@ -182,6 +177,16 @@ export function SeasonalPage(
         </div>
       </div>
 
+      {activeKeys.length === 0 ? (
+        <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
+          text-center">
+          Select one or more commodities to see their seasonal patterns.
+        </div>
+      ) : yearKeys.length === 0 ? (
+        <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
+          text-center">No history yet for seasonal analysis.</div>
+      ) : (
+       <>
       <div className="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
@@ -193,7 +198,7 @@ export function SeasonalPage(
           </span>
         </h3>
         <ReactECharts option={overlayOption} opts={{ renderer: 'svg' }}
-          style={{ height: 320, width: '100%' }} />
+          notMerge style={{ height: 320, width: '100%' }} />
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200
@@ -204,7 +209,7 @@ export function SeasonalPage(
           {multi ? ' · one line per commodity' : ''}
         </h3>
         <ReactECharts option={seasonalOption} opts={{ renderer: 'svg' }}
-          style={{ height: 260, width: '100%' }} />
+          notMerge style={{ height: 260, width: '100%' }} />
         {years < 3 && (
           <p className="text-xs text-zinc-400 mt-2">
             Based on {years} year{years > 1 ? 's' : ''} of data — treat the
@@ -212,6 +217,8 @@ export function SeasonalPage(
           </p>
         )}
       </div>
+       </>
+      )}
     </div>
   );
 }

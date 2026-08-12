@@ -162,7 +162,7 @@ export function CostImpactPage(
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
           mb-3">Impact contribution per commodity</h3>
         <ReactECharts option={chartOption} opts={{ renderer: 'svg' }}
-          style={{ height: Math.max(240, contribRows.length * 34) }} />
+          notMerge style={{ height: Math.max(240, contribRows.length * 34) }} />
       </div>
 
       <div className="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200
