@@ -82,6 +82,7 @@ export const driveWebhook = onRequest(
           logger.info(`Enqueuing file ${fileId} for extraction.`);
           await pipelineDoc.set({
             fileId,
+            fileName: file.name || 'Unknown',
             status: 'detected',
             detectedAt: Date.now(),
             attempts: 0,
