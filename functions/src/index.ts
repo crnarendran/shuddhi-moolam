@@ -12,7 +12,10 @@ import {
   resendInvitation as _resendInvitation,
   revokeInvitation as _revokeInvitation,
 } from './sharing/invitations';
-import { setUserPlan as _setUserPlan } from './sharing/entitlements';
+import {
+  setUserPlan as _setUserPlan,
+  listUserPlans as _listUserPlans,
+} from './sharing/entitlements';
 import { getFirestore } from 'firebase-admin/firestore';
 import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
@@ -143,6 +146,7 @@ module.exports = {
   [`resendInvitation${suffix}`]: _resendInvitation,
   [`revokeInvitation${suffix}`]: _revokeInvitation,
   [`setUserPlan${suffix}`]: _setUserPlan,
+  [`listUserPlans${suffix}`]: _listUserPlans,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');

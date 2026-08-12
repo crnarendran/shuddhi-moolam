@@ -40,3 +40,42 @@ export const setUserPlan = onCall(async (request: CallableRequest) => {
   );
   return { success: true, uid, plan };
 });
+
+/**
+ * Admin-only callable listing every auth user with their effective plan
+ * (founders → premium; else entitlements/{uid}) for the Admin panel (SM-42).
+ * @param {CallableRequest} request Unused payload.
+ * @returns {Promise<object>} { users: [{ uid, email, plan, lastSignIn }] }.
+ */
+export const listUserPlans = onCall(async (request: CallableRequest) => {
+  const auth = request.auth;
+  const caller = (auth?.token.email || '').toLowerCase();
+  if (!auth || !ADMIN_EMAILS.includes(caller)) {
+    throw new HttpsError('permission-denied', 'Admins only.');
+  }
+  const db = getFirestore();
+  const entSnap = await db.collection('entitlements').get();
+  const plans = new Map<string, string>();
+  entSnap.docs.forEach((d) => plans.set(d.id, d.data().plan));
+
+  const users: {
+    uid: string; email: string; plan: string; lastSignIn: string | null;
+  }[] = [];
+  let pageToken: string | undefined;
+  do {
+    const res = await getAuth().listUsers(1000, pageToken);
+    res.users.forEach((u) => {
+      const email = (u.email || '').toLowerCase();
+      const premium = ADMIN_EMAILS.includes(email)
+        || plans.get(u.uid) === 'premium';
+      users.push({
+        uid: u.uid, email: u.email || '(no email)',
+        plan: premium ? 'premium' : 'free',
+        lastSignIn: u.metadata.lastSignInTime || null,
+      });
+    });
+    pageToken = res.pageToken;
+  } while (pageToken);
+  users.sort((a, b) => a.email.localeCompare(b.email));
+  return { users };
+});

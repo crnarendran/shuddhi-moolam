@@ -4,15 +4,17 @@ import { SettingsPage } from '../pages/SettingsPage';
 import { CompaniesPage } from '../pages/CompaniesPage';
 import { AdminPage } from '../pages/AdminPage';
 import { SubTabs, type SubTab } from './SubTabs';
-import { useIsAdmin } from '../hooks/usePlan';
+import { useIsAdmin, usePlan } from '../hooks/usePlan';
 import { type PriceRecord } from '../lib/reporting';
 
 type SettingsSub = 'commodities' | 'companies' | 'admin';
 
-const BASE_TABS: SubTab<SettingsSub>[] = [
-  { id: 'companies', label: 'Companies & Materials', icon: Building2 },
-  { id: 'commodities', label: 'Commodities', icon: Sliders },
-];
+const COMPANIES_TAB: SubTab<SettingsSub> = {
+  id: 'companies', label: 'Companies & Materials', icon: Building2,
+};
+const COMMODITIES_TAB: SubTab<SettingsSub> = {
+  id: 'commodities', label: 'Commodities', icon: Sliders,
+};
 const ADMIN_TAB: SubTab<SettingsSub> = {
   id: 'admin', label: 'Admin', icon: ShieldCheck,
 };
@@ -41,8 +43,15 @@ export function SettingsSection(
   { records }: { records: PriceRecord[] }
 ) {
   const isAdmin = useIsAdmin();
+  const { premium } = usePlan();
   const [sub, setSub] = useState<SettingsSub>(subFromHash);
-  const tabs = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS;
+  // Commodity personalization is a premium feature (SM-42); Admin is founder-
+  // only. Companies is always present (shows an upsell for free users).
+  const tabs = [
+    COMPANIES_TAB,
+    ...(premium ? [COMMODITIES_TAB] : []),
+    ...(isAdmin ? [ADMIN_TAB] : []),
+  ];
 
   useEffect(() => {
     const onHash = () => setSub(subFromHash());
@@ -55,14 +64,16 @@ export function SettingsSection(
     window.location.hash = `settings/${id}`;
   };
 
-  // A non-admin landing on #settings/admin falls back to companies.
-  const active: SettingsSub = sub === 'admin' && !isAdmin ? 'companies' : sub;
+  // Fall back to companies if the user isn't entitled to the requested tab.
+  const active: SettingsSub =
+    (sub === 'admin' && !isAdmin) || (sub === 'commodities' && !premium)
+      ? 'companies' : sub;
 
   return (
     <div className="flex flex-col gap-6">
       <SubTabs tabs={tabs} active={active} onSelect={select} />
       {active === 'companies' && <CompaniesPage records={records} />}
-      {active === 'commodities' && <SettingsPage />}
+      {active === 'commodities' && premium && <SettingsPage />}
       {active === 'admin' && isAdmin && <AdminPage />}
     </div>
   );
