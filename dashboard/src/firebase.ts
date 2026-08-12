@@ -17,6 +17,17 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
+
+// Cloud Functions are deployed with an env suffix (_dev / _staging;
+// none in prod). Derive it from the env-suffixed collection name so
+// callables resolve to the right function in each environment.
+const collection = import.meta.env.VITE_FIRESTORE_COLLECTION || '';
+const fnSuffix = collection.endsWith('_dev')
+  ? '_dev'
+  : collection.endsWith('_staging')
+    ? '_staging'
+    : '';
+export const fnName = (base: string): string => `${base}${fnSuffix}`;
 const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);

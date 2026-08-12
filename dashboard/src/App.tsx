@@ -4,7 +4,7 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator, Shuffle,
+  Calculator, Shuffle, Settings, Building2, Lightbulb,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
@@ -12,20 +12,29 @@ import { PriceReviewPage } from './pages/PriceReviewPage';
 import { SeasonalPage } from './pages/SeasonalPage';
 import { CostImpactPage } from './pages/CostImpactPage';
 import { SpreadsPage } from './pages/SpreadsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { CompaniesPage } from './pages/CompaniesPage';
+import { GuidancePage } from './pages/GuidancePage';
 import { AIChatPanel } from './components/AIChatPanel';
 import { type PriceRecord } from './lib/reporting';
 
-type Tab = 'price-review' | 'seasonal' | 'cost-impact' | 'spreads' | 'monitor';
+type Tab =
+  | 'price-review' | 'seasonal' | 'cost-impact' | 'spreads'
+  | 'companies' | 'guidance' | 'monitor' | 'settings';
 const TABS: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: 'price-review', label: 'Price Review', icon: BarChart3 },
   { id: 'seasonal', label: 'Seasonal', icon: TrendingUp },
   { id: 'cost-impact', label: 'Cost Impact', icon: Calculator },
   { id: 'spreads', label: 'Spreads', icon: Shuffle },
+  { id: 'companies', label: 'Companies', icon: Building2 },
+  { id: 'guidance', label: 'Guidance', icon: Lightbulb },
   { id: 'monitor', label: 'Monitor', icon: LayoutDashboard },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const VALID_TABS: Tab[] = [
-  'price-review', 'seasonal', 'cost-impact', 'spreads', 'monitor',
+  'price-review', 'seasonal', 'cost-impact', 'spreads', 'companies',
+  'guidance', 'monitor', 'settings',
 ];
 const tabFromHash = (): Tab => {
   const h = window.location.hash.replace('#', '') as Tab;
@@ -126,7 +135,8 @@ function App() {
     );
   }
 
-  const hasChat = activeTab !== 'monitor';
+  const hasChat = activeTab !== 'monitor' && activeTab !== 'settings'
+    && activeTab !== 'companies' && activeTab !== 'guidance';
   const viewName =
     activeTab === 'seasonal' ? 'Seasonal analysis'
       : activeTab === 'cost-impact' ? 'Cost impact analysis'
@@ -195,6 +205,12 @@ function App() {
           <CostImpactPage records={records} isDark={isDark} />
         ) : activeTab === 'spreads' ? (
           <SpreadsPage records={records} isDark={isDark} />
+        ) : activeTab === 'companies' ? (
+          <CompaniesPage records={records} />
+        ) : activeTab === 'guidance' ? (
+          <GuidancePage records={records} isDark={isDark} />
+        ) : activeTab === 'settings' ? (
+          <SettingsPage />
         ) : (
           <>
             <SummaryMetrics runs={runs} />

@@ -1,4 +1,6 @@
 export const APP_ENV = process.env.APP_ENV || 'dev';
+// The deploy workflow sets APP_ENV from the branch name, so production
+// arrives as 'main' (not 'prod'). Treat both as production.
 const isProd = APP_ENV === 'prod' || APP_ENV === 'main';
 
 export const DRIVE_ROOT_FOLDER_ID =

@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  COMMODITIES,
+  effectiveCommodities,
   monthlySpread,
   meanStd,
   monthKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { InfoTip } from '../components/InfoTip';
+import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number): string =>
   n.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -14,9 +18,23 @@ const fmt = (n: number): string =>
 export function SpreadsPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
+  const { settings } = useUserSettings();
+  const commodities = useMemo(
+    () => effectiveCommodities('spreads', settings.personalization),
+    [settings.personalization]
+  );
   // Default to the scrap vs pig-iron substitution spread (comparable scale).
   const [keyA, setKeyA] = useState('melting_foundry_scrap_mumbai');
   const [keyB, setKeyB] = useState('pig_iron_foundry_gr_pune');
+  // Keep both selections within the effective set.
+  useEffect(() => {
+    if (!commodities.some((c) => c.key === keyA)) {
+      setKeyA(commodities[0]?.key ?? '');
+    }
+    if (!commodities.some((c) => c.key === keyB)) {
+      setKeyB(commodities[1]?.key ?? commodities[0]?.key ?? '');
+    }
+  }, [commodities, keyA, keyB]);
 
   const spread = useMemo(
     () => monthlySpread(records, keyA, keyB), [records, keyA, keyB]
@@ -26,8 +44,8 @@ export function SpreadsPage(
   const { mean, std } = meanStd(values);
   const latest = values.length ? values[values.length - 1] : null;
   const z = latest !== null && std > 0 ? (latest - mean) / std : null;
-  const labelA = COMMODITIES.find((c) => c.key === keyA)?.label ?? keyA;
-  const labelB = COMMODITIES.find((c) => c.key === keyB)?.label ?? keyB;
+  const labelA = commodities.find((c) => c.key === keyA)?.label ?? keyA;
+  const labelB = commodities.find((c) => c.key === keyB)?.label ?? keyB;
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
@@ -73,20 +91,16 @@ export function SpreadsPage(
 
   return (
     <div className="flex flex-col gap-6">
+      <ReportIntro help={REPORT_HELP['spreads']} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Spread monitor
-          </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {labelA} − {labelB}, monthly, with mean ±1σ band
-          </p>
-        </div>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {labelA} − {labelB}, monthly, with mean ±1σ band
+        </p>
         <div className="flex items-center gap-2">
           <select value={keyA} onChange={(e) => setKeyA(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
               dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
@@ -94,7 +108,7 @@ export function SpreadsPage(
           <select value={keyB} onChange={(e) => setKeyB(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
               dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
@@ -111,17 +125,20 @@ export function SpreadsPage(
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { label: 'Latest spread', value: latest !== null
-                ? fmt(latest) : '—' },
-              { label: 'Mean', value: fmt(mean) },
-              { label: 'Std dev', value: fmt(std) },
+                ? fmt(latest) : '—', tip: 'Spread' as const },
+              { label: 'Mean', value: fmt(mean),
+                tip: undefined },
+              { label: 'Std dev', value: fmt(std), tip: undefined },
               { label: 'Deviation', value: z !== null
                 ? `${z > 0 ? '+' : ''}${z.toFixed(1)}σ` : '—',
-              tone: deviates ? 'text-amber-600 dark:text-amber-400' : '' },
+              tone: deviates ? 'text-amber-600 dark:text-amber-400' : '',
+              tip: 'Deviation (σ)' as const },
             ].map((t) => (
               <div key={t.label} className="bg-zinc-50 dark:bg-zinc-800/60
                 rounded-lg p-4">
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {t.label}</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400
+                  flex items-center gap-1">
+                  {t.label}{t.tip && <InfoTip term={t.tip} />}</p>
                 <p className={`text-2xl font-semibold mt-1 ${t.tone ||
                   'text-zinc-900 dark:text-zinc-100'}`}>{t.value}</p>
               </div>

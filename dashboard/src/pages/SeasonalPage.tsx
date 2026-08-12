@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
-  COMMODITIES,
+  effectiveCommodities,
   MONTHS,
   monthlyByYear,
   seasonalIndex,
@@ -9,11 +9,25 @@ import {
   confidenceLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { REPORT_HELP } from '../lib/help';
 
 export function SeasonalPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const [metric, setMetric] = useState(COMMODITIES[7].key); // Cu LME
+  const { settings } = useUserSettings();
+  const commodities = useMemo(
+    () => effectiveCommodities('seasonal', settings.personalization),
+    [settings.personalization]
+  );
+  const [metric, setMetric] = useState<string>('');
+  // Keep the selection valid as the effective set changes.
+  useEffect(() => {
+    if (!commodities.some((c) => c.key === metric)) {
+      setMetric(commodities[0]?.key ?? '');
+    }
+  }, [commodities, metric]);
 
   const years = yearsOfData(records);
   const confidence = confidenceLabel(years);
@@ -111,15 +125,8 @@ export function SeasonalPage(
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Historical &amp; seasonal analysis
-          </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            year-over-year overlay and the typical seasonal pattern
-          </p>
-        </div>
+      <ReportIntro help={REPORT_HELP['seasonal']} />
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <span className={`px-2 py-1 rounded text-xs font-medium ${confTone}`}>
             confidence: {confidence}
@@ -131,7 +138,7 @@ export function SeasonalPage(
               dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-md
               py-2 px-3 text-sm"
           >
-            {COMMODITIES.map((c) => (
+            {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>

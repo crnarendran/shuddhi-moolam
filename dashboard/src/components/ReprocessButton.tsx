@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../firebase';
+import { functions, fnName } from '../firebase';
 import { RefreshCw } from 'lucide-react';
 
 export const ReprocessButton = ({ fileId }: { fileId: string }) => {
@@ -13,7 +13,7 @@ export const ReprocessButton = ({ fileId }: { fileId: string }) => {
     setLoading(true);
     setError(null);
     try {
-      const reprocessFn = httpsCallable<{ fileId: string }, any>(functions, 'reprocessPendingPdf');
+      const reprocessFn = httpsCallable<{ fileId: string }, any>(functions, fnName('reprocessPendingPdf'));
       await reprocessFn({ fileId });
     } catch (err: any) {
       setError(err.message || 'Failed to reprocess file');
