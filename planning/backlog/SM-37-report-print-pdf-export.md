@@ -3,11 +3,32 @@ id: SM-37
 title: Print / PDF export for all reports
 type: ticket
 points: 3
-status: planned
+status: in-review
 depends_on: [SM-18, SM-20, SM-21, SM-26, SM-33, SM-35]
 tags: [backlog, ux, reports, print, pdf, export]
 ---
 # SM-37 — Print / PDF export for reports
+
+## Implemented (dev)
+- `components/PrintButton.tsx`: "Print / PDF" action (printer icon) that
+  temporarily drops dark mode (ink-friendly), calls `window.print()`, and
+  restores the theme on `afterprint`. Self-hidden in print (`print:hidden`).
+- Button added to every in-scope report header: Price Review, Seasonal, Cost
+  Impact, Spreads, Guidance.
+- `index.css` `@media print`: white background, full-width `main`,
+  `break-inside: avoid` on charts/tables.
+- `App.tsx`: `print:hidden` on the top nav header, Ask-AI button, and chat
+  panel; a **print-only document header** (app name + report name + generated
+  timestamp) so the PDF is self-describing; `viewName` extended to all tabs.
+- ECharts switched to the **SVG renderer** (`opts={{ renderer: 'svg' }}`) on
+  every report chart so charts print crisply (not blank canvas).
+- Report control `<select>`s are left visible so the printed page shows the
+  active selection.
+- tsc + oxlint + vitest (22) + build green.
+
+**Verification note:** the authenticated report views sit behind Google
+sign-in, so the print dialog wasn't exercisable in the sandbox; verify the
+actual print/save-as-PDF output on the deployed dev site.
 
 ## Goal
 Let a user print or save any report as a PDF — for sharing with stakeholders

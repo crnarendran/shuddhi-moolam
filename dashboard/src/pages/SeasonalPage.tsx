@@ -11,6 +11,7 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { ReportIntro } from '../components/ReportIntro';
+import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 
 export function SeasonalPage(
@@ -142,6 +143,7 @@ export function SeasonalPage(
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
+          <PrintButton />
         </div>
       </div>
 
@@ -149,7 +151,7 @@ export function SeasonalPage(
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
           mb-2">Year-over-year overlay</h3>
-        <ReactECharts option={overlayOption}
+        <ReactECharts option={overlayOption} opts={{ renderer: 'svg' }}
           style={{ height: 320, width: '100%' }} />
       </div>
 
@@ -157,7 +159,7 @@ export function SeasonalPage(
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
           mb-2">Typical seasonal pattern · avg month-over-month change</h3>
-        <ReactECharts option={seasonalOption}
+        <ReactECharts option={seasonalOption} opts={{ renderer: 'svg' }}
           style={{ height: 260, width: '100%' }} />
         {years < 3 && (
           <p className="text-xs text-zinc-400 mt-2">

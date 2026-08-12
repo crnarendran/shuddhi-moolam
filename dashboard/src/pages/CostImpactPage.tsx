@@ -11,6 +11,7 @@ import { useUserSettings } from '../hooks/useUserSettings';
 import { shouldMigrateWeights } from '../lib/userSettings';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
+import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 
 const STORE_KEY = 'cost_weights_v1';
@@ -117,10 +118,13 @@ export function CostImpactPage(
   return (
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['cost-impact']} />
-      <p className="-mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-        {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
-        baseline, weighted by per-kg consumption
-      </p>
+      <div className="-mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
+          baseline, weighted by per-kg consumption
+        </p>
+        <PrintButton />
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4
@@ -157,7 +161,7 @@ export function CostImpactPage(
         dark:border-zinc-700 p-4">
         <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
           mb-3">Impact contribution per commodity</h3>
-        <ReactECharts option={chartOption}
+        <ReactECharts option={chartOption} opts={{ renderer: 'svg' }}
           style={{ height: Math.max(240, contribRows.length * 34) }} />
       </div>
 

@@ -142,7 +142,10 @@ function App() {
     activeTab === 'seasonal' ? 'Seasonal analysis'
       : activeTab === 'cost-impact' ? 'Cost impact analysis'
         : activeTab === 'spreads' ? 'Spread monitor'
-          : 'Price Review';
+          : activeTab === 'guidance' ? 'Purchasing guidance'
+            : activeTab === 'monitor' ? 'Pipeline monitor'
+              : activeTab === 'settings' ? 'Settings'
+                : 'Price Review';
   const chatContext =
     `The user is viewing the ${viewName} of the metals price dashboard. ` +
     'Answer only from the available extracted newsletter price data; if the ' +
@@ -150,7 +153,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <header className="bg-white dark:bg-zinc-800 shadow-sm">
+      <header className="bg-white dark:bg-zinc-800 shadow-sm print:hidden">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2 min-w-0">
@@ -198,6 +201,15 @@ function App() {
       </header>
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Print-only document header so a saved PDF is self-describing. */}
+        <div className="hidden print:block mb-4 pb-3 border-b border-zinc-300">
+          <div className="text-lg font-semibold">
+            Shuddhi-Moolam — {viewName}
+          </div>
+          <div className="text-xs text-zinc-500">
+            Generated {new Date().toLocaleString()}
+          </div>
+        </div>
         {activeTab === 'price-review' ? (
           <PriceReviewPage records={records} isDark={isDark} />
         ) : activeTab === 'seasonal' ? (
@@ -221,17 +233,19 @@ function App() {
       {hasChat && !isChatOpen && (
         <button
           onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-lg transition-colors"
+          className="print:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-lg transition-colors"
         >
           <MessageSquare className="w-5 h-5" />
           <span className="hidden sm:inline font-medium">Ask AI</span>
         </button>
       )}
-      <AIChatPanel
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        contextText={chatContext}
-      />
+      <div className="print:hidden">
+        <AIChatPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          contextText={chatContext}
+        />
+      </div>
     </div>
   );
 }

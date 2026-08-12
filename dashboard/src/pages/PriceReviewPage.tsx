@@ -9,6 +9,7 @@ import {
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { ReportIntro } from '../components/ReportIntro';
+import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 
 type Status = 'Review' | 'Watch' | 'OK' | 'No data';
@@ -144,20 +145,23 @@ export function PriceReviewPage(
             : ''}
           month-over-month
         </p>
-        <label className="flex items-center gap-2 text-sm text-zinc-600
-          dark:text-zinc-300">
-          Threshold
-          <input
-            type="number"
-            min={1}
-            max={50}
-            value={threshold}
-            onChange={(e) => setThreshold(Number(e.target.value) || 1)}
-            className="w-16 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
-              dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm"
-          />
-          <span>%</span>
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-zinc-600
+            dark:text-zinc-300">
+            Threshold
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={threshold}
+              onChange={(e) => setThreshold(Number(e.target.value) || 1)}
+              className="w-16 bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm"
+            />
+            <span>%</span>
+          </label>
+          <PrintButton />
+        </div>
       </div>
 
       {flagged > 0 && (
@@ -189,6 +193,7 @@ export function PriceReviewPage(
           mb-3">Percent change · latest month</h3>
         <ReactECharts
           option={chartOption}
+          opts={{ renderer: 'svg' }}
           style={{ height: Math.max(240, chartRows.length * 34), width: '100%' }}
         />
       </div>

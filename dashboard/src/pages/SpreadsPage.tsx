@@ -10,6 +10,7 @@ import {
 import { useUserSettings } from '../hooks/useUserSettings';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
+import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number): string =>
@@ -112,6 +113,7 @@ export function SpreadsPage(
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}
           </select>
+          <PrintButton />
         </div>
       </div>
 
@@ -156,7 +158,7 @@ export function SpreadsPage(
 
           <div className="bg-white dark:bg-zinc-800 rounded-lg border
             border-zinc-200 dark:border-zinc-700 p-4">
-            <ReactECharts option={option}
+            <ReactECharts option={option} opts={{ renderer: 'svg' }}
               style={{ height: 340, width: '100%' }} />
           </div>
         </>

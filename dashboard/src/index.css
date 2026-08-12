@@ -34,3 +34,24 @@ body {
   color: var(--foreground);
   overflow-x: hidden;
 }
+
+/* SM-37: print / save-as-PDF. `print:hidden` (Tailwind) removes app chrome;
+   here we widen the report and keep charts/tables from splitting pages.
+   PrintButton also forces light mode so the PDF is ink-friendly. */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .echarts-for-react,
+  table {
+    break-inside: avoid;
+  }
+}

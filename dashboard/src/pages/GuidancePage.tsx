@@ -11,6 +11,7 @@ import {
 } from '../lib/guidance';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
+import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 
 const fmt = (n: number | null): string =>
@@ -128,6 +129,7 @@ export function GuidancePage(
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
+        <div className="ml-auto"><PrintButton /></div>
       </div>
 
       {/* Cost vs baseline */}
@@ -161,7 +163,8 @@ export function GuidancePage(
         <div className={card}>
           <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200
             mb-3">Blended cost over time</h3>
-          <ReactECharts option={option} style={{ height: 300 }} />
+          <ReactECharts option={option} opts={{ renderer: 'svg' }}
+            style={{ height: 300 }} />
         </div>
       )}
 
