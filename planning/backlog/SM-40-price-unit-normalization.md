@@ -3,11 +3,23 @@ id: SM-40
 title: Price unit normalization — one canonical unit (₹/kg) for charts & math
 type: ticket
 points: 3
-status: planned
+status: in-review
 depends_on: [SM-18, SM-26, SM-33]
 tags: [backlog, data, units, charts, correctness]
 ---
 # SM-40 — Price unit normalization
+
+## Implemented (dev) — DECIDED: normalize at load → ₹/kg
+- `reporting.ts`: `TONNE_KEYS` (registry `unit === 'Rs/tonne'`) +
+  `toCanonicalPriceRecord(record)` — pure, divides each Rs/tonne value by 1000
+  (handles ranges via `normalizePrice`, leaves Rs/kg + metadata + unparseable
+  cells untouched, non-mutating). Unit-tested (5 cases).
+- `App.tsx`: applied once where `historical_prices` records load, so all
+  charts + `blendedCost`/cost-impact/guidance see canonical ₹/kg.
+- Firestore/Sheet unchanged (faithful to newsletter). Commodity `unit` isn't
+  displayed in the UI, so no label changes needed. Backend `%`-based alerts are
+  scale-invariant and unaffected.
+- tsc + oxlint + vitest (27) + build green.
 
 ## Problem
 The newsletter quotes some commodities in **₹/tonne** and others in **₹/kg**.

@@ -16,7 +16,7 @@ import { SettingsSection } from './components/SettingsSection';
 import { GuidancePage } from './pages/GuidancePage';
 import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
-import { type PriceRecord } from './lib/reporting';
+import { toCanonicalPriceRecord, type PriceRecord } from './lib/reporting';
 
 // Top-level sections keep the primary nav to three items (no scroll).
 type Section = 'reports' | 'monitor' | 'settings';
@@ -123,7 +123,10 @@ function App() {
       return;
     }
     return onSnapshot(collection(db, HISTORICAL), (snap) => {
-      setRecords(snap.docs.map((d) => d.data() as PriceRecord));
+      // Normalize Rs/tonne commodities to canonical Rs/kg at load (SM-40).
+      setRecords(snap.docs.map(
+        (d) => toCanonicalPriceRecord(d.data() as PriceRecord)
+      ));
     });
   }, [user]);
 

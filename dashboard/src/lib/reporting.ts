@@ -93,6 +93,32 @@ export function normalizePrice(raw: unknown): number | null {
   return parts.reduce((a, b) => a + b, 0) / parts.length;
 }
 
+// Commodities the newsletter quotes in Rs/tonne. We normalize them to Rs/kg
+// (÷1000) at the data-load boundary so every chart and the blended-cost math
+// share one canonical unit (SM-40); Firestore/Sheet stay faithful to the
+// newsletter. Rs/kg commodities and metadata are untouched.
+const TONNE_KEYS = new Set(
+  COMPONENTS.filter((c) => c.unit === 'Rs/tonne').map((c) => c.key)
+);
+
+/**
+ * Returns a copy of a raw price record with every Rs/tonne commodity value
+ * converted to Rs/kg (÷1000). A field that doesn't parse to a number is left
+ * as-is (e.g. a blank cell). Apply once where records are loaded so all
+ * downstream reporting sees canonical Rs/kg.
+ * @param {PriceRecord} record - A raw record from `historical_prices`.
+ * @returns {PriceRecord} A canonical (Rs/kg) copy.
+ */
+export function toCanonicalPriceRecord(record: PriceRecord): PriceRecord {
+  const out: PriceRecord = { ...record };
+  for (const key of TONNE_KEYS) {
+    if (!(key in out)) continue;
+    const n = normalizePrice(out[key]);
+    if (n !== null) out[key] = n / 1000;
+  }
+  return out;
+}
+
 /** Parses dd/MM/yyyy into {year, month}, or null. */
 export function parseIssueDate(
   dateStr: string

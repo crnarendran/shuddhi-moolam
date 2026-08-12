@@ -122,9 +122,9 @@ Manager**, not in code. The provider's API response → delivery status stored o
 the invitation doc. No `mail` collection needed.
 
 **Provider:** ✅ **Resend** (`resend` SDK), behind a thin swappable
-`sendEmail()` helper. **Sending domain: `narensportal.com`** (added in Resend);
-default FROM `Shuddhi-Moolam <no-reply@narensportal.com>`. API key stored as the
-`RESEND_API_KEY` Firebase secret.
+`sendEmail()` helper. **Sending domain: `narensportal.com`** (verified in Resend); **FROM
+`Shuddhi-Moolam <sai-shuddhi-moolam-no-reply@narensportal.com>`**. API key
+stored as the `RESEND_API_KEY` Firebase secret (Blaze confirmed).
 
 **User-provisioned prerequisites (billing/credentials — ESCALATION, not the
 agent's to do):**
