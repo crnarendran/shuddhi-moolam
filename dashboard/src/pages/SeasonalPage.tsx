@@ -44,15 +44,27 @@ export function SeasonalPage(
   }, [sv.keys, commodities]);
   const setKeys = (next: string[]) => setSv({ keys: next });
 
-  const primary = activeKeys[0];
   const labelOf = (k: string) =>
     commodities.find((c) => c.key === k)?.label ?? k;
 
   const years = yearsOfData(records);
   const confidence = confidenceLabel(years);
 
-  const byYear = useMemo(
-    () => monthlyByYear(records, primary), [records, primary]
+  const axisColor = isDark ? '#9ca3af' : '#6b7280';
+  const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
+  const multi = activeKeys.length > 1;
+
+  // Per commodity: a stable colour + its months-by-year data. Drives the
+  // overlay (one colour per commodity; current year solid, previous dotted).
+  const overlayByKey = useMemo(
+    () => activeKeys.map((k, ci) => ({
+      key: k,
+      label: labelOf(k),
+      color: SERIES_COLORS[ci % SERIES_COLORS.length],
+      by: monthlyByYear(records, k),
+    })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [records, activeKeys]
   );
   const patternByKey = useMemo(
     () => activeKeys.map((k) => ({
@@ -62,16 +74,16 @@ export function SeasonalPage(
     [records, activeKeys]
   );
 
-  const yearKeys = [...byYear.keys()].sort();
-  const latestYear = yearKeys[yearKeys.length - 1];
-  const axisColor = isDark ? '#9ca3af' : '#6b7280';
-  const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
-  const multi = activeKeys.length > 1;
+  // Any commodity with at least one year of data → chart is renderable.
+  const hasOverlayData = overlayByKey.some((o) => o.by.size > 0);
 
   const overlayOption = {
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
     tooltip: { trigger: 'axis' },
-    legend: { data: yearKeys.map(String), textStyle: { color: axisColor }, top: 0 },
+    legend: {
+      data: overlayByKey.map((o) => o.label),
+      textStyle: { color: axisColor }, top: 0,
+    },
     xAxis: {
       type: 'category',
       data: MONTHS,
@@ -84,19 +96,27 @@ export function SeasonalPage(
       axisLabel: { color: axisColor },
       splitLine: { lineStyle: { color: gridColor } },
     },
-    series: yearKeys.map((y) => ({
-      name: String(y),
-      type: 'line',
-      data: byYear.get(y),
-      smooth: true,
-      connectNulls: false,
-      symbol: 'none',
-      lineStyle:
-        y === latestYear
-          ? { color: '#2563eb', width: 3 }
-          : { color: axisColor, width: 1.5, type: 'dashed' },
-      itemStyle: { color: y === latestYear ? '#2563eb' : axisColor },
-    })),
+    // For each commodity, one line per year in its own colour; the latest
+    // year is solid, earlier years dotted. Series share the commodity name
+    // so the legend shows one toggle per commodity.
+    series: overlayByKey.flatMap((o) => {
+      const yrs = [...o.by.keys()].sort();
+      const latest = yrs[yrs.length - 1];
+      return yrs.map((y) => ({
+        name: o.label,
+        type: 'line',
+        data: o.by.get(y),
+        smooth: true,
+        connectNulls: false,
+        symbol: 'none',
+        lineStyle: {
+          color: o.color,
+          width: y === latest ? 2.5 : 1.5,
+          type: y === latest ? 'solid' : 'dotted',
+        },
+        itemStyle: { color: o.color },
+      }));
+    }),
   };
 
   const patternData = (idx: Map<number, number>) =>
@@ -182,7 +202,7 @@ export function SeasonalPage(
           text-center">
           Select one or more commodities to see their seasonal patterns.
         </div>
-      ) : yearKeys.length === 0 ? (
+      ) : !hasOverlayData ? (
         <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
           text-center">No history yet for seasonal analysis.</div>
       ) : (
@@ -193,8 +213,7 @@ export function SeasonalPage(
           mb-2">
           Year-over-year overlay
           <span className="font-normal text-zinc-400">
-            {' · '}{labelOf(primary)}
-            {multi ? ' (first selection)' : ''}
+            {' · '}absolute price · solid = current year · dotted = previous
           </span>
         </h3>
         <ReactECharts option={overlayOption} opts={{ renderer: 'svg' }}

@@ -39,8 +39,10 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
       'Typical seasonal pattern draws one line per commodity — the average ' +
         'month-over-month % change per calendar month. They are percentages, ' +
         'so different metals compare cleanly on one axis.',
-      'The year-over-year overlay shows the first selected commodity, one ' +
-        'line per year.',
+      'The year-over-year overlay shows each selected commodity in its own ' +
+        'colour — current year solid, previous year dotted. These are ' +
+        'absolute prices, so it reads best comparing similar-scale ' +
+        'commodities.',
       'Confidence is labelled by how many years of history exist — treat a ' +
         'low-confidence read as indicative only.',
     ],
