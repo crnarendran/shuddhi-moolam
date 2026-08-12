@@ -166,7 +166,7 @@ export function PriceReviewPage(
             />
             <span>%</span>
           </label>
-          <PrintButton />
+          <PrintButton orientation="landscape" />
         </div>
       </div>
 

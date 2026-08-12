@@ -39,13 +39,9 @@ body {
    here we widen the report and keep charts/tables from splitting pages.
    PrintButton also forces light mode so the PDF is ink-friendly. */
 @media print {
-  /* Landscape gives wide data tables (Cost Impact, Price Review) ~40% more
-     width so every column fits without truncation. */
-  @page {
-    size: landscape;
-    margin: 12mm;
-  }
-
+  /* Page orientation is set per-report by PrintButton (landscape only for the
+     wide-table reports: Price Review, Cost Impact); everything else prints
+     portrait. */
   html,
   body {
     background: #ffffff !important;

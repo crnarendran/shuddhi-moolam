@@ -3,15 +3,24 @@ import { Printer } from 'lucide-react';
 /**
  * A "Print / PDF" action for a report. Uses the browser's native print
  * (which offers "Save as PDF"). Temporarily drops dark mode so the output is
- * ink-friendly, restoring it after printing. Hidden in the print output.
- * @param props Optional label override for the button.
+ * ink-friendly, and injects the page orientation for this print only
+ * (landscape for wide-table reports, portrait otherwise); both are restored
+ * after printing. Hidden in the print output.
+ * @param props Optional label and page orientation (defaults to portrait).
  */
-export function PrintButton({ label = 'Print / PDF' }: { label?: string }) {
+export function PrintButton(
+  { label = 'Print / PDF', orientation = 'portrait' }:
+  { label?: string; orientation?: 'portrait' | 'landscape' }
+) {
   const handlePrint = () => {
     const html = document.documentElement;
     const wasDark = html.classList.contains('dark');
+    const style = document.createElement('style');
+    style.textContent = `@page { size: ${orientation}; margin: 12mm; }`;
+    document.head.appendChild(style);
     const restore = () => {
       if (wasDark) html.classList.add('dark');
+      style.remove();
       window.removeEventListener('afterprint', restore);
     };
     if (wasDark) html.classList.remove('dark');

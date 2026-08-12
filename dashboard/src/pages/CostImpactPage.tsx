@@ -123,7 +123,7 @@ export function CostImpactPage(
           {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
           baseline, weighted by per-kg consumption
         </p>
-        <PrintButton />
+        <PrintButton orientation="landscape" />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
