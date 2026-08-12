@@ -32,8 +32,19 @@ SM-09 (deploy CI)  ·  SM-10 (docs)  — cross-cutting
 **Also scoped:** SM-15 backfill (catch existing/missed files), SM-16 analytics
 (price trends — lower priority).
 
-**Non-goal:** multi-tenant support — see the HLD's Non-goals; deliberately not
-built for this single-owner tool.
+**Personalization & Guidance epic (SM-30…SM-34):** the tool grows from a
+single-owner monitor into a per-user product. SM-30 stands up per-user Firestore
+settings + self-scoped security rules (replacing localStorage); SM-31 adds a
+global + per-report commodity exclusion cascade for focused views; SM-32 lets a
+user model **multiple companies** and their **materials (BOMs)**; SM-33 turns
+those BOMs into statistical purchasing **guidance** (seasonal buy-timing,
+material/market substitution) reusing the existing reporting engine; SM-34
+defers forecasting/alerts/sharing.
+
+**Note on the earlier "no multi-tenant" non-goal:** SM-30+ deliberately
+supersedes it — per-user personalization and consultant multi-company modelling
+are now in scope. Access stays private-per-user via uid-scoped rules (SM-30);
+this is not org-wide multi-tenancy, just per-account data.
 
 ## Tickets
 
@@ -64,6 +75,15 @@ built for this single-owner tool.
 | [SM-24](SM-24-latency-cost-metrics.md) | Fix latency & total-cost metrics (telemetry bug) | 3 | SM-11, SM-14, SM-05 |
 | [SM-25](SM-25-file-monitor-display-fixes.md) | File monitor display fixes — filename + year→tab label | 2 | SM-11, SM-13, SM-06 |
 | [SM-26](SM-26-cost-impact-analysis.md) | Cost-impact analysis — consumption-weighted quarterly view | 5 | SM-18, SM-20 |
+| [SM-27](SM-27-chat-cost-tracking.md) | Capture chat cost separately | 2 | SM-24 |
+| [SM-28](SM-28-extraction-foundation-revamp.md) | Extraction revamp — 31-component tiered registry + re-extraction | 8 | SM-05, SM-07, SM-18 |
+| [SM-29](SM-29-cost-optimized-extraction.md) | Cost-optimized extraction — thinking cap, File API, large-PDF | 8 | SM-05, SM-24, SM-28 |
+| [SM-30](SM-30-per-user-settings-foundation.md) | Per-user settings foundation (Firestore + self-scoped rules) | 3 | — |
+| [SM-31](SM-31-commodity-personalization.md) | Commodity personalization — global + per-report exclusion cascade | 5 | SM-30 |
+| [SM-32](SM-32-companies-and-materials.md) | Companies & Materials (BOM) management | 5 | SM-30 |
+| [SM-33](SM-33-material-guidance-report.md) | Material guidance report — seasonal buying + substitution (v1) | 8 | SM-31, SM-32 |
+| [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, alerts, sharing (later) | 8 | SM-33 |
+| [SM-35](SM-35-in-product-documentation.md) | In-product documentation — report intros, how-to-read, term tooltips | 3 | SM-18, SM-31, SM-32, SM-33 |
 
 **Reporting & UX epic (SM-18…SM-24):** Price Review & Insights reporting
 (SM-18), quarterly/seasonal alerts (SM-19), historical & seasonal analysis

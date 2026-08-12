@@ -1,21 +1,32 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   COMMODITIES,
   costImpact,
+  effectiveCommodities,
   quarterKeyLabel,
   type PriceRecord,
 } from '../lib/reporting';
+import { useUserSettings } from '../hooks/useUserSettings';
+import { shouldMigrateWeights } from '../lib/userSettings';
+import { ReportIntro } from '../components/ReportIntro';
+import { InfoTip } from '../components/InfoTip';
+import { REPORT_HELP } from '../lib/help';
 
 const STORE_KEY = 'cost_weights_v1';
 
-const loadWeights = (): Record<string, number> => {
+// Parsed browser weights, or null if none were ever saved (kept as a
+// signed-out fallback and the source for the one-off Firestore migration).
+const loadLocalWeights = (): Record<string, number> | null => {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* ignore */ }
-  return Object.fromEntries(COMMODITIES.map((c) => [c.key, 1]));
+  return null;
 };
+
+const defaultWeights = (): Record<string, number> =>
+  Object.fromEntries(COMMODITIES.map((c) => [c.key, 1]));
 
 const fmt = (n: number | null, d = 1): string =>
   n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: d });
@@ -23,16 +34,40 @@ const fmt = (n: number | null, d = 1): string =>
 export function CostImpactPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const [weights, setWeights] = useState<Record<string, number>>(loadWeights);
+  const { settings, update } = useUserSettings();
+  const [weights, setWeights] = useState<Record<string, number>>(
+    () => settings.costImpact?.weights ?? loadLocalWeights() ?? defaultWeights()
+  );
+
+  // Adopt weights once they arrive from Firestore (sign-in / other device).
+  useEffect(() => {
+    const stored = settings.costImpact?.weights;
+    if (stored) setWeights(stored);
+  }, [settings.costImpact?.weights]);
+
+  // One-off localStorage -> Firestore migration for existing users.
+  useEffect(() => {
+    const local = loadLocalWeights();
+    if (local && shouldMigrateWeights(settings, local)) {
+      void update({ costImpact: { weights: local } });
+    }
+  }, [settings, update]);
 
   const setWeight = (key: string, val: number) => {
     const next = { ...weights, [key]: isNaN(val) ? 0 : val };
     setWeights(next);
+    // Keep a local fallback (for signed-out use) and persist to the account.
     try { localStorage.setItem(STORE_KEY, JSON.stringify(next)); } catch { /* */ }
+    void update({ costImpact: { weights: next } });
   };
 
+  const commodities = useMemo(
+    () => effectiveCommodities('cost-impact', settings.personalization),
+    [settings.personalization]
+  );
   const { rows, sum, latestQuarter } = useMemo(
-    () => costImpact(records, weights), [records, weights]
+    () => costImpact(records, weights, 4, commodities),
+    [records, weights, commodities]
   );
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
@@ -81,21 +116,21 @@ export function CostImpactPage(
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Cost impact
-        </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
-          baseline, weighted by per-kg consumption
-        </p>
-      </div>
+      <ReportIntro help={REPORT_HELP['cost-impact']} />
+      <p className="-mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+        {quarterKeyLabel(latestQuarter)} vs the trailing 4-quarter rolling
+        baseline, weighted by per-kg consumption
+      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4
           col-span-2 md:col-span-1">
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400
+            flex items-center gap-1">
             Sum of impact / kg
+            <InfoTip content={'The total per-unit cost change: each ' +
+              'commodity’s net price move × its consumption weight, summed. ' +
+              'Red = costlier, green = cheaper.'} />
           </p>
           <p className={`text-2xl font-semibold mt-1 ${sumTone ||
             'text-zinc-900 dark:text-zinc-100'}`}>
@@ -114,7 +149,7 @@ export function CostImpactPage(
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
           <p className="text-xs text-zinc-500 dark:text-zinc-400">Commodities</p>
           <p className="text-2xl font-semibold mt-1 text-zinc-900
-            dark:text-zinc-100">{COMMODITIES.length}</p>
+            dark:text-zinc-100">{commodities.length}</p>
         </div>
       </div>
 
@@ -134,9 +169,17 @@ export function CostImpactPage(
               border-zinc-200 dark:border-zinc-700">
               <th className="px-4 py-3 font-medium">Commodity</th>
               <th className="px-4 py-3 font-medium text-right">Latest Q</th>
-              <th className="px-4 py-3 font-medium text-right">Baseline</th>
+              <th className="px-4 py-3 font-medium text-right">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  Baseline<InfoTip term="Rolling baseline" />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Net Δ</th>
-              <th className="px-4 py-3 font-medium text-right">Weight (kg)</th>
+              <th className="px-4 py-3 font-medium text-right">
+                <span className="inline-flex items-center gap-1 justify-end">
+                  Weight (kg)<InfoTip term="Consumption weight" />
+                </span>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Impact / kg</th>
             </tr>
           </thead>
@@ -184,7 +227,8 @@ export function CostImpactPage(
       </div>
       <p className="text-xs text-zinc-400">
         Weights are the kg of each commodity per unit of product; edit them above
-        (saved in your browser). Impact = net quarterly change × weight.
+        (saved to your account, synced across devices). Impact = net quarterly
+        change × weight.
       </p>
     </div>
   );

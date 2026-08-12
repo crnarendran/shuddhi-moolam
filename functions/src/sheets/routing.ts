@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import * as logger from 'firebase-functions/logger';
-import { SHEET_HEADERS } from './constants';
+import { SHEET_HEADERS_FRIENDLY } from './constants';
 import { MASTER_SHEET_ID } from '../config';
 
 const auth = new google.auth.GoogleAuth({
@@ -62,20 +62,13 @@ export async function ensureYearTab(dateStr: string): Promise<string> {
     },
   });
 
-  const userFriendlyHeaders = SHEET_HEADERS.map((header) =>
-    header
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
-  );
-
   // Initialize the headers
   await sheetsClient.spreadsheets.values.update({
     spreadsheetId: masterSheetId,
     range: `${tabTitle}!A1`,
     valueInputOption: 'USER_ENTERED',
     requestBody: {
-      values: [userFriendlyHeaders],
+      values: [SHEET_HEADERS_FRIENDLY],
     },
   });
 

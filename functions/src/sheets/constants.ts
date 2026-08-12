@@ -17,3 +17,14 @@ export const SHEET_HEADERS: string[] = [
   'source_pages',
   'last_modified_date',
 ];
+
+// Title-cased header labels written to row 1 of each year tab (e.g.
+// 'aluminium_ingot' -> 'Aluminium Ingot'). Single source of truth so the
+// tab-creation path (routing.ts) and the reset path (clearTabs) can never
+// disagree on the header names.
+export const SHEET_HEADERS_FRIENDLY: string[] = SHEET_HEADERS.map((header) =>
+  header
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+);
