@@ -21,13 +21,34 @@ export const chatEndpoint = onRequest((req, res) => {
     }
     
     let uid: string;
+    let email: string;
     try {
       const token = authHeader.split('Bearer ')[1];
       const decodedToken = await getAuth().verifyIdToken(token);
       uid = decodedToken.uid;
+      email = (decodedToken.email || '').toLowerCase();
     } catch (err) {
       console.error('Auth verification failed:', err);
       res.status(401).send('Unauthorized: Invalid token.');
+      return;
+    }
+
+    // 1.5 Verify Premium Entitlement
+    const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
+    let isPremium = FOUNDER_EMAILS.includes(email);
+    if (!isPremium) {
+      try {
+        const entDoc = await getFirestore().collection('entitlements').doc(uid).get();
+        if (entDoc.exists && entDoc.data()?.plan === 'premium') {
+          isPremium = true;
+        }
+      } catch (err) {
+        console.error('Error fetching entitlements:', err);
+      }
+    }
+
+    if (!isPremium) {
+      res.status(403).send('Forbidden: Ask AI requires a Premium plan.');
       return;
     }
 
