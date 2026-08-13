@@ -126,25 +126,25 @@ export const chatEndpoint = onRequest((req, res) => {
             'about the Shuddhi-Moolam data in extracted_data. ' +
             'CRITICAL SECURITY RULE: The user is ONLY authorized to view company-specific data for the following company IDs: ' +
             `[${allowedIdsStr}]. ` +
-            `When querying the \`${HISTORICAL_COLLECTION}_raw_latest\` or \`${COMPANIES_COLLECTION}_raw_latest\` tables, you MUST explicitly include a \`WHERE companyId IN (...)\` or \`WHERE id IN (...)\` filter using exactly this list to ensure no other company data is returned. ` +
-            `Note: The \`${FIRESTORE_COLLECTION}_raw_latest\` table contains global newsletter prices and does not require this filter.`,
+            `When querying the \`${HISTORICAL_COLLECTION}\` or \`${COMPANIES_COLLECTION}\` tables, you MUST explicitly include a \`WHERE companyId IN (...)\` or \`WHERE id IN (...)\` filter using exactly this list to ensure no other company data is returned. ` +
+            `Note: The \`${FIRESTORE_COLLECTION}\` table contains global newsletter prices and does not require this filter.`,
           datasourceReferences: {
             bq: {
               tableReferences: [
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: `${FIRESTORE_COLLECTION}_raw_latest`,
+                  tableId: FIRESTORE_COLLECTION,
                 },
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: `${HISTORICAL_COLLECTION}_raw_latest`,
+                  tableId: HISTORICAL_COLLECTION,
                 },
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: `${COMPANIES_COLLECTION}_raw_latest`,
+                  tableId: COMPANIES_COLLECTION,
                 },
               ],
             },

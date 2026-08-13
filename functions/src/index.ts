@@ -133,6 +133,13 @@ const env = process.env.APP_ENV || 'dev';
 const isProd = env === 'main' || env === 'prod';
 const suffix = isProd ? '' : `_${env}`;
 
+import { createSyncTrigger } from './analytics/syncToBigQuery';
+import { FIRESTORE_COLLECTION, HISTORICAL_COLLECTION, COMPANIES_COLLECTION } from './config';
+
+const _syncPipelineRuns = createSyncTrigger(FIRESTORE_COLLECTION, FIRESTORE_COLLECTION);
+const _syncHistoricalPrices = createSyncTrigger(HISTORICAL_COLLECTION, HISTORICAL_COLLECTION);
+const _syncCompanies = createSyncTrigger(COMPANIES_COLLECTION, COMPANIES_COLLECTION);
+
 module.exports = {
   [`driveWebhook${suffix}`]: _driveWebhook,
   [`processPendingPdf${suffix}`]: _processPendingPdf,
@@ -142,6 +149,9 @@ module.exports = {
   [`chatEndpoint${suffix}`]: _chatEndpoint,
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
   [`reprocessPendingPdf${suffix}`]: _reprocessPendingPdf,
+  [`syncPipelineRunsToBigQuery${suffix}`]: _syncPipelineRuns,
+  [`syncHistoricalPricesToBigQuery${suffix}`]: _syncHistoricalPrices,
+  [`syncCompaniesToBigQuery${suffix}`]: _syncCompanies,
   [`createInvitation${suffix}`]: _createInvitation,
   [`acceptInvitation${suffix}`]: _acceptInvitation,
   [`resendInvitation${suffix}`]: _resendInvitation,
