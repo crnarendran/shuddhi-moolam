@@ -16,9 +16,7 @@ import { PrintButton } from '../components/PrintButton';
 import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
-
-const fmt = (n: number): string =>
-  n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+import { fmtNum as fmt } from '../lib/format';
 
 // Empty defaults so first run (unset) is distinguishable from an explicit
 // clear ([]); first run picks sensible defaults, clear shows an empty-state.

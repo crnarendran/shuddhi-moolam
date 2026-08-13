@@ -18,9 +18,7 @@ import { PrintButton } from '../components/PrintButton';
 import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
-
-const fmt = (n: number | null): string =>
-  n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+import { fmtNum as fmt } from '../lib/format';
 
 function latestRecord(records: PriceRecord[]): PriceRecord | null {
   let best: PriceRecord | null = null;
@@ -226,7 +224,7 @@ export function GuidancePage(
   const option = {
     grid: { left: 8, right: 16, top: multi ? 28 : 16, bottom: 8,
       containLabel: true },
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', valueFormatter: (v: number) => fmt(v) },
     legend: multi
       ? { data: guidance.map((g) => g.material.name), textStyle:
         { color: axisColor }, top: 0 }
@@ -247,13 +245,13 @@ export function GuidancePage(
         type: 'line', smooth: true, symbol: 'none', connectNulls: false,
         data: allMonths.map((k) => {
           const v = g.series.get(k);
-          return v == null ? null : Number(v.toFixed(0));
+          return v == null ? null : Number(v.toFixed(1));
         }),
         lineStyle: { color, width: 2.5 },
         itemStyle: { color },
         markLine: !multi && g.baseline.baseline !== null ? {
           symbol: 'none',
-          data: [{ yAxis: Number(g.baseline.baseline.toFixed(0)) }],
+          data: [{ yAxis: Number(g.baseline.baseline.toFixed(1)) }],
           lineStyle: { color: axisColor, type: 'dashed' },
           label: { color: axisColor, formatter: 'baseline' },
         } : undefined,

@@ -14,6 +14,7 @@ import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
+import { fmtNum as fmt } from '../lib/format';
 
 const STORE_KEY = 'cost_weights_v1';
 
@@ -29,9 +30,6 @@ const loadLocalWeights = (): Record<string, number> | null => {
 
 const defaultWeights = (): Record<string, number> =>
   Object.fromEntries(COMMODITIES.map((c) => [c.key, 1]));
-
-const fmt = (n: number | null, d = 1): string =>
-  n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: d });
 
 export function CostImpactPage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }

@@ -12,9 +12,7 @@ import { SharePanel } from '../components/SharePanel';
 import { useView } from '../context/ViewContext';
 import { usePlan } from '../hooks/usePlan';
 import { REPORT_HELP } from '../lib/help';
-
-const fmt = (n: number | null): string =>
-  n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+import { fmtNum as fmt } from '../lib/format';
 
 /** The most recent price record (by dd/MM/yyyy), or null. */
 function latestRecord(records: PriceRecord[]): PriceRecord | null {

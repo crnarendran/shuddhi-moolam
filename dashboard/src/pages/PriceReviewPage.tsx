@@ -13,6 +13,7 @@ import { useView } from '../context/ViewContext';
 import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
+import { fmtNum as fmt } from '../lib/format';
 
 const PRICE_REVIEW_DEFAULTS = { threshold: 5 };
 
@@ -25,9 +26,6 @@ interface Row {
   pct: number | null;
   status: Status;
 }
-
-const fmt = (n: number | null): string =>
-  n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
 const statusStyle: Record<Status, string> = {
   Review: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
