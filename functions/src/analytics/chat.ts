@@ -6,7 +6,7 @@ import {
 import { recordChatUsage } from './chatUsage';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Filter } from 'firebase-admin/firestore';
-import { COMPANIES_COLLECTION } from '../config';
+import { COMPANIES_COLLECTION, FIRESTORE_COLLECTION, HISTORICAL_COLLECTION } from '../config';
 
 const corsHandler = cors({ origin: true });
 const chatClient = new DataChatServiceClient();
@@ -115,7 +115,7 @@ export const chatEndpoint = onRequest((req, res) => {
         'sai-shuddhi-moolam';
         
       const allowedIdsStr = allowedCompanyIds.map(id => `'${id}'`).join(', ');
-      
+
       const chatRequest = {
         parent: `projects/${PROJECT_ID}/locations/us`,
         messages: formattedHistory,
@@ -126,25 +126,25 @@ export const chatEndpoint = onRequest((req, res) => {
             'about the Shuddhi-Moolam data in extracted_data. ' +
             'CRITICAL SECURITY RULE: The user is ONLY authorized to view company-specific data for the following company IDs: ' +
             `[${allowedIdsStr}]. ` +
-            'When querying the `historical_prices` or `companies` tables, you MUST explicitly include a `WHERE companyId IN (...)` or `WHERE id IN (...)` filter using exactly this list to ensure no other company data is returned. ' +
-            'Note: The `pipeline_runs` table contains global newsletter prices and does not require this filter.',
+            `When querying the \`${HISTORICAL_COLLECTION}_raw_latest\` or \`${COMPANIES_COLLECTION}_raw_latest\` tables, you MUST explicitly include a \`WHERE companyId IN (...)\` or \`WHERE id IN (...)\` filter using exactly this list to ensure no other company data is returned. ` +
+            `Note: The \`${FIRESTORE_COLLECTION}_raw_latest\` table contains global newsletter prices and does not require this filter.`,
           datasourceReferences: {
             bq: {
               tableReferences: [
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: 'pipeline_runs',
+                  tableId: `${FIRESTORE_COLLECTION}_raw_latest`,
                 },
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: 'historical_prices',
+                  tableId: `${HISTORICAL_COLLECTION}_raw_latest`,
                 },
                 {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
-                  tableId: 'companies',
+                  tableId: `${COMPANIES_COLLECTION}_raw_latest`,
                 },
               ],
             },
