@@ -17,7 +17,6 @@ const datasetId = 'extracted_data';
  */
 export function createSyncTrigger(collectionName: string, tableName: string) {
   return onDocumentWritten(`${collectionName}/{docId}`, async (event) => {
-    const table = bq.dataset(datasetId).table(tableName);
     const docId = event.params.docId;
 
     if (!event.data) {
@@ -25,7 +24,6 @@ export function createSyncTrigger(collectionName: string, tableName: string) {
       return;
     }
 
-    const before = event.data.before.exists ? event.data.before.data() : null;
     const after = event.data.after.exists ? event.data.after.data() : null;
 
     if (!after) {
