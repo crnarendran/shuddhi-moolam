@@ -35,15 +35,19 @@ export function useViewState<K extends keyof ViewState>(
   const defaultsRef = useRef(defaults);
   const hydratedCtx = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Latest value per context this session. Switching back restores instantly,
+  // without waiting for the debounced Firestore write to round-trip (SM-53).
+  const cacheRef = useRef<Record<string, T>>({});
 
   useEffect(() => {
     if (loading) return;
     // Re-hydrate whenever the context changes; the per-ctx guard also lets the
     // post-save snapshot echo through without clobbering the user's edits.
     if (hydratedCtx.current === ctx) return;
+    const cached = cacheRef.current[ctx];
     const stored =
       settings.viewState?.[ctx]?.[report] as Partial<T> | undefined;
-    setV({ ...defaultsRef.current, ...stored });
+    setV(cached ?? { ...defaultsRef.current, ...stored });
     hydratedCtx.current = ctx;
   }, [loading, settings, report, ctx]);
 
@@ -51,6 +55,7 @@ export function useViewState<K extends keyof ViewState>(
     (patch: Partial<T>) => {
       setV((prev) => {
         const next = { ...prev, ...patch };
+        cacheRef.current[ctx] = next;
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => {
           void update({
