@@ -336,7 +336,7 @@ function App() {
                 <Icon className="h-4 w-4" /> {label}
               </button>
             ))}
-            <div className="px-1 pt-2"><ContextSwitcher /></div>
+            <div className="px-1 pt-2"><ContextSwitcher align="left" /></div>
           </div>
         </nav>
       </div>

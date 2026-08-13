@@ -10,11 +10,14 @@ import { useView } from '../context/ViewContext';
  * pick among the companies shared with them. Hidden when there's nothing to
  * switch between.
  */
-export function ContextSwitcher() {
+export function ContextSwitcher(
+  { align = 'right' }: { align?: 'left' | 'right' }
+) {
   const { shared: sharedCompanies } = useCompanies();
   const { premium } = usePlan();
   const { shared, setShared } = useView();
   const [open, setOpen] = useState(false);
+  const alignLeft = align === 'left';
 
   // Free users have no "My workspace"; hide the whole control unless there's a
   // real choice (they only have shares). Premium always shows it (to reach
@@ -25,11 +28,11 @@ export function ContextSwitcher() {
     : premium ? 'My workspace' : sharedCompanies[0]?.name ?? '';
 
   return (
-    <div className="relative">
+    <div className={`relative ${alignLeft ? 'w-full' : ''}`}>
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm
-          border transition-colors ${shared
+          border transition-colors ${alignLeft ? 'w-full justify-between ' : ''}${shared
             ? 'border-amber-400 text-amber-700 dark:text-amber-300 ' +
               'bg-amber-50 dark:bg-amber-900/20'
             : 'border-zinc-300 dark:border-zinc-700 text-zinc-700 ' +
@@ -44,9 +47,9 @@ export function ContextSwitcher() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 z-50 w-64 rounded-md border
+          <div className={`absolute mt-1 z-50 rounded-md border
             border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800
-            shadow-lg py-1">
+            shadow-lg py-1 ${alignLeft ? 'left-0 right-0' : 'right-0 w-64'}`}>
             {premium && (
               <button
                 onClick={() => { setShared(null); setOpen(false); }}
