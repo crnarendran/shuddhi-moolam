@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { functions, fnName } from '../firebase';
-import { type Plan } from '../hooks/usePlan';
+import { type Plan, FOUNDER_EMAILS } from '../hooks/usePlan';
 
 interface UserRow { uid: string; email: string; plan: Plan; lastSignIn: string | null }
 
@@ -105,13 +105,15 @@ export function AdminPage() {
                     ? new Date(u.lastSignIn).toLocaleDateString() : '—'}</td>
                 <td className="px-4 py-2 text-right">
                   <button
-                    disabled={busy === u.email}
+                    disabled={busy === u.email || FOUNDER_EMAILS.includes(u.email.toLowerCase())}
                     onClick={() => void setPlan(
                       u.email, u.plan === 'premium' ? 'free' : 'premium'
                     )}
                     className="text-xs px-2 py-1 rounded-md border
                       border-zinc-300 dark:border-zinc-700 text-zinc-700
-                      dark:text-zinc-200 disabled:opacity-50">
+                      dark:text-zinc-200 disabled:opacity-50"
+                    title={FOUNDER_EMAILS.includes(u.email.toLowerCase()) ? "Founders are always premium" : ""}
+                  >
                     {u.plan === 'premium' ? 'Make free' : 'Make premium'}
                   </button>
                 </td>

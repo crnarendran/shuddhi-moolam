@@ -21,7 +21,7 @@ import { useView } from './context/ViewContext';
 import { useIsAdmin, usePlan } from './hooks/usePlan';
 import { useCompanies } from './hooks/useCompanies';
 import { acceptInvite } from './hooks/useSharing';
-import { toCanonicalPriceRecord, type PriceRecord } from './lib/reporting';
+import { type PriceRecord } from './lib/reporting';
 
 // Top-level sections keep the primary nav to three items (no scroll).
 type Section = 'reports' | 'monitor' | 'settings';
@@ -180,9 +180,8 @@ function App() {
       return;
     }
     return onSnapshot(collection(db, HISTORICAL), (snap) => {
-      // Normalize Rs/tonne commodities to canonical Rs/kg at load (SM-40).
       setRecords(snap.docs.map(
-        (d) => toCanonicalPriceRecord(d.data() as PriceRecord)
+        (d) => d.data() as PriceRecord
       ));
     });
   }, [user]);

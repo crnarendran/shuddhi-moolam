@@ -7,7 +7,7 @@ export type Plan = 'free' | 'premium';
 
 // Founders are grandfathered premium; everyone else is gated by an
 // entitlements/{uid} doc (SM-42). Mirrors firestore.rules isPremium().
-const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
+export const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
 // Admins (Monitor tab + Admin plans panel) are a strict subset of founders.
 const ADMIN_EMAILS = ['crnarendran@gmail.com'];
 
