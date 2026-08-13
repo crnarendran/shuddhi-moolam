@@ -16,12 +16,12 @@ const comp = [
 ];
 
 describe('blendedCostSeries', () => {
-  it('sums ratio × monthly price per month', () => {
+  it('is the mass-weighted average price per month (Rs/kg)', () => {
     const s = blendedCostSeries(comp, recs);
-    // Jun: 2*200 + 0.1*50000 = 400 + 5000 = 5400
-    expect(s.get('2026-06')).toBe(5400);
-    // Aug: 2*180 + 0.1*46000 = 360 + 4600 = 4960
-    expect(s.get('2026-08')).toBe(4960);
+    // Jun: (2*200 + 0.1*50000) / 2.1 = 5400 / 2.1
+    expect(s.get('2026-06')).toBeCloseTo(5400 / 2.1, 6);
+    // Aug: (2*180 + 0.1*46000) / 2.1 = 4960 / 2.1
+    expect(s.get('2026-08')).toBeCloseTo(4960 / 2.1, 6);
   });
 });
 
@@ -66,7 +66,8 @@ describe('substitutionSuggestions', () => {
     );
     expect(s).toHaveLength(1);
     expect(s[0].to.key).toBe('fe_si_70_75_raipur');
-    expect(s[0].saving).toBe((120 - 108) * 3); // 36
+    // (120 - 108) * 3 / 3 grams = 12 Rs per kg of blend
+    expect(s[0].saving).toBe(120 - 108);
   });
 
   it('does not suggest when the current is already cheapest', () => {

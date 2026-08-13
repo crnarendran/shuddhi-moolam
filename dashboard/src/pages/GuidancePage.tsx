@@ -76,7 +76,7 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
           <p className="text-xs text-zinc-500 dark:text-zinc-400
             flex items-center gap-1">
-            Blended cost / {material.unit ?? 'unit'}
+            Blended cost / kg
             <InfoTip term="Blended cost" /></p>
           <p className="text-2xl font-semibold mt-1 text-zinc-900
             dark:text-zinc-100">{fmt(baseline.latest)}</p>
@@ -138,7 +138,7 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
                   Swap <span className="font-medium">{s.from.label}</span> →{' '}
                   <span className="font-medium">{s.to.label}</span>{' '}
                   <span className="text-xs text-zinc-400">
-                    ({s.groupName}, saving / {material.unit})</span>
+                    ({s.groupName}, saving / kg)</span>
                 </span>
               </li>
             ))}

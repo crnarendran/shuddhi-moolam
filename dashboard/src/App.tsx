@@ -4,7 +4,7 @@ import { auth, signInWithGoogle, logout, db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import {
   Moon, Sun, LayoutDashboard, LogOut, BarChart3, TrendingUp, MessageSquare,
-  Calculator, Shuffle, Settings, Lightbulb, Eye,
+  Calculator, Shuffle, Settings, Lightbulb, Eye, Menu, X,
 } from 'lucide-react';
 import { FileMonitor, type PipelineRun } from './components/FileMonitor';
 import { SummaryMetrics } from './components/SummaryMetrics';
@@ -81,6 +81,7 @@ function App() {
   const { premium } = usePlan();
   const { shared: sharedCompanies } = useCompanies();
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Free users have no workspace of their own — drop them straight into the
   // company shared with them, so there's no confusing "My workspace" (SM-42).
@@ -149,6 +150,7 @@ function App() {
 
   const goToSection = (id: Section) => {
     window.location.hash = id === 'reports' ? `reports/${report}` : id;
+    setMenuOpen(false);
   };
   const goToReport = (id: Report) => {
     window.location.hash = `reports/${id}`;
@@ -234,9 +236,18 @@ function App() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2 min-w-0">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="sm:hidden p-2 -ml-2 rounded-md text-gray-600
+                  dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700"
+                aria-label="Menu"
+                aria-expanded={menuOpen}
+              >
+                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
               <LayoutDashboard className="h-6 w-6 text-blue-600 flex-shrink-0" />
               <span className="font-semibold text-lg text-gray-900 dark:text-white mr-6 hidden sm:inline">Metals Prices</span>
-              <nav className="flex space-x-1 sm:space-x-4">
+              <nav className="hidden sm:flex space-x-1 sm:space-x-4">
                 {visibleSections.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -255,7 +266,7 @@ function App() {
               </nav>
             </div>
             <div className="flex items-center space-x-3">
-              <ContextSwitcher />
+              <div className="hidden sm:block"><ContextSwitcher /></div>
               <button
                 onClick={() => setIsDark(!isDark)}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
@@ -275,6 +286,29 @@ function App() {
               </div>
             </div>
           </div>
+
+          {/* Mobile nav drawer (SM-47): the primary tabs + view switcher,
+              stacked, so nothing overlaps on a narrow screen. */}
+          {menuOpen && (
+            <nav className="sm:hidden pb-3 flex flex-col gap-1 border-t
+              border-gray-100 dark:border-zinc-700/50 pt-2">
+              {visibleSections.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => goToSection(id)}
+                  className={`w-full px-3 py-2 text-sm font-medium rounded-md
+                    text-left flex items-center gap-2 ${
+                    section === id
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-zinc-700/50'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+              <div className="px-1 pt-2"><ContextSwitcher /></div>
+            </nav>
+          )}
         </div>
       </header>
 

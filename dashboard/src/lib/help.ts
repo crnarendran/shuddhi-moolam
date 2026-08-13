@@ -87,14 +87,18 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
     title: 'Companies & materials',
     description:
       'Model the companies you work with and the materials each ' +
-      'manufactures. A material is a recipe: a set of commodities with a ' +
-      'ratio (how much of each goes into a unit) — the input to the Guidance ' +
-      'report. You can also share a company read-only with someone else.',
+      'manufactures. A material is a recipe measured in grams per kg of ' +
+      'finished product — a set of commodities and how many grams of each go ' +
+      'into 1 kg (a full recipe totals 1000 g). It is the input to the ' +
+      'Guidance report. You can also share a company read-only with someone.',
     howToRead: [
       'Add a company, then add materials to it. (Creating your own companies ' +
         'is a premium feature.)',
-      'A material’s composition is commodity + ratio rows; the editor shows ' +
-        'the live blended cost and each commodity’s % share.',
+      'Enter each commodity in grams per kg. The % on the right is that ' +
+        'commodity’s share of a kilogram (grams ÷ 1000); the total shows ' +
+        'whether the recipe fills a full 1000 g.',
+      'Blended cost is the mass-weighted average price — the ₹ cost of 1 kg ' +
+        'of the finished material at the latest commodity prices.',
       'Share read-only: click Share on a company and invite by email. The ' +
         'invitee gets a link (and an email) to VIEW — not edit — that ' +
         'company’s materials and its charts/guidance, limited to its ' +
@@ -120,7 +124,7 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
         'selection is remembered.',
       'Each selected material gets its own card: current blended cost vs its ' +
         '6-month baseline, seasonal buy-timing (weighted by each commodity’s ' +
-        'share), and cheaper same-unit substitutions with the per-unit saving.',
+        'share), and cheaper same-unit substitutions with the per-kg saving.',
       'A coloured dot on each card matches its line in the chart above.',
     ],
   },
@@ -157,8 +161,8 @@ export const GLOSSARY = {
     'How many standard deviations the latest value is from its historical ' +
     'mean; beyond ±2σ is unusual.',
   'Blended cost':
-    'A material’s cost = the sum of each commodity’s ratio × its ' +
-    'current price.',
+    'The ₹ cost of 1 kg of finished material — the mass-weighted average of ' +
+    'its commodities’ current prices, i.e. Σ(grams × price) ÷ Σ(grams).',
   'Consumption weight':
     'How much of a commodity (kg) goes into one unit of your product.',
   'Tier':
