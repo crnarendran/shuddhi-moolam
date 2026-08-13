@@ -287,30 +287,59 @@ function App() {
             </div>
           </div>
 
-          {/* Mobile nav drawer (SM-47): the primary tabs + view switcher,
-              stacked, so nothing overlaps on a narrow screen. */}
-          {menuOpen && (
-            <nav className="sm:hidden pb-3 flex flex-col gap-1 border-t
-              border-gray-100 dark:border-zinc-700/50 pt-2">
-              {visibleSections.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => goToSection(id)}
-                  className={`w-full px-3 py-2 text-sm font-medium rounded-md
-                    text-left flex items-center gap-2 ${
-                    section === id
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-zinc-700/50'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" /> {label}
-                </button>
-              ))}
-              <div className="px-1 pt-2"><ContextSwitcher /></div>
-            </nav>
-          )}
         </div>
       </header>
+
+      {/* Mobile nav drawer (SM-47): slides in from the left with a backdrop —
+          the conventional mobile pattern. Kept mounted so it animates. */}
+      <div
+        className={`sm:hidden fixed inset-0 z-40 ${
+          menuOpen ? '' : 'pointer-events-none'
+        }`}
+        aria-hidden={!menuOpen}
+      >
+        <div
+          onClick={() => setMenuOpen(false)}
+          className={`absolute inset-0 bg-black/40 transition-opacity
+            duration-200 ${menuOpen ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <nav
+          className={`absolute top-0 left-0 h-full w-64 max-w-[80%] bg-white
+            dark:bg-zinc-800 shadow-xl flex flex-col transition-transform
+            duration-200 ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        >
+          <div className="flex items-center justify-between h-16 px-4 border-b
+            border-gray-100 dark:border-zinc-700">
+            <span className="flex items-center gap-2 font-semibold
+              text-gray-900 dark:text-white">
+              <LayoutDashboard className="h-5 w-5 text-blue-600" />
+              Metals Prices
+            </span>
+            <button onClick={() => setMenuOpen(false)} aria-label="Close menu"
+              className="p-2 rounded-md text-gray-600 dark:text-gray-300
+                hover:bg-gray-100 dark:hover:bg-zinc-700">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-1 p-3">
+            {visibleSections.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => goToSection(id)}
+                className={`w-full px-3 py-2 text-sm font-medium rounded-md
+                  text-left flex items-center gap-2 ${
+                  section === id
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-zinc-700/50'
+                }`}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+            <div className="px-1 pt-2"><ContextSwitcher /></div>
+          </div>
+        </nav>
+      </div>
 
       {inviteMsg && (
         <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800
