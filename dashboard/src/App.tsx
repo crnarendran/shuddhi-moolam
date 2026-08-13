@@ -216,8 +216,8 @@ function App() {
     );
   }
 
-  // Chat is available only to premium users on non-guidance report pages.
-  const hasChat = premium && section === 'reports' && report !== 'guidance';
+  // Chat is available only to premium users on all report pages (including Guidance).
+  const hasChat = premium && section === 'reports';
   const viewName =
     section === 'monitor' ? 'Pipeline monitor'
       : section === 'settings' ? 'Settings'
