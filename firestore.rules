@@ -42,33 +42,42 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // Companies live in env-partitioned collections (SM-44): companies (prod),
+    // companies_staging, companies_dev. Same access model for all three — the
+    // guard keeps this match from affecting any other collection.
+    function isCompaniesCol(c) {
+      return c == 'companies'
+        || c == 'companies_staging'
+        || c == 'companies_dev';
+    }
+
     // Companies + their materials (BOMs). The owner has full control; a user
     // whose uid is in `viewerUids` (via an accepted invitation, SM-41) gets
     // read-only access. Writes stay owner-only; the accept flow adds viewers
     // through a trusted Admin-SDK callable, not client writes.
-    match /companies/{companyId} {
-      allow read: if isSignedIn() && (
+    match /{companiesCol}/{companyId} {
+      allow read: if isCompaniesCol(companiesCol) && isSignedIn() && (
         request.auth.uid == resource.data.ownerUid
         || request.auth.uid in resource.data.get('viewerUids', [])
       );
-      allow update, delete: if isSignedIn()
+      allow update, delete: if isCompaniesCol(companiesCol) && isSignedIn()
         && request.auth.uid == resource.data.ownerUid;
       // Creating your own company requires a premium entitlement (SM-42).
-      allow create: if isSignedIn()
+      allow create: if isCompaniesCol(companiesCol) && isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid
         && isPremium();
 
       match /materials/{materialId} {
         function company() {
           return get(
-            /databases/$(database)/documents/companies/$(companyId)
+            /databases/$(database)/documents/$(companiesCol)/$(companyId)
           ).data;
         }
-        allow read: if isSignedIn() && (
+        allow read: if isCompaniesCol(companiesCol) && isSignedIn() && (
           request.auth.uid == company().ownerUid
           || request.auth.uid in company().get('viewerUids', [])
         );
-        allow write: if isSignedIn()
+        allow write: if isCompaniesCol(companiesCol) && isSignedIn()
           && request.auth.uid == company().ownerUid;
       }
     }
