@@ -12,17 +12,47 @@
 // (This is where the pipeline webhook listens for changes)
 var DRIVE_ROOT_FOLDER_ID = '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb';
 
-// The search query to find unread newsletters
-var GMAIL_SEARCH_QUERY = '(from:sk@pmacindia.com OR from:mvsaikishore@gmail.com) has:attachment is:unread';
+// The search query to find unread newsletters tagged by the Gmail Filter
+var GMAIL_SEARCH_QUERY = 'label:MMR_Automation is:unread';
 
 // ---------------------
 
+/**
+ * Creates the custom menu inside the Google Sheet when opened.
+ */
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Shuddhi-Moolam')
+    .addItem('Process Newsletters', 'manualTrigger')
+    .addToUi();
+}
+
+/**
+ * Triggered by the user clicking the custom menu button.
+ */
+function manualTrigger() {
+  var ui = SpreadsheetApp.getUi();
+  var resultCount = processMmrNewsletters();
+  
+  if (resultCount > 0) {
+    ui.alert('Success', 'Processed ' + resultCount + ' newsletter(s) successfully!', ui.ButtonSet.OK);
+  } else {
+    ui.alert('Status', 'No new unread newsletters found with the MMR_Automation label.', ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Core processing logic. Also triggered by the Time-driven background trigger.
+ * @returns {number} The number of emails successfully processed.
+ */
 function processMmrNewsletters() {
+  var processedCount = 0;
+  
   // 1. Find emails matching the query
   var threads = GmailApp.search(GMAIL_SEARCH_QUERY);
   if (threads.length === 0) {
     Logger.log('No new newsletters found.');
-    return;
+    return processedCount;
   }
 
   // 2. Access the Shuddhi-Moolam Root Drive Folder
@@ -49,10 +79,10 @@ function processMmrNewsletters() {
       // Only process if the message is unread
       if (message.isUnread()) {
         var attachments = message.getAttachments();
+        var savedAny = false;
         
         for (var k = 0; k < attachments.length; k++) {
           var attachment = attachments[k];
-          
           var attachmentName = attachment.getName().toUpperCase();
           
           // Ensure it is a PDF and matches the format MMRW<Date>.pdf
@@ -62,15 +92,20 @@ function processMmrNewsletters() {
             // Save the PDF into the target folder
             var newFile = targetFolder.createFile(attachment.copyBlob());
             Logger.log('Saved PDF: ' + newFile.getName() + ' to ' + monthStr);
-            
+            savedAny = true;
           }
         }
         
         // Mark the message as read so we don't process it again
-        message.markRead();
+        if (savedAny) {
+          message.markRead();
+          processedCount++;
+        }
       }
     }
   }
+  
+  return processedCount;
 }
 
 /**
