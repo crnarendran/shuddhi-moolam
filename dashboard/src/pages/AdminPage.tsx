@@ -99,8 +99,9 @@ export function AdminPage() {
             <Database className="h-4 w-4" />Seed test data from prod</h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xl">
             Copy every prod company + its materials into the staging and dev
-            partitions so you can test with real data. Upserts by id (safe to
-            re-run to refresh); prod is never modified.
+            partitions so you can test with real data. Companies you don't own
+            are shared to you read-only, so they show in the view switcher.
+            Upserts by id (safe to re-run to refresh); prod is never modified.
           </p>
           {seedMsg && (
             <p className="text-xs text-green-600 dark:text-green-400 mt-1">

@@ -26,9 +26,12 @@ deployed so it can be re-run to refresh test data anytime.
 - `functions/src/admin/seedEnvData.ts`: `onCall`, gated to `ADMIN_EMAILS`
   (crnarendran). Copies each company + its `materials` subcollection from
   `companies` into `companies_staging` and `companies_dev`, upserting by id
-  (idempotent, safe to re-run). Hard guard: only `*_staging`/`*_dev` targets
-  may be written — prod `companies` is never a destination. Returns per-target
-  counts. Batched writes (flush at 400 ops).
+  (idempotent, safe to re-run). For companies the caller does NOT own, adds the
+  caller to `viewerUids`/`viewerEmails` (and denormalizes `ownerEmail` via an
+  Auth lookup) so every seeded company is reachable from the "view as" switcher
+  in the test env — independent of whatever sharing exists in prod. Hard guard:
+  only `*_staging`/`*_dev` targets may be written — prod `companies` is never a
+  destination. Returns per-target counts. Batched writes (flush at 400 ops).
 - `functions/src/index.ts`: export `seedEnvData${suffix}`.
 - `.github/workflows/deploy.yml`: add `functions:seedEnvData${SUFFIX}` to
   `FUNCS` (or it won't deploy).
