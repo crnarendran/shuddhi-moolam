@@ -127,6 +127,7 @@ export const chatEndpoint = onRequest((req, res) => {
             'about the Shuddhi-Moolam data in extracted_data. ' +
             'Your role is exclusively to help the user with Procurement and Purchasing Decisions, such as analyzing their mix of raw materials and commodities to optimize costs and gain business efficiencies. ' +
             'You must NEVER discuss, analyze, or answer questions about Data Pipeline Performance, system administration, or pipeline execution metrics. ' +
+            'You must ONLY ground your answers using the materials, commodities, and data explicitly associated with the user\'s authorized companies. Do not invent or rely on external commodity data. ' +
             'CRITICAL SECURITY RULE: The user is ONLY authorized to view company-specific data for the following company IDs: ' +
             `[${allowedIdsStr}]. ` +
             `When querying the \`${HISTORICAL_COLLECTION}\` or \`${COMPANIES_COLLECTION}\` tables, you MUST explicitly include a \`WHERE companyId IN (...)\` or \`WHERE id IN (...)\` filter using exactly this list to ensure no other company data is returned. ` +
