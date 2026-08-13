@@ -75,8 +75,10 @@ function MaterialEditor({
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400 -mt-1">
         Amounts are grams of each commodity per <b>1 kg</b> of finished
-        material; the % is that share of a kilogram. A full recipe totals
-        1000 g.
+        material — the base metallics plus trace additions (ferro-alloys,
+        inoculants) that offset melting loss. The % is each commodity’s share
+        of a kilogram; a recipe need not total 1000 g — the balance is melting
+        loss / burn-off, not missing data.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -119,16 +121,11 @@ function MaterialEditor({
           })}>
           <Plus className="h-3.5 w-3.5" /> Add commodity
         </button>
-        <p className={`text-xs ${
-          Math.abs(grams - 1000) < 0.5
-            ? 'text-zinc-400'
-            : 'text-amber-600 dark:text-amber-400'
-        }`}>
-          Total: {fmt(grams)} g / 1000 g
-          {Math.abs(grams - 1000) >= 0.5 && (
-            <span> — {grams < 1000 ? 'under' : 'over'} a full kg
-              ({fmt(Math.abs(1000 - grams))} g
-              {grams < 1000 ? ' unaccounted' : ' excess'})</span>
+        <p className="text-xs text-zinc-400">
+          Total: {fmt(grams)} g charged per kg
+          {grams < 1000 && (
+            <span> — the {fmt(1000 - grams)} g balance to 1 kg is melting
+              loss / burn-off</span>
           )}
         </p>
       </div>

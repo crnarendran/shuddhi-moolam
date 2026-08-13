@@ -88,15 +88,17 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
     description:
       'Model the companies you work with and the materials each ' +
       'manufactures. A material is a recipe measured in grams per kg of ' +
-      'finished product — a set of commodities and how many grams of each go ' +
-      'into 1 kg (a full recipe totals 1000 g). It is the input to the ' +
-      'Guidance report. You can also share a company read-only with someone.',
+      'finished product — how many grams of each commodity go into 1 kg, ' +
+      'base metallics plus trace additions for melting loss. It is the input ' +
+      'to the Guidance report. You can also share a company read-only.',
     howToRead: [
       'Add a company, then add materials to it. (Creating your own companies ' +
         'is a premium feature.)',
-      'Enter each commodity in grams per kg. The % on the right is that ' +
-        'commodity’s share of a kilogram (grams ÷ 1000); the total shows ' +
-        'whether the recipe fills a full 1000 g.',
+      'Enter each commodity in grams per kg — base metallics plus trace ' +
+        'additions (ferro-alloys, inoculants) that offset melting loss. The ' +
+        '% on the right is that commodity’s share of a kilogram (grams ÷ ' +
+        '1000). A recipe need not total 1000 g: the balance to 1 kg is ' +
+        'melting loss / burn-off, not missing data.',
       'Blended cost is the mass-weighted average price — the ₹ cost of 1 kg ' +
         'of the finished material at the latest commodity prices.',
       'Share read-only: click Share on a company and invite by email. The ' +
