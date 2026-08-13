@@ -8,12 +8,18 @@
 
 // --- CONFIGURATION ---
 
-// The Production Google Drive Root Folder ID for Shuddhi-Moolam
-// (This is where the pipeline webhook listens for changes)
-var DRIVE_ROOT_FOLDER_ID = '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb';
-
 // The search query to find unread newsletters tagged by the Gmail Filter
 var GMAIL_SEARCH_QUERY = 'label:MMR_Automation is:unread';
+
+// Environment mapping: Master Sheet ID -> Drive Root Folder ID
+var ENV_MAPPING = {
+  // Production
+  '1DNB8wkqGiVZ1fED4tSVI43PdNY6cY9NdYO6HsZJ-hoY': '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb',
+  // Staging
+  '15xWbByMNZ8nyK9CObZfbQ-_YxGrUJEe8uwnIN4CpYcY': '19Dbuq7mq94oRninpgRmDLj7EGNmCqamb',
+  // Dev
+  '1XgYRTqWmiFoHmSrN-sWAxzDzxEl_YeKGeUk-XqMtpgE': '1rvSE-rAW2mf1krmCepYM9va9oHoFEDNN'
+};
 
 // ---------------------
 
@@ -48,15 +54,24 @@ function manualTrigger() {
 function processMmrNewsletters() {
   var processedCount = 0;
   
-  // 1. Find emails matching the query
+  // 1. Determine the correct Drive folder based on the current Spreadsheet
+  var sheetId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var driveRootFolderId = ENV_MAPPING[sheetId];
+  
+  if (!driveRootFolderId) {
+    Logger.log('Error: This spreadsheet ID (' + sheetId + ') is not recognized as a Shuddhi-Moolam Master Sheet.');
+    return processedCount;
+  }
+  
+  // 2. Find emails matching the query
   var threads = GmailApp.search(GMAIL_SEARCH_QUERY);
   if (threads.length === 0) {
     Logger.log('No new newsletters found.');
     return processedCount;
   }
 
-  // 2. Access the Shuddhi-Moolam Root Drive Folder
-  var rootFolder = DriveApp.getFolderById(DRIVE_ROOT_FOLDER_ID);
+  // 3. Access the Shuddhi-Moolam Root Drive Folder for this environment
+  var rootFolder = DriveApp.getFolderById(driveRootFolderId);
   
   // 3. Determine current date for folder structure
   var now = new Date();

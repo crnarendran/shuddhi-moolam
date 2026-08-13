@@ -14,6 +14,8 @@ Instead of hardcoding sender emails into the code, we use Gmail's native filters
 8. Click **Create filter** to save.
 
 ## Step 2: Open the Master Sheet Script Editor
+*(Note: Because the script is environment-aware, you can paste the exact same code into all 3 of your Master Sheets (`dev`, `staging`, and `prod`). It will automatically detect which sheet it is running from and route the PDF to the correct Drive folder!)*
+
 1. Open the **Shuddhi-Moolam Master Sheet** in Google Sheets.
 2. In the top menu, click **Extensions > Apps Script**.
 3. A new tab will open titled "Untitled project". Rename it to **"Shuddhi-Moolam Newsletter Automation"**.
