@@ -4,6 +4,7 @@ import {
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { type Composition } from '../lib/materials';
+import { COMPANIES_COLLECTION } from '../lib/config';
 
 export interface SharedView {
   companyId: string;
@@ -36,7 +37,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!shared) { setScopeKeys(null); return; }
-    const col = collection(db, 'companies', shared.companyId, 'materials');
+    const col = collection(db, COMPANIES_COLLECTION, shared.companyId, 'materials');
     return onSnapshot(
       col,
       (snap) => {

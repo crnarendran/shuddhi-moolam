@@ -3,7 +3,7 @@ import {
 } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { randomBytes } from 'crypto';
-import { APP_BASE_URL } from '../config';
+import { APP_BASE_URL, COMPANIES_COLLECTION } from '../config';
 import { sendInviteEmail } from './email';
 
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -70,7 +70,10 @@ export const createInvitation = onCall(
     }
 
     const db = getFirestore();
-    const compSnap = await db.collection('companies').doc(companyId).get();
+    const compSnap = await db
+      .collection(COMPANIES_COLLECTION)
+      .doc(companyId)
+      .get();
     if (!compSnap.exists) {
       throw new HttpsError('not-found', 'Company not found.');
     }
@@ -145,7 +148,7 @@ export const acceptInvitation = onCall(async (request) => {
     throw new HttpsError('failed-precondition', 'This invitation has expired.');
   }
 
-  await db.collection('companies').doc(inv.companyId).update({
+  await db.collection(COMPANIES_COLLECTION).doc(inv.companyId).update({
     viewerUids: FieldValue.arrayUnion(uid),
     viewerEmails: FieldValue.arrayUnion(email),
     ownerEmail: inv.ownerEmail,
@@ -227,7 +230,7 @@ export const revokeInvitation = onCall(async (request) => {
   }
 
   if (inv.acceptedUid) {
-    await db.collection('companies').doc(inv.companyId).update({
+    await db.collection(COMPANIES_COLLECTION).doc(inv.companyId).update({
       viewerUids: FieldValue.arrayRemove(inv.acceptedUid),
       viewerEmails: FieldValue.arrayRemove(inv.inviteeEmail),
     });

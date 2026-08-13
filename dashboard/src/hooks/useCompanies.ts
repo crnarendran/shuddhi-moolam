@@ -6,6 +6,7 @@ import {
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { type Company, type Material } from '../lib/materials';
+import { COMPANIES_COLLECTION } from '../lib/config';
 
 /** Companies owned by the signed-in user, with CRUD; plus shared-with-me. */
 export function useCompanies() {
@@ -29,7 +30,7 @@ export function useCompanies() {
     }
     setLoading(true);
     const q = query(
-      collection(db, 'companies'),
+      collection(db, COMPANIES_COLLECTION),
       where('ownerUid', '==', uid)
     );
     return onSnapshot(
@@ -54,7 +55,7 @@ export function useCompanies() {
       return;
     }
     const q = query(
-      collection(db, 'companies'),
+      collection(db, COMPANIES_COLLECTION),
       where('viewerUids', 'array-contains', uid)
     );
     return onSnapshot(
@@ -68,20 +69,20 @@ export function useCompanies() {
 
   const addCompany = async (name: string, notes = '') => {
     if (!uid) return;
-    await addDoc(collection(db, 'companies'), {
+    await addDoc(collection(db, COMPANIES_COLLECTION), {
       ownerUid: uid, name, notes, createdAt: Date.now(), updatedAt: Date.now(),
     });
   };
   const updateCompany = async (id: string, patch: Partial<Company>) => {
-    await updateDoc(doc(db, 'companies', id), {
+    await updateDoc(doc(db, COMPANIES_COLLECTION, id), {
       ...patch, updatedAt: Date.now(),
     });
   };
   const deleteCompany = async (id: string) => {
     // Cascade: remove materials first (Firestore has no cascade delete).
-    const mats = await getDocs(collection(db, 'companies', id, 'materials'));
+    const mats = await getDocs(collection(db, COMPANIES_COLLECTION, id, 'materials'));
     await Promise.all(mats.docs.map((m) => deleteDoc(m.ref)));
-    await deleteDoc(doc(db, 'companies', id));
+    await deleteDoc(doc(db, COMPANIES_COLLECTION, id));
   };
 
   return {
@@ -99,7 +100,7 @@ export function useMaterials(companyId: string | null) {
       setMaterials([]);
       return;
     }
-    const col = collection(db, 'companies', companyId, 'materials');
+    const col = collection(db, COMPANIES_COLLECTION, companyId, 'materials');
     return onSnapshot(col, (snap) => {
       setMaterials(
         snap.docs.map((d) => ({
@@ -112,7 +113,7 @@ export function useMaterials(companyId: string | null) {
 
   const saveMaterial = async (m: Material) => {
     if (!companyId) return;
-    const col = collection(db, 'companies', companyId, 'materials');
+    const col = collection(db, COMPANIES_COLLECTION, companyId, 'materials');
     const data = {
       name: m.name, unit: m.unit, composition: m.composition,
       updatedAt: Date.now(),
@@ -122,7 +123,7 @@ export function useMaterials(companyId: string | null) {
   };
   const deleteMaterial = async (id: string) => {
     if (!companyId) return;
-    await deleteDoc(doc(db, 'companies', companyId, 'materials', id));
+    await deleteDoc(doc(db, COMPANIES_COLLECTION, companyId, 'materials', id));
   };
 
   return { materials, saveMaterial, deleteMaterial };

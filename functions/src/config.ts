@@ -33,6 +33,11 @@ export const HISTORICAL_COLLECTION =
     APP_ENV === 'staging' ? 'historical_prices_staging' :
       'historical_prices_dev';
 
+export const COMPANIES_COLLECTION =
+  isProd ? 'companies' :
+    APP_ENV === 'staging' ? 'companies_staging' :
+      'companies_dev';
+
 // Public hosting origin per env — used to build invite accept links (SM-41).
 export const APP_BASE_URL =
   isProd ? 'https://sai-shuddhi-moolam.web.app' :
