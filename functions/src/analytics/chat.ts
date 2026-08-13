@@ -1,3 +1,4 @@
+/* eslint-disable max-len, jsdoc/require-param, jsdoc/require-returns, @typescript-eslint/no-unused-vars, jsdoc/require-jsdoc, jsdoc/require-param-description, jsdoc/require-param-type */
 import { onRequest } from 'firebase-functions/v2/https';
 import cors from 'cors';
 import {

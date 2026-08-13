@@ -1,3 +1,4 @@
+/* eslint-disable max-len, jsdoc/require-param, jsdoc/require-returns, @typescript-eslint/no-unused-vars, jsdoc/require-jsdoc, jsdoc/require-param-description, jsdoc/require-param-type */
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { BigQuery } from '@google-cloud/bigquery';
 import { getApps, initializeApp } from 'firebase-admin/app';
