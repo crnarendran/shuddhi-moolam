@@ -197,19 +197,44 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
           </p>
         ) : materials.map((m) => {
           const cost = blendedCost(m.composition, record);
+          const shares = massShares(m.composition);
+          const grams = totalGrams(m.composition);
           return (
             <div key={m.id} className="bg-white dark:bg-zinc-800 rounded-lg
-              border border-zinc-200 dark:border-zinc-700 p-3">
-              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {m.name}
-                <span className="text-xs font-normal text-zinc-400 ml-2">
-                  {m.composition.length} commodities · {fmt(cost)} / kg
+              border border-zinc-200 dark:border-zinc-700 p-4 flex flex-col
+              gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-zinc-900
+                  dark:text-zinc-100">{m.name}</p>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400
+                  shrink-0">
+                  Blended cost{' '}
+                  <span className="font-semibold text-zinc-800
+                    dark:text-zinc-100">{fmt(cost)}</span> / kg
                 </span>
-              </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                {m.composition
-                  .map((r) => `${labelOf(r.commodityKey)} ${r.ratio}g`)
-                  .join(' · ')}
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-[11px] uppercase
+                  tracking-wide text-zinc-400">
+                  <span className="flex-1">Commodity</span>
+                  <span className="w-20 text-right">grams / kg</span>
+                  <span className="w-12 text-right">% of kg</span>
+                </div>
+                {m.composition.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="flex-1 text-zinc-700 dark:text-zinc-200">
+                      {labelOf(r.commodityKey)}</span>
+                    <span className="w-20 text-right tabular-nums text-zinc-600
+                      dark:text-zinc-300">{r.ratio} g</span>
+                    <span className="w-12 text-right text-xs text-zinc-400">
+                      {shares[i].pct.toFixed(shares[i].pct < 1 ? 2 : 1)}%</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-400">
+                Total: {fmt(grams)} g charged per kg
+                {grams < 1000
+                  && ` — ${fmt(1000 - grams)} g melting loss / burn-off`}
               </p>
             </div>
           );
