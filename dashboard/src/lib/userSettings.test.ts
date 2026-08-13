@@ -26,6 +26,24 @@ describe('mergeSettings', () => {
     expect(r.updatedAt).toBe(5);
   });
 
+  it('deep-merges viewState by context -> report -> slice (SM-52)', () => {
+    const cur = {
+      viewState: {
+        own: { seasonal: { keys: ['a'] } },
+        c1: { spreads: { reference: 'x' } },
+      },
+    };
+    const r = mergeSettings(cur, {
+      viewState: { c1: { spreads: { compare: ['y'] } } },
+    });
+    // other context untouched
+    expect(r.viewState?.own).toEqual({ seasonal: { keys: ['a'] } });
+    // same context + report: reference kept, compare added
+    expect(r.viewState?.c1?.spreads).toEqual({
+      reference: 'x', compare: ['y'],
+    });
+  });
+
   it('never emits undefined fields (Firestore rejects them)', () => {
     // First-time personalization write with no costImpact set.
     const r = mergeSettings({}, {

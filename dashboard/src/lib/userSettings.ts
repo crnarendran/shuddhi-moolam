@@ -35,8 +35,13 @@ export interface UserSettings {
   costImpact?: { weights?: Record<string, number> };
   /** Global + per-report commodity exclusions (SM-31). */
   personalization?: Personalization;
-  /** Persisted per-report UI selections (SM-39). */
-  viewState?: ViewState;
+  /**
+   * Persisted per-report UI selections (SM-39), namespaced by view context
+   * (SM-52): `viewState[contextId][report]`, where `contextId` is 'own' for
+   * the user's workspace or a companyId for a shared company. Each context
+   * keeps its own selections, so switching companies retains them.
+   */
+  viewState?: Record<string, ViewState>;
   /** Last write time (ms epoch), set on every update. */
   updatedAt?: number;
 }
@@ -60,11 +65,18 @@ export function mergeSettings(
     merged.costImpact = { ...current.costImpact, ...patch.costImpact };
   }
   if (patch.viewState) {
-    // Deep-merge two levels so a patch to one report's slice (e.g. seasonal)
-    // keeps the other reports' slices AND that report's untouched fields.
-    const next: ViewState = { ...current.viewState };
-    (Object.keys(patch.viewState) as (keyof ViewState)[]).forEach((k) => {
-      next[k] = { ...current.viewState?.[k], ...patch.viewState?.[k] };
+    // Deep-merge three levels (context -> report -> slice) so a patch to one
+    // report's slice in one context keeps every other context, that context's
+    // other reports, and that report's untouched fields.
+    const next: Record<string, ViewState> = { ...current.viewState };
+    Object.keys(patch.viewState).forEach((ctx) => {
+      const curCtx = current.viewState?.[ctx] ?? {};
+      const patchCtx = patch.viewState![ctx];
+      const nextCtx: ViewState = { ...curCtx };
+      (Object.keys(patchCtx) as (keyof ViewState)[]).forEach((k) => {
+        nextCtx[k] = { ...curCtx[k], ...patchCtx[k] };
+      });
+      next[ctx] = nextCtx;
     });
     merged.viewState = next;
   }
