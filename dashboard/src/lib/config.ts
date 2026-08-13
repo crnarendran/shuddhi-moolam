@@ -22,4 +22,4 @@ export const COMPANIES_COLLECTION = isProd
  */
 export const CHAT_ENDPOINT_URL = mode === 'development'
   ? 'http://localhost:5001/sai-shuddhi-moolam/us-central1/chatEndpoint_dev'
-  : `https://us-central1-sai-shuddhi-moolam.cloudfunctions.net/chatEndpoint_${isProd ? 'prod' : (mode === 'staging' ? 'staging' : 'dev')}`;
+  : `https://us-central1-sai-shuddhi-moolam.cloudfunctions.net/chatEndpoint${isProd ? '' : (mode === 'staging' ? '_staging' : '_dev')}`;
