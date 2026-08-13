@@ -26,6 +26,8 @@ interface Message {
   suggestions?: string[];
 }
 
+import { CHAT_ENDPOINT_URL } from '../lib/config';
+
 export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean; onClose: () => void; contextText?: string }) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'model', content: "Hi! Ask me any questions about the data." }
@@ -78,13 +80,8 @@ export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean;
     setMessages([...currentMessages, { role: 'model', content: '', thoughts: '', suggestions: [] }]);
 
     try {
-      // Use Firebase function URL if in prod, or emulator in dev
-      // For Vite, assuming there's a proxy set up, or absolute path. Let's use relative if it's served together,
-      // but usually functions run on a different port. We'll use the API endpoint.
-      // E.g. process.env.VITE_API_URL or similar.
-      // If we are developing locally, assuming we can reach it via a proxy in vite.config.ts, or direct URL.
-      // I'll assume we can use the cloud function pattern or it's proxied.
-      const functionUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'http://localhost:5001/sai-shuddhi-moolam/us-central1/chatEndpoint_dev';
+      // Use the dynamically resolved endpoint URL from config
+      const functionUrl = CHAT_ENDPOINT_URL;
       
       const response = await fetch(functionUrl, {
         method: 'POST',
