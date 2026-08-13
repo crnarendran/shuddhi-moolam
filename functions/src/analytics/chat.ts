@@ -20,7 +20,7 @@ export const chatEndpoint = onRequest((req, res) => {
       res.status(401).send('Unauthorized: Missing or invalid Bearer token.');
       return;
     }
-    
+
     let uid: string;
     let email: string;
     try {
@@ -114,7 +114,7 @@ export const chatEndpoint = onRequest((req, res) => {
         process.env.GCLOUD_PROJECT ||
         process.env.GOOGLE_CLOUD_PROJECT ||
         'sai-shuddhi-moolam';
-        
+
       const allowedIdsStr = allowedCompanyIds.map(id => `'${id}'`).join(', ');
 
       const chatRequest = {
