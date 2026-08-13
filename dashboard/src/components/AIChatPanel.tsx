@@ -26,6 +26,7 @@ interface Message {
   suggestions?: string[];
 }
 
+import { auth } from '../firebase';
 import { CHAT_ENDPOINT_URL } from '../lib/config';
 
 export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean; onClose: () => void; contextText?: string }) {
@@ -83,9 +84,15 @@ export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean;
       // Use the dynamically resolved endpoint URL from config
       const functionUrl = CHAT_ENDPOINT_URL;
       
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+      
       const response = await fetch(functionUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           message: contextText ? `[Context: ${contextText}] ${textToSend.trim()}` : textToSend.trim(),
           history: currentMessages.slice(0, -1)

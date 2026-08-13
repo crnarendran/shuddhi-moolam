@@ -4,17 +4,66 @@ import {
   DataChatServiceClient
 } from '@google-cloud/geminidataanalytics/build/src/v1beta';
 import { recordChatUsage } from './chatUsage';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, Filter } from 'firebase-admin/firestore';
+import { COMPANIES_COLLECTION } from '../config';
 
 const corsHandler = cors({ origin: true });
 const chatClient = new DataChatServiceClient();
 
 export const chatEndpoint = onRequest((req, res) => {
   corsHandler(req, res, async () => {
+    // 1. Verify Auth Token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).send('Unauthorized: Missing or invalid Bearer token.');
+      return;
+    }
+    
+    let uid: string;
+    try {
+      const token = authHeader.split('Bearer ')[1];
+      const decodedToken = await getAuth().verifyIdToken(token);
+      uid = decodedToken.uid;
+    } catch (err) {
+      console.error('Auth verification failed:', err);
+      res.status(401).send('Unauthorized: Invalid token.');
+      return;
+    }
+
     const { message, history } = req.body;
 
     // Record estimated chat usage separately from pipeline cost (SM-27).
     // Fire-and-forget; must never affect the chat response.
     void recordChatUsage(message, history);
+
+    // 2. Resolve accessible companies for the user
+    let allowedCompanyIds: string[] = [];
+    try {
+      const db = getFirestore();
+      // User has access if they are the owner OR if they are in the viewerUids array.
+      const snap = await db.collection(COMPANIES_COLLECTION).where(
+        Filter.or(
+          Filter.where('ownerUid', '==', uid),
+          Filter.where('viewerUids', 'array-contains', uid)
+        )
+      ).get();
+      allowedCompanyIds = snap.docs.map(doc => doc.id);
+    } catch (err) {
+      console.error('Failed to resolve accessible companies:', err);
+      res.status(500).send('Internal Server Error: Failed to resolve data access.');
+      return;
+    }
+
+    if (allowedCompanyIds.length === 0) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.write(`data: ${JSON.stringify({ type: 'FINAL_RESPONSE', content: 'You do not currently have access to any companies.' })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+      return;
+    }
 
     // Initialize SSE streaming headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -43,6 +92,9 @@ export const chatEndpoint = onRequest((req, res) => {
         process.env.GCLOUD_PROJECT ||
         process.env.GOOGLE_CLOUD_PROJECT ||
         'sai-shuddhi-moolam';
+        
+      const allowedIdsStr = allowedCompanyIds.map(id => `'${id}'`).join(', ');
+      
       const chatRequest = {
         parent: `projects/${PROJECT_ID}/locations/us`,
         messages: formattedHistory,
@@ -50,7 +102,11 @@ export const chatEndpoint = onRequest((req, res) => {
           systemInstruction:
             'You are a friendly data analytics assistant. ' +
             'Write SQL against BigQuery to answer user questions ' +
-            'about the extracted newsletter data in pipeline_runs.',
+            'about the Shuddhi-Moolam data in extracted_data. ' +
+            'CRITICAL SECURITY RULE: The user is ONLY authorized to view company-specific data for the following company IDs: ' +
+            `[${allowedIdsStr}]. ` +
+            'When querying the `historical_prices` or `companies` tables, you MUST explicitly include a `WHERE companyId IN (...)` or `WHERE id IN (...)` filter using exactly this list to ensure no other company data is returned. ' +
+            'Note: The `pipeline_runs` table contains global newsletter prices and does not require this filter.',
           datasourceReferences: {
             bq: {
               tableReferences: [
@@ -58,6 +114,16 @@ export const chatEndpoint = onRequest((req, res) => {
                   projectId: PROJECT_ID,
                   datasetId: 'extracted_data',
                   tableId: 'pipeline_runs',
+                },
+                {
+                  projectId: PROJECT_ID,
+                  datasetId: 'extracted_data',
+                  tableId: 'historical_prices',
+                },
+                {
+                  projectId: PROJECT_ID,
+                  datasetId: 'extracted_data',
+                  tableId: 'companies',
                 },
               ],
             },
