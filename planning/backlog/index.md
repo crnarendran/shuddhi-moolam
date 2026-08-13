@@ -14,25 +14,14 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
-| [SM-40](SM-40-price-unit-normalization.md) | Price unit normalization — canonical ₹/kg for charts & math | 3 | SM-18, SM-26, SM-33 |
-| [SM-41](SM-41-readonly-company-sharing.md) | Read-only company sharing — invite viewers, tracked expiring invites (epic) | 13 | SM-30, SM-32, SM-33 |
-| [SM-42](SM-42-premium-entitlement-gate.md) | Premium entitlement gate — creating companies/materials is paid | 3 | SM-32, SM-41 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
-| [SM-45](SM-45-grams-per-kg-composition.md) | Grams-per-kg material composition + mass-weighted blended cost | 3 | SM-32, SM-40 |
-| [SM-46](SM-46-collapsible-report-docs.md) | Collapsible inline report documentation (collapsed by default) | 1 | SM-35 |
-| [SM-47](SM-47-mobile-nav-hamburger.md) | Mobile-friendly top navigation (left slide-in drawer) | 2 | SM-38 |
-| [SM-48](SM-48-seed-env-data-function.md) | Reusable admin function to seed staging/dev companies from prod | 2 | SM-42, SM-44 |
-| [SM-49](SM-49-companies-rules-env-coverage.md) | Fix: Firestore rules didn't cover companies_dev/_staging (SM-44 regression) | 1 | SM-44 |
-| [SM-50](SM-50-price-decimal-precision.md) | 1-decimal price precision across reports (shared fmtNum helper) | 1 | SM-18, SM-45 |
-| [SM-51](SM-51-persist-shared-view.md) | Persist the shared read-only view across refresh | 1 | SM-41 |
-
-> **SM-40, SM-41, SM-42 are built + on `dev`** (in-review), pending promotion.
-> See `planning/handover-2026-08-13.md` for the Antigravity handover.
-> **SM-45, SM-46, SM-47, SM-48 are built + on `dev`** (in-review): grams-per-kg
-> composition, collapsible docs, mobile slide-in nav, and the prod→staging/dev
-> seed function (Admin panel button).
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
+
+> **SM-43** (tonne→kg storage migration) is Antigravity's; status unconfirmed.
+> Note the double-division risk: if prices are stored in kg, SM-40's
+> `toCanonicalPriceRecord` (÷1000 for tonne items) must be removed in the same
+> release or the dashboard divides already-kg values again.
 
 New tweaks/features get the next free id (SM-40+). Add a row here and a ticket
 file, then implement dev → staging → main.
@@ -58,6 +47,13 @@ the full ticket + implementation notes. Do **not** re-plan these.
 - **Product polish** SM-36…SM-39: unified Settings section, print/PDF export,
   Reports nav consolidation, multi-select overlays + persisted (cross-device)
   per-report view state.
+- **Sharing, premium & precision** SM-40…SM-42, SM-45…SM-51: ₹/kg price
+  normalization; read-only company sharing (invite/accept/expiry) + premium
+  entitlement gate + founder-only admin panel; grams-per-kg BOM with
+  mass-weighted blended cost; collapsible in-report docs; mobile left slide-in
+  nav; reusable prod→staging/dev seed function; Firestore-rules coverage for
+  env-partitioned companies (SM-44 regression fix); 1-decimal price precision
+  (shared `fmtNum`); persisted shared read-only view.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.
