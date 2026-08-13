@@ -31,7 +31,9 @@ export const setUserPlan = onCall(async (request: CallableRequest) => {
     throw new HttpsError('invalid-argument', 'email + plan (free|premium).');
   }
   if (plan === 'free' && FOUNDER_EMAILS.includes(email)) {
-    throw new HttpsError('invalid-argument', 'Cannot downgrade a founder to free.');
+    throw new HttpsError(
+      'invalid-argument', 'Cannot downgrade a founder to free.'
+    );
   }
   let uid: string;
   try {

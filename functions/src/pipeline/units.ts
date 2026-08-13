@@ -6,7 +6,11 @@ const TONNE_KEYS = new Set(
   COMPONENTS.filter((c) => c.unit === 'Rs/tonne').map((c) => c.key)
 );
 
-/** Normalizes a raw price cell to a number (range midpoint), or null. */
+/**
+ * Normalizes a raw price cell to a number (range midpoint), or null.
+ * @param {unknown} raw - The raw value from extraction.
+ * @returns {number | null} - The normalized number or null.
+ */
 function normalizePrice(raw: unknown): number | null {
   if (typeof raw !== 'string') {
     return typeof raw === 'number' && isFinite(raw) ? raw : null;
@@ -23,7 +27,8 @@ function normalizePrice(raw: unknown): number | null {
  * Returns a copy of an extraction record with every Rs/tonne commodity value
  * converted to Rs/kg (÷1000). A field that doesn't parse to a number is left
  * as-is (e.g. a blank cell).
- * Note: we convert the result back to string to satisfy the ExtractionRecord schema.
+ * Note: we convert the result back to string to satisfy the ExtractionRecord
+ * schema.
  * @param {ExtractionRecord} record - A raw record from extraction.
  * @returns {ExtractionRecord} A canonical (Rs/kg) copy.
  */
@@ -34,7 +39,7 @@ export function toKgRecord(record: ExtractionRecord): ExtractionRecord {
     const val = out[key as keyof ExtractionRecord];
     const n = normalizePrice(val);
     if (n !== null) {
-      (out as any)[key] = String(n / 1000);
+      (out as Record<string, unknown>)[key] = String(n / 1000);
     }
   }
   return out;

@@ -44,7 +44,9 @@ export const processPendingPdf = onDocumentWritten(
 
         // 2. Extract (record the filename now so the monitor shows it)
         await recordStage(fileId, 'extracting', { fileName: filename });
-        const { data: rawRecord, usage } = await extractPricesFromPdf(pdfBuffer);
+        const { data: rawRecord, usage } = await extractPricesFromPdf(
+          pdfBuffer
+        );
         const record = toKgRecord(rawRecord);
 
         // Overwrite the filename with the full path/filename
