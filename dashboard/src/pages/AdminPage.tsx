@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { ShieldCheck, RefreshCw } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Database } from 'lucide-react';
 import { functions, fnName } from '../firebase';
 import { type Plan, FOUNDER_EMAILS } from '../hooks/usePlan';
 
@@ -16,6 +16,8 @@ export function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
@@ -32,6 +34,28 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  const seed = async () => {
+    if (!confirm(
+      'Copy ALL prod companies + materials into the staging and dev ' +
+      'partitions? Test companies with the same ids are overwritten. ' +
+      'Prod is not modified.'
+    )) return;
+    setSeeding(true); setSeedMsg(null); setErr(null);
+    try {
+      const fn = httpsCallable<unknown, {
+        results: { target: string; companies: number; materials: number }[];
+      }>(functions, fnName('seedEnvData'));
+      const r = await fn({});
+      setSeedMsg(r.data.results
+        .map((x) => `${x.target}: ${x.companies} companies, ` +
+          `${x.materials} materials`)
+        .join(' · '));
+    } catch (e) {
+      setErr((e as { message?: string }).message ?? 'Seed failed.');
+    }
+    setSeeding(false);
+  };
 
   const setPlan = async (email: string, plan: Plan) => {
     setBusy(email); setErr(null);
@@ -66,6 +90,31 @@ export function AdminPage() {
       </div>
 
       {err && <p className="text-sm text-red-600 dark:text-red-400">{err}</p>}
+
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-700
+        p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100
+            flex items-center gap-2">
+            <Database className="h-4 w-4" />Seed test data from prod</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xl">
+            Copy every prod company + its materials into the staging and dev
+            partitions so you can test with real data. Upserts by id (safe to
+            re-run to refresh); prod is never modified.
+          </p>
+          {seedMsg && (
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+              Done — {seedMsg}
+            </p>
+          )}
+        </div>
+        <button onClick={() => void seed()} disabled={seeding}
+          className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md
+            bg-blue-600 text-white disabled:opacity-50 whitespace-nowrap">
+          <Database className="h-4 w-4" />
+          {seeding ? 'Copying…' : 'Copy prod → staging & dev'}
+        </button>
+      </div>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200
         dark:border-zinc-700">

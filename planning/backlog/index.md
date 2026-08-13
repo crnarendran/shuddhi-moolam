@@ -20,12 +20,14 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-45](SM-45-grams-per-kg-composition.md) | Grams-per-kg material composition + mass-weighted blended cost | 3 | SM-32, SM-40 |
 | [SM-46](SM-46-collapsible-report-docs.md) | Collapsible inline report documentation (collapsed by default) | 1 | SM-35 |
-| [SM-47](SM-47-mobile-nav-hamburger.md) | Mobile-friendly top navigation (hamburger menu) | 2 | SM-38 |
+| [SM-47](SM-47-mobile-nav-hamburger.md) | Mobile-friendly top navigation (left slide-in drawer) | 2 | SM-38 |
+| [SM-48](SM-48-seed-env-data-function.md) | Reusable admin function to seed staging/dev companies from prod | 2 | SM-42, SM-44 |
 
 > **SM-40, SM-41, SM-42 are built + on `dev`** (in-review), pending promotion.
 > See `planning/handover-2026-08-13.md` for the Antigravity handover.
-> **SM-45, SM-46, SM-47 are built + on `dev`** (in-review) — a UX batch:
-> grams-per-kg composition, collapsible docs, mobile hamburger nav.
+> **SM-45, SM-46, SM-47, SM-48 are built + on `dev`** (in-review): grams-per-kg
+> composition, collapsible docs, mobile slide-in nav, and the prod→staging/dev
+> seed function (Admin panel button).
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
 
