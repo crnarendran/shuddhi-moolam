@@ -277,7 +277,7 @@ function App() {
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium hidden sm:inline">{user.email}</span>
                 <button
-                  onClick={logout}
+                  onClick={() => { setShared(null); logout(); }}
                   className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors text-red-600 dark:text-red-400"
                   title="Logout"
                 >

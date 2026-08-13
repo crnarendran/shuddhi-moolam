@@ -1,5 +1,6 @@
 import {
-  createContext, useContext, useEffect, useState, type ReactNode,
+  createContext, useCallback, useContext, useEffect, useState,
+  type ReactNode,
 } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -25,6 +26,19 @@ const Ctx = createContext<ViewCtx>({
   shared: null, setShared: () => {}, scopeKeys: null,
 });
 
+// Persist the active shared view so a refresh keeps it (SM-51).
+const SHARED_KEY = 'sm.sharedView';
+
+/** Reads the persisted shared view; null if none or unparseable. */
+function loadShared(): SharedView | null {
+  try {
+    const raw = localStorage.getItem(SHARED_KEY);
+    return raw ? (JSON.parse(raw) as SharedView) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Provides the current view context — own workspace vs a company shared with
  * the user (read-only) — and the shared company's commodity scope, derived
@@ -32,8 +46,20 @@ const Ctx = createContext<ViewCtx>({
  * @param props Children to render within the provider.
  */
 export function ViewProvider({ children }: { children: ReactNode }) {
-  const [shared, setShared] = useState<SharedView | null>(null);
+  const [shared, setSharedState] = useState<SharedView | null>(loadShared);
   const [scopeKeys, setScopeKeys] = useState<string[] | null>(null);
+
+  // Persist on change so a page refresh restores the shared view instead of
+  // snapping back to My workspace (SM-51).
+  const setShared = useCallback((s: SharedView | null) => {
+    setSharedState(s);
+    try {
+      if (s) localStorage.setItem(SHARED_KEY, JSON.stringify(s));
+      else localStorage.removeItem(SHARED_KEY);
+    } catch {
+      // ignore storage failures (private mode etc.)
+    }
+  }, []);
 
   useEffect(() => {
     if (!shared) { setScopeKeys(null); return; }
