@@ -13,7 +13,7 @@
 var DRIVE_ROOT_FOLDER_ID = '1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb';
 
 // The search query to find unread newsletters
-var GMAIL_SEARCH_QUERY = '(from:sk@pmacindia.com OR from:mvsaikishore@gmail.com) subject:"MMR weekly" has:attachment is:unread';
+var GMAIL_SEARCH_QUERY = '(from:sk@pmacindia.com OR from:mvsaikishore@gmail.com) has:attachment is:unread';
 
 // ---------------------
 
@@ -53,8 +53,11 @@ function processMmrNewsletters() {
         for (var k = 0; k < attachments.length; k++) {
           var attachment = attachments[k];
           
-          // Ensure it is a PDF
-          if (attachment.getContentType() === 'application/pdf' || attachment.getName().toLowerCase().indexOf('.pdf') > -1) {
+          var attachmentName = attachment.getName().toUpperCase();
+          
+          // Ensure it is a PDF and matches the format MMRW<Date>.pdf
+          if ((attachment.getContentType() === 'application/pdf' || attachmentName.indexOf('.PDF') > -1) && 
+              attachmentName.indexOf('MMRW') === 0) {
             
             // Save the PDF into the target folder
             var newFile = targetFolder.createFile(attachment.copyBlob());
