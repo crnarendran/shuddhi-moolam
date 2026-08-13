@@ -22,6 +22,7 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | [SM-46](SM-46-collapsible-report-docs.md) | Collapsible inline report documentation (collapsed by default) | 1 | SM-35 |
 | [SM-47](SM-47-mobile-nav-hamburger.md) | Mobile-friendly top navigation (left slide-in drawer) | 2 | SM-38 |
 | [SM-48](SM-48-seed-env-data-function.md) | Reusable admin function to seed staging/dev companies from prod | 2 | SM-42, SM-44 |
+| [SM-49](SM-49-companies-rules-env-coverage.md) | Fix: Firestore rules didn't cover companies_dev/_staging (SM-44 regression) | 1 | SM-44 |
 
 > **SM-40, SM-41, SM-42 are built + on `dev`** (in-review), pending promotion.
 > See `planning/handover-2026-08-13.md` for the Antigravity handover.
