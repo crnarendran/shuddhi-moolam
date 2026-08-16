@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
+import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2, RefreshCw } from 'lucide-react';
 import { FileDetailPanel } from './FileDetailPanel';
+import { functions, fnName } from '../firebase';
 
 export type PipelineStatus = 'detected' | 'downloaded' | 'extracting' | 'extracted' | 'validating' | 'routing' | 'appended' | 'failed' | 'dead_letter';
 
@@ -102,6 +104,9 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedRun, setSelectedRun] = useState<PipelineRun | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedRun) {
@@ -114,6 +119,37 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
     (run.fileName?.toLowerCase() || "").includes(search.toLowerCase()) &&
     matchesStatusFilter(run.status, statusFilter)
   );
+
+  const allFilteredIds = filteredRuns.map((r) => r.id);
+  const allSelected = allFilteredIds.length > 0
+    && allFilteredIds.every((id) => selected.has(id));
+  const toggleOne = (id: string) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(allFilteredIds));
+
+  const reprocessSelected = async () => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!window.confirm(
+      `Reprocess ${ids.length} file(s)? Each re-runs extraction ` +
+      `(uses Gemini and overwrites that week's row).`
+    )) return;
+    setBulkBusy(true); setBulkMsg(null);
+    const fn = httpsCallable<{ fileId: string }, unknown>(
+      functions, fnName('reprocessPendingPdf')
+    );
+    let ok = 0; let fail = 0;
+    for (const id of ids) {
+      try { await fn({ fileId: id }); ok++; } catch { fail++; }
+    }
+    setBulkBusy(false);
+    setBulkMsg(`Queued ${ok} for reprocessing${fail ? `, ${fail} failed` : ''}.`);
+    setSelected(new Set());
+  };
 
   const failedCount = runs.filter(r => r.status === 'failed' || r.status === 'dead_letter').length;
 
@@ -188,6 +224,28 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
           </div>
         </div>
 
+        {(selected.size > 0 || bulkMsg) && (
+          <div className="px-4 py-2 border-b border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 flex items-center gap-3 text-sm">
+            {selected.size > 0 && (
+              <>
+                <span className="text-blue-800 dark:text-blue-200 font-medium">{selected.size} selected</span>
+                <button onClick={() => void reprocessSelected()} disabled={bulkBusy}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50">
+                  <RefreshCw className={`h-4 w-4 ${bulkBusy ? 'animate-spin' : ''}`} />
+                  {bulkBusy ? 'Reprocessing…' : `Reprocess ${selected.size} selected`}
+                </button>
+                <button onClick={() => setSelected(new Set())} className="text-blue-700 dark:text-blue-300 hover:underline">Clear</button>
+              </>
+            )}
+            {bulkMsg && (
+              <span className="text-blue-700 dark:text-blue-300 ml-auto flex items-center gap-2">
+                {bulkMsg}
+                <button onClick={() => setBulkMsg(null)} className="hover:underline">Dismiss</button>
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">
@@ -227,6 +285,11 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
             <table className="w-full min-w-[720px] text-left text-sm text-gray-600 dark:text-gray-400">
               <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-800/80 sticky top-0 z-10 border-b border-gray-200 dark:border-zinc-700">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input type="checkbox" checked={allSelected}
+                      onChange={toggleAll} aria-label="Select all"
+                      className="cursor-pointer accent-blue-600" />
+                  </th>
                   <th className="px-6 py-3 font-semibold">File</th>
                   <th className="px-6 py-3 font-semibold">Status</th>
                   <th className="px-6 py-3 font-semibold">Detected</th>
@@ -247,6 +310,12 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                       onClick={() => setSelectedRun(run)}
                       className={`border-b border-gray-100 dark:border-zinc-700/50 cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-zinc-700/50'}`}
                     >
+                      <td className="px-4 py-4 w-10" onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(run.id)}
+                          onChange={() => toggleOne(run.id)}
+                          aria-label={`Select ${run.fileName}`}
+                          className="cursor-pointer accent-blue-600" />
+                      </td>
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <FileText className="h-4 w-4 text-gray-400" />
                         <span className="truncate max-w-xs">{run.fileName}</span>
