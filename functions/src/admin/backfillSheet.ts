@@ -40,6 +40,7 @@ export const backfillSheetFromHistory = onCall(
     const snap = await getFirestore().collection(HISTORICAL_COLLECTION).get();
     const tabs = new Set<string>();
     const skipped: string[] = [];
+    const ensured = new Map<string, string>();
     let written = 0;
 
     for (const doc of snap.docs) {
@@ -50,10 +51,18 @@ export const backfillSheetFromHistory = onCall(
         continue;
       }
       try {
-        const tab = await ensureYearTab(date);
+        const year = date.split('/')[2];
+        let tab = ensured.get(year);
+        if (!tab) {
+          tab = await ensureYearTab(date);
+          ensured.set(year, tab);
+        }
         await upsertRow(tab, record, true);
         tabs.add(tab);
         written++;
+        // Pace writes: the Sheets API caps writes at ~60/min/user, and a
+        // burst of 69 upserts 429s the tail. ~1.2s spacing keeps us under it.
+        await new Promise((r) => setTimeout(r, 1200));
       } catch (e) {
         logger.warn('Backfill row failed', { docId: doc.id, error: e });
         skipped.push(doc.id);
