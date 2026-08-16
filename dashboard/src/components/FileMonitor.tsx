@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { FileDetailPanel } from './FileDetailPanel';
 import { functions, fnName } from '../firebase';
 
@@ -42,6 +42,25 @@ export interface PipelineRun {
     deviationPct: number;
   }[];
 }
+
+type SortKey = 'fileName' | 'status' | 'detectedAt' | 'year' | 'durationMs' | 'attempts';
+
+/** Comparable value for a run under a sort key (ms for the timestamp). */
+const sortValue = (run: PipelineRun, key: SortKey): number | string => {
+  switch (key) {
+    case 'fileName': return (run.fileName || '').toLowerCase();
+    case 'status': return run.status;
+    case 'year': return run.year ?? 0;
+    case 'durationMs': return run.durationMs ?? 0;
+    case 'attempts': return run.attempts ?? 1;
+    case 'detectedAt': {
+      const d = run.detectedAt as any;
+      if (!d) return 0;
+      return typeof d.toDate === 'function'
+        ? d.toDate().getTime() : new Date(d).getTime();
+    }
+  }
+};
 
 const getStatusConfig = (status: PipelineStatus) => {
   switch (status) {
@@ -107,6 +126,13 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('detectedAt');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const setSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
+  };
 
   useEffect(() => {
     if (selectedRun) {
@@ -130,6 +156,29 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
   });
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
+
+  const sortedRuns = [...filteredRuns].sort((a, b) => {
+    const va = sortValue(a, sortKey);
+    const vb = sortValue(b, sortKey);
+    const cmp = typeof va === 'string' && typeof vb === 'string'
+      ? va.localeCompare(vb)
+      : (va as number) - (vb as number);
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+
+  const sortTh = (label: string, sk: SortKey) => (
+    <th className="px-6 py-3 font-semibold">
+      <button onClick={() => setSort(sk)}
+        className="flex items-center gap-1 uppercase hover:text-gray-700 dark:hover:text-gray-200">
+        {label}
+        {sortKey === sk
+          ? (sortDir === 'asc'
+            ? <ArrowUp className="h-3 w-3" />
+            : <ArrowDown className="h-3 w-3" />)
+          : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+      </button>
+    </th>
+  );
 
   const reprocessSelected = async () => {
     const ids = [...selected];
@@ -290,16 +339,16 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                       onChange={toggleAll} aria-label="Select all"
                       className="cursor-pointer accent-blue-600" />
                   </th>
-                  <th className="px-6 py-3 font-semibold">File</th>
-                  <th className="px-6 py-3 font-semibold">Status</th>
-                  <th className="px-6 py-3 font-semibold">Detected</th>
-                  <th className="px-6 py-3 font-semibold">Year → Tab</th>
-                  <th className="px-6 py-3 font-semibold">Duration</th>
-                  <th className="px-6 py-3 font-semibold">Attempts</th>
+                  {sortTh('File', 'fileName')}
+                  {sortTh('Status', 'status')}
+                  {sortTh('Detected', 'detectedAt')}
+                  {sortTh('Year → Tab', 'year')}
+                  {sortTh('Duration', 'durationMs')}
+                  {sortTh('Attempts', 'attempts')}
                 </tr>
               </thead>
               <tbody>
-                {filteredRuns.map((run) => {
+                {sortedRuns.map((run) => {
                   const statusConf = getStatusConfig(run.status);
                   const Icon = statusConf.icon;
                   const isSelected = selectedRun?.id === run.id;
