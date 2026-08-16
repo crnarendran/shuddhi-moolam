@@ -15,3 +15,4 @@ don't re-litigate it. Add a row when you add an ADR.
 | [003](003-swarm-role-isolation-and-governance.md) | Swarm Role Isolation & Non-Bypass Protocol | Accepted |
 | [004](004-environment-variables-and-secrets-governance.md) | Environment Variables & Secrets Governance | Accepted |
 | [005](005-multi-environment-trigger-isolation-and-release-synchronization.md) | Multi-Environment Trigger Isolation & Release Synchronization | Accepted |
+| [006](006-extraction-accuracy-large-pdf-ocr.md) | Extraction accuracy: large high-res PDFs, tonne rounding, quality safety net | Accepted |

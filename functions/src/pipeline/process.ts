@@ -1,4 +1,4 @@
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldPath } from 'firebase-admin/firestore';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as logger from 'firebase-functions/logger';
@@ -11,6 +11,7 @@ import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 import { estimateGeminiCostUsd } from './cost';
 import { toKgRecord } from './units';
+import { detectOutliers } from '../reporting/outliers';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
@@ -77,6 +78,41 @@ export const processPendingPdf = onDocumentWritten(
           .doc(timestampId)
           .set(record);
 
+        // 4.6 Quality check (SM-56): flag any value that deviates sharply
+        // from recent weeks — a safety net for extraction misreads on the
+        // dense image tables (e.g. inoculant 308 read as 200). Non-blocking.
+        let qualityOutliers: ReturnType<typeof detectOutliers> = [];
+        try {
+          const histSnap = await getFirestore()
+            .collection(historicalCol)
+            .orderBy(FieldPath.documentId(), 'desc')
+            .limit(9)
+            .get();
+          const history = histSnap.docs
+            .filter((d) => d.id !== docId)
+            .map((d) => d.data() as Record<string, unknown>);
+          qualityOutliers = detectOutliers(
+            record as unknown as Record<string, unknown>, history
+          );
+          if (qualityOutliers.length > 0) {
+            logger.warn('Extraction quality: outliers detected', {
+              fileId, outliers: qualityOutliers,
+            });
+            await sendAlert(
+              `Extraction check: ${qualityOutliers.length} outlier(s) ` +
+                `in ${filename}`,
+              qualityOutliers
+                .map((o) =>
+                  `${o.label}: ${o.value} vs ~${o.baseline} ` +
+                  `(${o.deviationPct > 0 ? '+' : ''}${o.deviationPct}%)`)
+                .join('\n'),
+              `outlier-${docId}`
+            );
+          }
+        } catch (e) {
+          logger.warn('Outlier check failed', { fileId, error: e });
+        }
+
         // 5. Success
         const now = Date.now();
         const tokensIn = usage.promptTokenCount || 0;
@@ -97,6 +133,7 @@ export const processPendingPdf = onDocumentWritten(
             estCostUsd: estimatedUsd,
           },
           cost: { estimatedUsd },
+          qualityOutliers,
           year: parseInt(record.date.split('/')[2] || '0', 10),
           targetTab: tabTitle,
           completedAt: now,

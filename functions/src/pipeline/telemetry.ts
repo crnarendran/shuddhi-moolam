@@ -1,5 +1,6 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { FIRESTORE_COLLECTION } from '../config';
+import { type Outlier } from '../reporting/outliers';
 
 export type PipelineStatus =
   | 'detected'
@@ -36,6 +37,8 @@ export interface PipelineRun {
   };
   durationMs?: number;
   cost?: { estimatedUsd: number };
+  /** Values that deviated sharply from recent weeks (SM-56). */
+  qualityOutliers?: Outlier[];
 }
 
 /**
