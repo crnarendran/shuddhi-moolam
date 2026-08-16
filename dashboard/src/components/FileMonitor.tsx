@@ -21,8 +21,15 @@ export interface PipelineRun {
     code?: string;
   };
   cost?: {
-    tokens: number;
-    estimatedUsd: number;
+    tokens?: number;
+    estimatedUsd?: number;
+  };
+  gemini?: {
+    tokensIn?: number;
+    tokensOut?: number;
+    thinkingTokens?: number;
+    totalTokens?: number;
+    estCostUsd?: number;
   };
   targetTab?: string;
   qualityOutliers?: {

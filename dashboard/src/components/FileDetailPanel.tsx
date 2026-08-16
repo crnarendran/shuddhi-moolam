@@ -135,11 +135,11 @@ export const FileDetailPanel = ({ run, onClose }: { run: PipelineRun; onClose: (
              <div className="flex gap-4 text-sm">
                 <div className="bg-white dark:bg-zinc-800/80 p-3 rounded-lg border border-gray-100 dark:border-zinc-700 flex-1 shadow-sm">
                   <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Tokens Used</div>
-                  <div className="font-medium text-gray-900 dark:text-white font-mono">{run.cost.tokens.toLocaleString()}</div>
+                  <div className="font-medium text-gray-900 dark:text-white font-mono">{(run.gemini?.totalTokens ?? run.cost?.tokens)?.toLocaleString() ?? '—'}</div>
                 </div>
                 <div className="bg-white dark:bg-zinc-800/80 p-3 rounded-lg border border-gray-100 dark:border-zinc-700 flex-1 shadow-sm">
                   <div className="text-gray-500 dark:text-gray-400 text-xs mb-1">Estimated Cost</div>
-                  <div className="font-medium text-gray-900 dark:text-white font-mono">${run.cost.estimatedUsd.toFixed(4)}</div>
+                  <div className="font-medium text-gray-900 dark:text-white font-mono">${(run.cost?.estimatedUsd ?? run.gemini?.estCostUsd)?.toFixed(4) ?? '—'}</div>
                 </div>
              </div>
            </div>
