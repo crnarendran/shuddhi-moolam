@@ -3,7 +3,7 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as logger from 'firebase-functions/logger';
 import { downloadPdf } from '../drive/download';
-import { extractPricesFromPdf } from '../gemini/extract';
+import { extractPricesConsensus } from '../gemini/extract';
 import { ensureYearTab } from '../sheets/routing';
 import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
@@ -15,12 +15,16 @@ import { detectOutliers } from '../reporting/outliers';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
+// How many extraction passes to vote over (SM-58). 3 by default; set to 1 to
+// disable consensus. More passes = steadier reads, ~linearly more cost/time.
+const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 3;
+
 export const processPendingPdf = onDocumentWritten(
   {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     document: `${require('../config').FIRESTORE_COLLECTION}/{fileId}`,
     secrets: [geminiApiKeySecret],
-    timeoutSeconds: 300,
+    timeoutSeconds: 540,
     maxInstances: 2,
     concurrency: 1,
     memory: '1GiB'
@@ -45,8 +49,8 @@ export const processPendingPdf = onDocumentWritten(
 
         // 2. Extract (record the filename now so the monitor shows it)
         await recordStage(fileId, 'extracting', { fileName: filename });
-        const { data: rawRecord, usage } = await extractPricesFromPdf(
-          pdfBuffer
+        const { data: rawRecord, usage } = await extractPricesConsensus(
+          pdfBuffer, {}, consensusRuns
         );
         const record = toKgRecord(rawRecord);
 

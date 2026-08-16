@@ -1,6 +1,6 @@
 import { processPendingPdf } from './process';
 import { downloadPdf } from '../drive/download';
-import { extractPricesFromPdf } from '../gemini/extract';
+import { extractPricesConsensus } from '../gemini/extract';
 import { ensureYearTab } from '../sheets/routing';
 import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
@@ -62,8 +62,9 @@ describe('processPendingPdf', () => {
       buffer: Buffer.from('pdf'),
       filename: 'test.pdf'
     });
-    (extractPricesFromPdf as jest.Mock).mockResolvedValue({
+    (extractPricesConsensus as jest.Mock).mockResolvedValue({
       data: { date: '27/07/2026' },
+      route: 'inline',
       usage: {
         totalTokenCount: 150,
         promptTokenCount: 100,
@@ -81,7 +82,7 @@ describe('processPendingPdf', () => {
     await handler.run(mockEvent);
 
     expect(downloadPdf).toHaveBeenCalledWith('123');
-    expect(extractPricesFromPdf).toHaveBeenCalled();
+    expect(extractPricesConsensus).toHaveBeenCalled();
     expect(ensureYearTab).toHaveBeenCalledWith('27/07/2026');
     expect(upsertRow).toHaveBeenCalledWith('2026', {
       date: '27/07/2026',
@@ -120,7 +121,7 @@ describe('processPendingPdf', () => {
       buffer: Buffer.from('pdf'),
       filename: 'test.pdf'
     });
-    (extractPricesFromPdf as jest.Mock).mockRejectedValue(error);
+    (extractPricesConsensus as jest.Mock).mockRejectedValue(error);
 
     const handler = processPendingPdf as unknown as {
       run: (e: unknown) => Promise<void>

@@ -69,6 +69,16 @@ Results (raw pre-÷1000 values; want inoculant=308, fe_mn_hc=95, fe_si_mg=200):
 - **Keep the probe (SM-55)** as the standing tool for future extraction
   diagnosis.
 
+## Update (2026-08-16, SM-58)
+Re-extraction testing showed the misreads are **run-to-run non-deterministic**,
+not fixed by any single prompt/budget: the same PDF read the latest column +
+`47,500` on one pass and the older column + `48,000` on another. Two follow-ups
+landed: **consensus extraction** (run N=3, take the per-field majority/median —
+non-determinism is outvoted) and a **date-based two-column rule** (pick the
+column by comparing its date, never by left/right position — the latest column's
+position flips between issues: right for 29/06, left for 25/05). Consensus is the
+real accuracy lever here; manual entry (SM-57) stays the deterministic fallback.
+
 ## Consequences
 - Extraction quality is now observable (alerts + run-doc field) rather than
   silently wrong.

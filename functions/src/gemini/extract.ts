@@ -9,6 +9,7 @@ import {
 } from '@google/generative-ai/server';
 import { extractionRecordSchema, ExtractionRecord } from './schema';
 import { buildPromptFields } from './components';
+import { mergeRecords } from './consensus';
 import * as logger from 'firebase-functions/logger';
 
 const MAX_RETRIES = 3;
@@ -133,11 +134,13 @@ export async function extractPricesFromPdf(
     'extract ONLY the upper bound (maximum) value (e.g. 42,800).\n' +
     'IMPORTANT: the Primary Material & Semi-finished Products / Melting ' +
     'Scrap table (approx. page 7) prints TWO weekly-average columns, each ' +
-    'headed by a DATE. These are NOT a price range and must NOT be ' +
-    'averaged together. For every field read from that table, extract the ' +
-    'SINGLE value under the column headed by the MOST RECENT (latest) ' +
-    'date — in this newsletter that is the right-most column. The ' +
-    'upper-bound rule above applies only to a genuine min-max range.\n' +
+    'headed by a DATE (e.g. "22-05-2026" and "15-05-2026"). These are NOT ' +
+    'a price range and must NOT be averaged together. Compare the two ' +
+    'column dates and, for every field in that table, extract the SINGLE ' +
+    'value under the column with the MOST RECENT (latest) date. The latest ' +
+    'date may be the LEFT or the RIGHT column — decide strictly by the ' +
+    'dates, never by position. The upper-bound rule above applies only to ' +
+    'a genuine min-max range.\n' +
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
     'Required fields:\n' +
@@ -255,4 +258,50 @@ export async function extractPricesFromPdf(
       });
     }
   }
+}
+
+/**
+ * Runs the extractor `runs` times and returns the per-field consensus (SM-58)
+ * so a non-deterministic misread (wrong two-column pick, a rounded value) is
+ * outvoted. Token usage is summed across runs (cost telemetry stays honest).
+ * @param {Buffer} pdfBuffer - The raw PDF bytes.
+ * @param {ExtractOptions} options - Extractor options (thinking budget etc.).
+ * @param {number} runs - Number of extraction passes (default 3).
+ * @returns {Promise<{data: ExtractionRecord; route: 'inline' | 'file-api';
+ *   usage: {totalTokenCount: number; promptTokenCount: number;
+ *   candidatesTokenCount: number; thoughtsTokenCount: number}}>} The consensus
+ *   record, route, and summed usage.
+ */
+export async function extractPricesConsensus(
+  pdfBuffer: Buffer,
+  options: ExtractOptions = {},
+  runs = 3
+): Promise<{
+  data: ExtractionRecord;
+  route: 'inline' | 'file-api';
+  usage: {
+    totalTokenCount: number;
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    thoughtsTokenCount: number;
+  }
+}> {
+  const n = Math.max(1, Math.floor(runs));
+  const results: Awaited<ReturnType<typeof extractPricesFromPdf>>[] = [];
+  for (let i = 0; i < n; i++) {
+    results.push(await extractPricesFromPdf(pdfBuffer, options));
+  }
+  const data = mergeRecords(results.map((r) => r.data));
+  const sum = (pick: (u: (typeof results)[number]['usage']) => number) =>
+    results.reduce((s, r) => s + pick(r.usage), 0);
+  return {
+    data,
+    route: results[0].route,
+    usage: {
+      totalTokenCount: sum((u) => u.totalTokenCount),
+      promptTokenCount: sum((u) => u.promptTokenCount),
+      candidatesTokenCount: sum((u) => u.candidatesTokenCount),
+      thoughtsTokenCount: sum((u) => u.thoughtsTokenCount),
+    },
+  };
 }
