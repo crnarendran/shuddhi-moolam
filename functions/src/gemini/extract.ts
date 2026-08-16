@@ -113,13 +113,18 @@ export async function extractPricesFromPdf(
     'number as a hint; rely on the table/section name to locate the ' +
     'value if pagination differs.\n' +
     'All prices must be returned as strings (with commas intact).\n' +
+    'Read each price as the EXACT printed figure, digit for digit, ' +
+    'INCLUDING the hundreds (e.g. "48,500" — never store it as "48,000" ' +
+    'or "49,000"). Do NOT round, truncate, or approximate any value to ' +
+    'the nearest thousand; the hundreds digits are significant.\n' +
     'If a price is listed as a range (e.g. 42,600 - 42,800), you MUST ' +
     'extract ONLY the upper bound (maximum) value (e.g. 42,800).\n' +
-    'IMPORTANT: the Primary Material & Semi-finished Products table ' +
-    '(Mandi Gobindgarh, approx. page 7) prints TWO weekly-average columns. ' +
-    'These are NOT a price range. For every field read from ' +
-    'that table, ALWAYS extract the SECOND (right-most) value if two values ' +
-    'are printed on the same line separated by spaces or dashes. The ' +
+    'IMPORTANT: the Primary Material & Semi-finished Products / Melting ' +
+    'Scrap table (approx. page 7) prints TWO weekly-average columns, each ' +
+    'headed by a DATE. These are NOT a price range and must NOT be ' +
+    'averaged together. For every field read from that table, extract the ' +
+    'SINGLE value under the column headed by the MOST RECENT (latest) ' +
+    'date — in this newsletter that is the right-most column. The ' +
     'upper-bound rule above applies only to a genuine min-max range.\n' +
     'If a value cannot be found, you MUST return an explicit ' +
     'empty string ("") for that field.\n\n' +
