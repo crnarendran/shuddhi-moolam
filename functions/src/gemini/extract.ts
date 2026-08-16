@@ -112,6 +112,10 @@ export async function extractPricesFromPdf(
   const thinkingBudget = options.thinkingBudget ?? 1024;
   const generationConfig = {
     responseMimeType: 'application/json',
+    // Greedy decoding: this is exact-number table extraction, not creative
+    // generation, so temperature 0 removes the run-to-run sampling variance
+    // that was misreading e.g. 47,500 as 48,000 on some passes (SM-58).
+    temperature: 0,
     // 1024 is the minimum budget; 0 causes a 400 Bad Request
     thinkingConfig: { thinkingBudget },
   } as unknown as GenerationConfig;
