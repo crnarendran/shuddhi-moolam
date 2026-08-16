@@ -39,9 +39,18 @@ export async function sortTabByDateDesc(tabTitle: string): Promise<void> {
   );
   const range = `${tabTitle}!A2:${endColumnLetter}`;
 
+  // CRITICAL: read UNFORMATTED values. The API default (FORMATTED_VALUE)
+  // returns the *displayed* string, so a kg price of 47.5 shown under a
+  // 0-decimal column format reads back as "48" — and the USER_ENTERED
+  // write below would then persist that rounded integer, silently
+  // destroying the decimals on every sort. UNFORMATTED_VALUE returns the
+  // true number (47.5); dateTimeRenderOption keeps column B a dd/MM/yyyy
+  // string so dateSortKey still works.
   const resp = await sheetsClient.spreadsheets.values.get({
     spreadsheetId: masterSheetId,
     range,
+    valueRenderOption: 'UNFORMATTED_VALUE',
+    dateTimeRenderOption: 'FORMATTED_STRING',
   });
 
   const rows = resp.data.values || [];

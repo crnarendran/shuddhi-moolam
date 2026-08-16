@@ -36,6 +36,8 @@ describe('sortTabByDateDesc', () => {
     expect(sheetsClient.spreadsheets.values.get).toHaveBeenCalledWith({
       spreadsheetId: MASTER_SHEET_ID,
       range: `2026!A2:${END}`,
+      valueRenderOption: 'UNFORMATTED_VALUE',
+      dateTimeRenderOption: 'FORMATTED_STRING',
     });
     const call = (sheetsClient.spreadsheets.values.update as jest.Mock).mock
       .calls[0][0];
@@ -61,6 +63,29 @@ describe('sortTabByDateDesc', () => {
       .calls[0][0];
     const writtenDates = call.requestBody.values.map((r: any[]) => r[1]);
     expect(writtenDates).toEqual(['27/07/2026', '06/04/2026', 'N/A']);
+  });
+
+  it('preserves decimal kg prices (no rounding round-trip)', async () => {
+    // Regression: an earlier version read FORMATTED_VALUE, so a 47.5 shown
+    // under a 0-decimal column format read back as "48" and got persisted,
+    // rounding the sheet. With UNFORMATTED_VALUE the true 47.5 survives.
+    (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
+      data: {
+        values: [
+          ['a.pdf', '06/04/2026', 47.5, 53.3],
+          ['b.pdf', '27/07/2026', 48, 50],
+        ],
+      },
+    });
+
+    await sortTabByDateDesc('2026');
+
+    const call = (sheetsClient.spreadsheets.values.update as jest.Mock).mock
+      .calls[0][0];
+    const written = call.requestBody.values;
+    // newest (27/07) first, then 06/04 with its decimals intact
+    expect(written[1][2]).toBe(47.5);
+    expect(written[1][3]).toBe(53.3);
   });
 
   it('does nothing when there are 0 or 1 data rows', async () => {
