@@ -76,8 +76,24 @@ not fixed by any single prompt/budget: the same PDF read the latest column +
 landed: **consensus extraction** (run N=3, take the per-field majority/median —
 non-determinism is outvoted) and a **date-based two-column rule** (pick the
 column by comparing its date, never by left/right position — the latest column's
-position flips between issues: right for 29/06, left for 25/05). Consensus is the
-real accuracy lever here; manual entry (SM-57) stays the deterministic fallback.
+position flips between issues: right for 29/06, left for 25/05).
+
+**Root cause of the run-to-run variance: `temperature` was unset** (default
+~1.0 sampling). The probe and pipeline call paths are otherwise identical. Set
+`temperature: 0` (greedy decoding — this is exact-number extraction, not
+creative generation). Effect, verified via the probe:
+- **Text PDFs (the normal ~1.3 MB issues): fully solved.** Two runs are now
+  byte-identical and correct (25/05: pig_iron_foundry 47,500 → 47.5, CRCA on
+  the latest column, ferro alloys exact). Temperature 0 removes *all* the
+  variance because the only uncertainty was language sampling.
+- **Scanned-image PDFs (e.g. the 16 MB 29/06 copy): still unreliable.**
+  Temperature 0 does not help — the uncertainty is in the **vision/OCR** of a
+  dense image, not decoding. Runs still disagree and inoculant reads 200 (≠308).
+  **Reaffirms: feed normal-size text PDFs; the 16 MB copies are the problem.**
+  The SM-56 outlier net flags the bad reads when a scan slips through.
+
+Net: temperature 0 is the real fix for proper inputs; consensus (now 3) is a
+light safety net; manual entry (SM-57) stays the deterministic fallback.
 
 ## Consequences
 - Extraction quality is now observable (alerts + run-doc field) rather than
