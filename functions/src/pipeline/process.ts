@@ -15,9 +15,10 @@ import { detectOutliers } from '../reporting/outliers';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
-// How many extraction passes to vote over (SM-58). 3 by default; set to 1 to
-// disable consensus. More passes = steadier reads, ~linearly more cost/time.
-const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 3;
+// How many extraction passes to vote over (SM-58). 5 by default so the
+// occasional round-to-thousand misread is reliably outvoted; set to 1 to
+// disable. More passes = steadier reads, ~linearly more cost/time.
+const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 5;
 
 export const processPendingPdf = onDocumentWritten(
   {

@@ -57,21 +57,28 @@ export const probeExtraction = onCall(
     const sizeMb = Number((buffer.length / 1048576).toFixed(2));
 
     const results: Array<Record<string, unknown>> = [];
-    for (let i = 0; i < runs; i++) {
-      const { data: rec, route, usage } = await extractPricesFromPdf(
-        buffer, { thinkingBudget, forceInline, model }
-      );
-      const source = rec as Record<string, unknown>;
-      const watched: Record<string, unknown> = {};
-      for (const k of WATCH_KEYS) watched[k] = source[k];
-      results.push({
-        run: i + 1,
-        route,
-        watched,
-        sourcePages: source.source_pages,
-        totalTokens: usage.totalTokenCount,
-        thinkingTokens: usage.thoughtsTokenCount,
-      });
+    try {
+      for (let i = 0; i < runs; i++) {
+        const { data: rec, route, usage } = await extractPricesFromPdf(
+          buffer, { thinkingBudget, forceInline, model }
+        );
+        const source = rec as Record<string, unknown>;
+        const watched: Record<string, unknown> = {};
+        for (const k of WATCH_KEYS) watched[k] = source[k];
+        results.push({
+          run: i + 1,
+          route,
+          watched,
+          sourcePages: source.source_pages,
+          totalTokens: usage.totalTokenCount,
+          thinkingTokens: usage.thoughtsTokenCount,
+        });
+      }
+    } catch (e) {
+      // Surface the real reason (e.g. an unknown/inaccessible model id)
+      // instead of a bare 500.
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new HttpsError('internal', `Extraction failed: ${msg}`);
     }
 
     return {
