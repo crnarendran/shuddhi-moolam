@@ -97,6 +97,7 @@ describe('Extract Prices from PDF', () => {
     const result = await extractPricesFromPdf(dummyBuffer);
     expect(result).toEqual({
       data: validResponse,
+      route: 'inline',
       usage: {
         totalTokenCount: 42,
         promptTokenCount: 0,
@@ -230,6 +231,7 @@ describe('Extract Prices from PDF', () => {
     const result = await extractPricesFromPdf(dummyBuffer);
     expect(result).toEqual({
       data: validResponse,
+      route: 'inline',
       usage: {
         totalTokenCount: 10,
         promptTokenCount: 0,

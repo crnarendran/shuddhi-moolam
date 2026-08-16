@@ -60,23 +60,34 @@ async function uploadPdfAndWait(
   return { uri: file.uri, name: file.name, mimeType: file.mimeType };
 }
 
+export interface ExtractOptions {
+  /** Gemini thinking budget (min 1024). Defaults to 1024. */
+  thinkingBudget?: number;
+  /** Force the inline base64 path regardless of size (probe/testing only). */
+  forceInline?: boolean;
+}
+
 /**
  * Extracts structured pricing data from a newsletter PDF using Gemini.
  * @param {Buffer} pdfBuffer - The raw PDF bytes.
+ * @param {ExtractOptions} options - Thinking budget / route overrides.
  * @returns {Promise<{
  *   data: ExtractionRecord;
+ *   route: 'inline' | 'file-api';
  *   usage: {
  *     totalTokenCount: number;
  *     promptTokenCount: number;
  *     candidatesTokenCount: number;
  *     thoughtsTokenCount: number;
  *   }
- * }>} The validated extraction record and token usage.
+ * }>} The validated extraction record, route used, and token usage.
  */
 export async function extractPricesFromPdf(
-  pdfBuffer: Buffer
+  pdfBuffer: Buffer,
+  options: ExtractOptions = {}
 ): Promise<{
   data: ExtractionRecord;
+  route: 'inline' | 'file-api';
   usage: {
     totalTokenCount: number;
     promptTokenCount: number;
@@ -95,10 +106,11 @@ export async function extractPricesFromPdf(
   // output rate — unbounded thinking was the cause of the SM-29 cost
   // spike. `thinkingConfig` is not declared in this SDK version's types,
   // so it is cast through; the REST API still honours the field.
+  const thinkingBudget = options.thinkingBudget ?? 1024;
   const generationConfig = {
     responseMimeType: 'application/json',
     // 1024 is the minimum budget; 0 causes a 400 Bad Request
-    thinkingConfig: { thinkingBudget: 1024 },
+    thinkingConfig: { thinkingBudget },
   } as unknown as GenerationConfig;
   const model = genAI.getGenerativeModel({
     model: 'gemini-3.6-flash',
@@ -142,7 +154,10 @@ export async function extractPricesFromPdf(
   let filePart: Part;
   let fileManager: GoogleAIFileManager | undefined;
   let uploadedName: string | undefined;
-  if (pdfBuffer.length <= inlineMaxBytes()) {
+  const useInline = options.forceInline
+    || pdfBuffer.length <= inlineMaxBytes();
+  const route: 'inline' | 'file-api' = useInline ? 'inline' : 'file-api';
+  if (useInline) {
     filePart = {
       inlineData: {
         data: pdfBuffer.toString('base64'),
@@ -197,6 +212,7 @@ export async function extractPricesFromPdf(
         logger.info('Successfully extracted and validated data.');
         return {
           data: parsedData,
+          route,
           usage: {
             totalTokenCount,
             promptTokenCount,

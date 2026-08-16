@@ -18,6 +18,7 @@ import {
   listUserPlans as _listUserPlans,
 } from './sharing/entitlements';
 import { seedEnvData as _seedEnvData } from './admin/seedEnvData';
+import { probeExtraction as _probeExtraction } from './admin/probeExtraction';
 import { getFirestore } from 'firebase-admin/firestore';
 import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
@@ -160,6 +161,7 @@ module.exports = {
   [`setUserPlan${suffix}`]: _setUserPlan,
   [`listUserPlans${suffix}`]: _listUserPlans,
   [`seedEnvData${suffix}`]: _seedEnvData,
+  [`probeExtraction${suffix}`]: _probeExtraction,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');

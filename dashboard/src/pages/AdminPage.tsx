@@ -1,10 +1,32 @@
 import { useCallback, useEffect, useState } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { ShieldCheck, RefreshCw, Database } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Database, FlaskConical } from 'lucide-react';
 import { functions, fnName } from '../firebase';
 import { type Plan, FOUNDER_EMAILS } from '../hooks/usePlan';
 
 interface UserRow { uid: string; email: string; plan: Plan; lastSignIn: string | null }
+
+// Test PDFs (SM-55 extraction probe). 29/06 is the 16.7 MB File-API case;
+// the rest are ~1.3 MB inline cases used as controls.
+const PROBE_FILES: { id: string; label: string }[] = [
+  { id: '10CZ2_V7xWN8aTV5T2SSdb1kg0IiI1qg3', label: 'MMRW29062026 (16.7MB)' },
+  { id: '17unkcTdtZBm7drnoxrX_NJp7hKXlXkOG', label: 'MMRW25052026 (1.4MB)' },
+  { id: '1UW7N5xJx0Ie2V2u3F6CMtswbg4u0Ghfe', label: 'MMRW18052026 (1.2MB)' },
+  { id: '1sLFtJ_EHgPIitDHIGImJifiLvalkP60B', label: 'MMRW11052026 (1.3MB)' },
+  { id: '1o7pBMTZSvKeoTYw55PNanjvYazEniDPd', label: 'MMRW04052026 (1.5MB)' },
+];
+
+interface ProbeRun {
+  run: number;
+  route: string;
+  watched: Record<string, string>;
+  totalTokens: number;
+  thinkingTokens: number;
+}
+interface ProbeResult {
+  filename: string; sizeMb: number; thinkingBudget: number;
+  forceInline: boolean; runs: number; results: ProbeRun[];
+}
 
 /**
  * Founder-only admin panel (SM-42): list every user with their plan and
@@ -18,6 +40,11 @@ export function AdminPage() {
   const [err, setErr] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
+  const [probeFileId, setProbeFileId] = useState(PROBE_FILES[0].id);
+  const [probeBudget, setProbeBudget] = useState(1024);
+  const [probeRuns, setProbeRuns] = useState(2);
+  const [probing, setProbing] = useState(false);
+  const [probeResult, setProbeResult] = useState<ProbeResult | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setErr(null);
@@ -55,6 +82,23 @@ export function AdminPage() {
       setErr((e as { message?: string }).message ?? 'Seed failed.');
     }
     setSeeding(false);
+  };
+
+  const runProbe = async () => {
+    setProbing(true); setProbeResult(null); setErr(null);
+    try {
+      const fn = httpsCallable<
+        { fileId: string; thinkingBudget: number; runs: number },
+        ProbeResult
+      >(functions, fnName('probeExtraction'), { timeout: 540000 });
+      const r = await fn({
+        fileId: probeFileId, thinkingBudget: probeBudget, runs: probeRuns,
+      });
+      setProbeResult(r.data);
+    } catch (e) {
+      setErr((e as { message?: string }).message ?? 'Probe failed.');
+    }
+    setProbing(false);
   };
 
   const setPlan = async (email: string, plan: Plan) => {
@@ -115,6 +159,100 @@ export function AdminPage() {
           <Database className="h-4 w-4" />
           {seeding ? 'Copying…' : 'Copy prod → staging & dev'}
         </button>
+      </div>
+
+      {/* Extraction probe (SM-55): re-run Gemini extraction on a test PDF with
+          a chosen thinking budget, read-only (never writes to the Sheet). */}
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-700
+        p-4 flex flex-col gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100
+            flex items-center gap-2">
+            <FlaskConical className="h-4 w-4" />Extraction probe</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-2xl">
+            Re-run extraction on a test PDF and inspect the confusable fields —
+            no writes to the Sheet. Compare thinking budgets and check run-to-run
+            consistency. (The Drive service account must be able to read the file.)
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-xs text-zinc-500 dark:text-zinc-400
+            flex flex-col gap-1">PDF
+            <select value={probeFileId}
+              onChange={(e) => setProbeFileId(e.target.value)}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm min-w-[200px]">
+              {PROBE_FILES.map((f) => (
+                <option key={f.id} value={f.id}>{f.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-zinc-500 dark:text-zinc-400
+            flex flex-col gap-1">Thinking budget
+            <select value={probeBudget}
+              onChange={(e) => setProbeBudget(Number(e.target.value))}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm">
+              <option value={1024}>1024 (current)</option>
+              <option value={4096}>4096</option>
+              <option value={8192}>8192</option>
+            </select>
+          </label>
+          <label className="text-xs text-zinc-500 dark:text-zinc-400
+            flex flex-col gap-1">Runs
+            <input type="number" min={1} max={4} value={probeRuns}
+              onChange={(e) => setProbeRuns(Number(e.target.value))}
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm w-16" />
+          </label>
+          <button onClick={() => void runProbe()} disabled={probing}
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md
+              bg-blue-600 text-white disabled:opacity-50 whitespace-nowrap">
+            <FlaskConical className="h-4 w-4" />
+            {probing ? 'Running…' : 'Run probe'}
+          </button>
+        </div>
+        {probing && (
+          <p className="text-xs text-zinc-400">
+            Extracting {probeRuns}× — this can take up to a few minutes…</p>
+        )}
+        {probeResult && (
+          <div className="overflow-x-auto">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+              {probeResult.filename} · {probeResult.sizeMb} MB · budget{' '}
+              {probeResult.thinkingBudget}
+            </p>
+            <table className="text-xs border-collapse">
+              <thead className="text-zinc-500 dark:text-zinc-400">
+                <tr>
+                  <th className="px-2 py-1 text-left">run</th>
+                  <th className="px-2 py-1 text-left">route</th>
+                  {Object.keys(probeResult.results[0]?.watched ?? {}).map((k) => (
+                    <th key={k} className="px-2 py-1 text-right">
+                      {k.replace(/_mumbai|_pune|_mumbai_pune/g, '')
+                        .replace(/_/g, ' ')}</th>
+                  ))}
+                  <th className="px-2 py-1 text-right">tokens</th>
+                </tr>
+              </thead>
+              <tbody className="text-zinc-800 dark:text-zinc-100">
+                {probeResult.results.map((r) => (
+                  <tr key={r.run} className="border-t border-zinc-100
+                    dark:border-zinc-800">
+                    <td className="px-2 py-1">{r.run}</td>
+                    <td className="px-2 py-1">{r.route}</td>
+                    {Object.values(r.watched).map((v, i) => (
+                      <td key={i} className="px-2 py-1 text-right tabular-nums">
+                        {String(v)}</td>
+                    ))}
+                    <td className="px-2 py-1 text-right tabular-nums">
+                      {r.totalTokens}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200
