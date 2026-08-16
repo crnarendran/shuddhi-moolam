@@ -37,6 +37,23 @@ function snapshotValues(
 }
 
 /**
+ * Extracts every component value from a record as a string map (blank when
+ * absent) — returned to the client so the grid refreshes without a re-fetch.
+ * @param {Record<string, unknown>} rec - The record to read.
+ * @returns {Record<string, string>} A key→string map over all components.
+ */
+function componentValues(
+  rec: Record<string, unknown>
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of CORE_KEYS) {
+    const v = rec[k];
+    out[k] = v === undefined || v === null ? '' : String(v);
+  }
+  return out;
+}
+
+/**
  * Data-editor-gated manual price entry / correction (SM-57, "break glass").
  * Writes the FINAL kg figures to BOTH the master Sheet and Firestore
  * `historical_prices`, stamping `source: 'manual'` so a later auto run keeps
@@ -86,15 +103,23 @@ export const manualUpsert = onCall(
         logger.info('Manual override cleared (restored auto values)', {
           docId, by: caller, restored: Object.keys(pre),
         });
-        return { success: true, docId, cleared: true, restored: true };
+        return {
+          success: true, docId, cleared: true, restored: true,
+          source: 'auto', manualFields: [],
+          values: componentValues(restored),
+        };
       }
       await ref.set(
-        { source: 'auto', manualBy: null, manualAt: null }, { merge: true }
+        { source: 'auto', manualBy: null, manualAt: null, manualFields: [] },
+        { merge: true }
       );
       logger.info('Manual override cleared (no snapshot to restore)', {
         docId, by: caller,
       });
-      return { success: true, docId, cleared: true, restored: false };
+      return {
+        success: true, docId, cleared: true, restored: false,
+        source: 'auto', manualFields: [], values: componentValues(existing),
+      };
     }
 
     const { clean, rejected } = sanitizeManualValues(data.values || {});
@@ -111,6 +136,12 @@ export const manualUpsert = onCall(
     const preManual = alreadyManual
       ? (existing.preManual as Record<string, string> | undefined)
       : snapshotValues(existing);
+    // Track which fields carry a manual override (for field-level badges).
+    const prevFields = alreadyManual && Array.isArray(existing.manualFields)
+      ? existing.manualFields as string[] : [];
+    const manualFields = Array.from(
+      new Set([...prevFields, ...Object.keys(clean)])
+    );
     const now = new Date().toISOString();
     const record = {
       ...existing,
@@ -120,6 +151,7 @@ export const manualUpsert = onCall(
       source: 'manual',
       manualBy: caller,
       manualAt: now,
+      manualFields,
       ...(preManual ? { preManual } : {}),
       last_modified_date: now,
     } as unknown as ExtractionRecord;
@@ -136,6 +168,8 @@ export const manualUpsert = onCall(
     return {
       success: true, docId, action,
       written: Object.keys(clean), rejected,
+      source: 'manual', manualFields,
+      values: componentValues(record as unknown as Record<string, unknown>),
     };
   }
 );

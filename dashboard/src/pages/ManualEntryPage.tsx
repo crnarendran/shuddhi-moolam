@@ -34,6 +34,7 @@ export function ManualEntryPage() {
   const [date, setDate] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
   const [source, setSource] = useState<string | null>(null);
+  const [manualFields, setManualFields] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,6 +57,9 @@ export function ManualEntryPage() {
       }
       setValues(next);
       setSource((data.source as string) ?? null);
+      setManualFields(
+        Array.isArray(data.manualFields) ? data.manualFields as string[] : []
+      );
       setLoaded(true);
       setMsg(snap.exists()
         ? `Loaded ${docId}${data.source === 'manual' ? ' (manual)' : ''}`
@@ -85,10 +89,16 @@ export function ManualEntryPage() {
     try {
       const fn = httpsCallable<
         { date: string; values: Record<string, string> },
-        { docId: string; written: string[]; rejected: string[] }
+        {
+          docId: string; written: string[]; rejected: string[];
+          source: string; manualFields: string[];
+          values: Record<string, string>;
+        }
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, values: payload });
-      setSource('manual');
+      if (r.data.values) setValues(r.data.values);
+      setSource(r.data.source ?? 'manual');
+      setManualFields(r.data.manualFields ?? []);
       setMsg(`Saved ${r.data.written.length} value(s) for ${r.data.docId}.`);
     } catch (e) {
       setErr((e as { message?: string }).message ?? 'Save failed.');
@@ -107,12 +117,16 @@ export function ManualEntryPage() {
     try {
       const fn = httpsCallable<
         { date: string; clearOverride: boolean },
-        { restored?: boolean }
+        {
+          restored?: boolean; source: string; manualFields: string[];
+          values: Record<string, string>;
+        }
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, clearOverride: true });
-      setSource('auto');
-      // Reload so the restored auto values (and dropped badge) show.
-      await load();
+      // Apply the returned values directly so the grid refreshes at once.
+      if (r.data.values) setValues(r.data.values);
+      setSource(r.data.source ?? 'auto');
+      setManualFields(r.data.manualFields ?? []);
       setMsg(r.data.restored
         ? `Override cleared for ${docId}. Restored the automated values.`
         : `Override cleared for ${docId}. Auto extraction re-enabled ` +
@@ -173,8 +187,16 @@ export function ManualEntryPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {COMPONENTS.map((c) => (
               <label key={c.key} className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600 dark:text-zinc-300 truncate"
-                  title={c.label}>{c.label}</span>
+                <span className="text-zinc-600 dark:text-zinc-300 truncate
+                  flex items-center gap-1" title={c.label}>
+                  <span className="truncate">{c.label}</span>
+                  {manualFields.includes(c.key) && (
+                    <span title="Manually overridden"
+                      className="shrink-0 text-[10px] px-1 rounded bg-amber-100
+                        text-amber-800 dark:bg-amber-900/40
+                        dark:text-amber-300">manual</span>
+                  )}
+                </span>
                 <div className="flex items-center gap-1">
                   <input
                     value={values[c.key] ?? ''}
