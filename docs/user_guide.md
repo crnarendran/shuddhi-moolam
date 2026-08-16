@@ -117,3 +117,35 @@ Graphite Petroleum Coke (Mumbai).
   1. Confirm the file is a PDF under 15 MB and was uploaded into the correct Drive folder `1RgArYZYgmR-ZJB7Gne5fZA7nlufIKaeb`.
   2. The file may have failed Gemini extraction or Zod validation. Contact system operators to review the system logs and `_system/dead_letters` queue.
 - **Requesting a Reprocess**: If a file failed or was updated, an operator can trigger a manual reprocess by clearing the Firestore lock document. See [docs/support_runbook.md](file:///c:/Naren/shuddhi-moolam/docs/support_runbook.md) for details.
+
+---
+
+## Manual Price Entry ("Break Glass") — SM-57
+
+When automated extraction fails or a value is wrong and re-processing won't
+fix it, an authorised **data editor** can enter or correct prices by hand.
+Access is limited to the data-editor allowlist (currently the two founders);
+it does **not** grant full admin access.
+
+**Where:** Dashboard → **Settings → Manual entry**.
+
+**To correct or add a week:**
+1. Type the issue date as `dd/MM/yyyy` (e.g. `18/05/2026`) and click **Load**.
+   Existing values pre-fill; a brand-new date starts blank.
+2. Edit the values. **All values are ₹/kg** (the same unit the dashboards
+   show) — e.g. pig iron is entered as `47.5`, not `47,500`. Leave a field
+   blank to keep its current value.
+3. Click **Save prices** and confirm. This writes **both** the master Sheet
+   and the dashboard (Firestore) at once.
+
+**Sticky behaviour:** a saved date is marked **manual**. Later automated
+extraction of that date will **not overwrite** your values — instead, if the
+fresh auto read disagrees, the Monitor shows a purple ✎ badge and an alert is
+sent, so a human can review. To hand the date back to automation, load it and
+click **Clear override (re-enable auto)** — the current values remain until the
+next automated run replaces them.
+
+**Notes:**
+- Partial entries are safe: only the fields you fill are written; the rest are
+  left untouched.
+- Manual entries are stamped with the editor's email and timestamp for audit.

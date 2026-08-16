@@ -10,6 +10,11 @@ export type Plan = 'free' | 'premium';
 export const FOUNDER_EMAILS = ['crnarendran@gmail.com', 'mvsaikishore@gmail.com'];
 // Admins (Monitor tab + Admin plans panel) are a strict subset of founders.
 const ADMIN_EMAILS = ['crnarendran@gmail.com'];
+// Data editors may use the manual price-entry tool (SM-57) only — a narrow
+// grant, distinct from full admin. Mirror functions/src/config/roles.ts.
+const DATA_EDITOR_EMAILS = [
+  'crnarendran@gmail.com', 'mvsaikishore@gmail.com',
+];
 
 /**
  * The signed-in user's plan (SM-42). Premium unlocks creating your own
@@ -58,4 +63,16 @@ export function useIsAdmin(): boolean {
     []
   );
   return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+}
+
+/** True when the signed-in user may use manual price entry (SM-57). */
+export function useIsDataEditor(): boolean {
+  const [email, setEmail] = useState<string | null>(
+    auth.currentUser?.email ?? null
+  );
+  useEffect(
+    () => onAuthStateChanged(auth, (u) => setEmail(u?.email ?? null)),
+    []
+  );
+  return !!email && DATA_EDITOR_EMAILS.includes(email.toLowerCase());
 }

@@ -7,9 +7,19 @@ import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
 
+// Data returned by the SM-57 sticky-guard read of historical/<docId>.
+// undefined → no manual override (normal path); set to a manual record to
+// exercise the guard.
+let mockManualDocData: Record<string, unknown> | undefined;
+
 jest.mock('firebase-admin/firestore', () => {
   const setMock = jest.fn();
-  const mockDoc = { set: setMock, collection: jest.fn() };
+  const mockDoc = {
+    set: setMock,
+    // SM-57 sticky guard reads the existing historical doc here.
+    get: jest.fn(() => Promise.resolve({ data: () => mockManualDocData })),
+    collection: jest.fn(),
+  };
   // The SM-56 outlier check queries recent history via
   // orderBy(...).limit(...).get(); declare those upfront so the chain works.
   const mockCollection = {
@@ -47,6 +57,7 @@ describe('processPendingPdf', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockManualDocData = undefined;
   });
 
   const mockEvent = {
@@ -113,6 +124,38 @@ describe('processPendingPdf', () => {
       })
     );
     expect(sendAlert).not.toHaveBeenCalled();
+  });
+
+  it('keeps a manual override: skips writes, flags disagreement', async () => {
+    // inoculant is Rs/kg (not tonne→kg converted) so the raw value is the
+    // final value — auto 308 vs stored manual 300 → material diff.
+    mockManualDocData = {
+      source: 'manual', inoculant_2_6mm_mumbai: '300',
+    };
+    (downloadPdf as jest.Mock).mockResolvedValue({
+      buffer: Buffer.from('pdf'), filename: 'test.pdf',
+    });
+    (extractPricesConsensus as jest.Mock).mockResolvedValue({
+      data: { date: '18/05/2026', inoculant_2_6mm_mumbai: '308' },
+      route: 'inline',
+      usage: {
+        totalTokenCount: 10, promptTokenCount: 5, candidatesTokenCount: 5,
+      },
+    });
+
+    const handler = processPendingPdf as unknown as {
+      run: (e: unknown) => Promise<void>
+    };
+    await handler.run(mockEvent);
+
+    // Neither store is overwritten.
+    expect(upsertRow).not.toHaveBeenCalled();
+    // The disagreement is surfaced.
+    expect(sendAlert).toHaveBeenCalled();
+    expect(recordStage).toHaveBeenCalledWith(
+      '123', 'appended',
+      expect.objectContaining({ manualOverrideKept: true })
+    );
   });
 
   it('handles failures, records failed stage, alerts', async () => {

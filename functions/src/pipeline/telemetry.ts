@@ -39,6 +39,10 @@ export interface PipelineRun {
   cost?: { estimatedUsd: number };
   /** Values that deviated sharply from recent weeks (SM-56). */
   qualityOutliers?: Outlier[];
+  /** A manual override existed, so auto writes were skipped (SM-57). */
+  manualOverrideKept?: boolean;
+  /** Fields where the fresh auto read disagreed with the manual value. */
+  autoVsManualDiffs?: { key: string; auto: string; manual: string }[];
 }
 
 /**

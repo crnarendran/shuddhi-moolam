@@ -12,6 +12,7 @@ import { recordStage } from './telemetry';
 import { estimateGeminiCostUsd } from './cost';
 import { toKgRecord } from './units';
 import { detectOutliers } from '../reporting/outliers';
+import { diffAutoVsManual } from '../admin/manualEntry';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
@@ -58,6 +59,52 @@ export const processPendingPdf = onDocumentWritten(
         // Overwrite the filename with the full path/filename
         record.filename = filename;
 
+        // Compute the historical doc id up front — used by the sticky guard
+        // here and the write further down.
+        const [day, month, year] = record.date.split('/');
+        const docId = `${year}-${month}-${day}`;
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const historicalCol = require('../config').HISTORICAL_COLLECTION;
+
+        // SM-57 sticky guard: if a data editor manually set this date, keep
+        // it — skip BOTH writes (Sheet + Firestore) so the manual value
+        // stays, and instead flag if the fresh auto read disagrees so a human
+        // notices auto vs manual differ.
+        const existingDoc = await getFirestore()
+          .collection(historicalCol).doc(docId).get();
+        const existing = existingDoc.data() as
+          Record<string, unknown> | undefined;
+        if (existing?.source === 'manual') {
+          const diffs = diffAutoVsManual(
+            record as unknown as Record<string, unknown>, existing
+          );
+          if (diffs.length > 0) {
+            logger.warn('Manual override kept; auto read disagrees', {
+              fileId, docId, diffs,
+            });
+            await sendAlert(
+              `Manual override kept for ${filename}`,
+              diffs.map((x) =>
+                `${x.key}: auto ${x.auto} vs manual ${x.manual}`).join('\n'),
+              `manual-diff-${docId}`
+            );
+          }
+          const nowManual = Date.now();
+          await recordStage(fileId, 'appended', {
+            manualOverrideKept: true,
+            autoVsManualDiffs: diffs,
+            year: parseInt(year || '0', 10),
+            completedAt: nowManual,
+            ...(typeof detectedAt === 'number'
+              ? { durationMs: nowManual - detectedAt }
+              : {}),
+          });
+          logger.info('Kept manual override; skipped writes', {
+            fileId, docId, diffCount: diffs.length,
+          });
+          return;
+        }
+
         // 3. Ensure tab
         await recordStage(fileId, 'routing');
         const tabTitle = await ensureYearTab(record.date);
@@ -68,10 +115,6 @@ export const processPendingPdf = onDocumentWritten(
         await logAuditTrail(action, record);
 
         // 4.5 Insert into Historical Collection
-        const [day, month, year] = record.date.split('/');
-        const docId = `${year}-${month}-${day}`;
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const historicalCol = require('../config').HISTORICAL_COLLECTION;
         await getFirestore().collection(historicalCol).doc(docId).set(record);
 
         // Also add to history subcollection

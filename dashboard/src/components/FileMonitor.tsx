@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
-import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown, PencilLine } from 'lucide-react';
 import { FileDetailPanel } from './FileDetailPanel';
 import { functions, fnName } from '../firebase';
 
@@ -41,6 +41,8 @@ export interface PipelineRun {
     baseline: number;
     deviationPct: number;
   }[];
+  manualOverrideKept?: boolean;
+  autoVsManualDiffs?: { key: string; auto: string; manual: string }[];
 }
 
 type SortKey = 'fileName' | 'status' | 'detectedAt' | 'year' | 'durationMs' | 'attempts';
@@ -374,6 +376,17 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                             className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 text-xs font-normal">
                             <AlertTriangle className="h-3.5 w-3.5" />
                             {run.qualityOutliers.length}
+                          </span>
+                        )}
+                        {run.manualOverrideKept && (
+                          <span
+                            title={run.autoVsManualDiffs && run.autoVsManualDiffs.length > 0
+                              ? `Manual override kept; auto disagreed on ${run.autoVsManualDiffs.length} field(s)`
+                              : 'Manual override kept; auto matched'}
+                            className="inline-flex items-center gap-0.5 text-purple-600 dark:text-purple-400 text-xs font-normal">
+                            <PencilLine className="h-3.5 w-3.5" />
+                            {run.autoVsManualDiffs && run.autoVsManualDiffs.length > 0
+                              ? run.autoVsManualDiffs.length : 'kept'}
                           </span>
                         )}
                       </td>

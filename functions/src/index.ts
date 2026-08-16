@@ -22,6 +22,7 @@ import { probeExtraction as _probeExtraction } from './admin/probeExtraction';
 import {
   backfillSheetFromHistory as _backfillSheetFromHistory,
 } from './admin/backfillSheet';
+import { manualUpsert as _manualUpsert } from './admin/manualUpsert';
 import { getFirestore } from 'firebase-admin/firestore';
 import { latestMoMBreaches, breachSummary } from './reporting/alerts';
 import { sendAlert } from './utils/alert';
@@ -166,6 +167,7 @@ module.exports = {
   [`seedEnvData${suffix}`]: _seedEnvData,
   [`probeExtraction${suffix}`]: _probeExtraction,
   [`backfillSheetFromHistory${suffix}`]: _backfillSheetFromHistory,
+  [`manualUpsert${suffix}`]: _manualUpsert,
   [`clearTabs${suffix}`]: onRequest(async (request, response) => {
     try {
       if (!MASTER_SHEET_ID) throw new Error('No MASTER_SHEET_ID');

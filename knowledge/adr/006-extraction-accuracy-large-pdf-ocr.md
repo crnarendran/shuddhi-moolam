@@ -95,9 +95,37 @@ creative generation). Effect, verified via the probe:
 Net: temperature 0 is the real fix for proper inputs; consensus (now 3) is a
 light safety net; manual entry (SM-57) stays the deterministic fallback.
 
+## Update (2026-08-17, SM-57) — the tonne "rounding" was the SORT, not the model
+Finding #1's premise ("the model was rounding the Rs/tonne figure") was
+**wrong**. Deterministic probes show the model reads exact figures on text
+PDFs — `47,500`, `53,300`, `48,500` all read correctly — and Firestore /
+`historical_prices` (what the dashboard reads) held the correct kg decimals
+(`47.5`) all along. **Only the master Sheet showed integers.**
+
+Root cause: `sortTabByDateDesc` (runs on every upsert) read the tab with the
+Sheets API default `valueRenderOption` (**FORMATTED_VALUE**), so a `47.5` shown
+under a 0-decimal column format read back as the string `"48"`, and the
+`USER_ENTERED` write persisted that rounded integer. Every sort silently
+rounded every tonne→kg cell. This is why re-extraction never fixed the sheet —
+the next sort re-rounded it.
+
+Fixes:
+- `sort.ts` now reads `UNFORMATTED_VALUE` (+ `dateTimeRenderOption:
+  FORMATTED_STRING` so column B stays a dd/MM/yyyy string for the sort). The
+  true `47.5` now survives. Regression test added.
+- One-time `backfillSheetFromHistory` admin callable rewrites every Sheet row
+  from `historical_prices` (correct decimals) — no re-extraction. Paced ~1.2s
+  per write to stay under the Sheets ~60/min write quota.
+
+Lesson: never round-trip Sheet values through FORMATTED_VALUE and write them
+back — read UNFORMATTED whenever a read feeds a write.
+
 ## Consequences
 - Extraction quality is now observable (alerts + run-doc field) rather than
   silently wrong.
 - Do not "fix" future dense-table misreads by turning up thinking budget or
   sending higher-res scans; both are proven dead ends. Feed normal-size PDFs
   and rely on the outlier net + re-extraction.
+- The dashboard (Firestore) is the source of truth for prices; the Sheet is a
+  human mirror. When they disagree, suspect a Sheet-write/format issue before
+  the model.

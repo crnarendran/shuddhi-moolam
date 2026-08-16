@@ -15,7 +15,6 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | ID | Title | Points | Depends on |
 |---|---|---|---|
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
-| [SM-57](SM-57-manual-price-entry.md) | Manual price entry ("break glass") + data-editor role (mvsaikishore) | 5 | SM-42, SM-56 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
 
@@ -66,7 +65,15 @@ the full ticket + implementation notes. Do **not** re-plan these.
   columns. Text PDFs now extract deterministically + correctly; 16 MB scanned
   copies stay unreliable (feed normal-size files). See ADR-006. Also: reprocess
   now deploys (FUNCS fix) + works on appended runs + bulk-select; run-detail
-  crash fixed.
+  crash fixed. Consensus defaulted to 1 pass (temp 0 makes it deterministic).
+- **Sheet decimal fix + manual entry** SM-57: root-caused the master Sheet
+  losing tonne→kg decimals to `sortTabByDateDesc` round-tripping through
+  FORMATTED_VALUE (not the model — see ADR-006 update); sort now reads
+  UNFORMATTED, plus a one-time `backfillSheetFromHistory` to repair history
+  from Firestore. Manual price entry ("break glass") + data-editor role
+  (mvsaikishore): data-editor-gated `manualUpsert` writes both stores with a
+  sticky `source:'manual'` guard in `process.ts` (auto won't overwrite; flags
+  disagreements), Settings ▸ Manual entry UI, Monitor ✎ badge.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

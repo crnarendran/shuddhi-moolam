@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Sliders, Building2, ShieldCheck } from 'lucide-react';
+import { Sliders, Building2, ShieldCheck, PencilLine } from 'lucide-react';
 import { SettingsPage } from '../pages/SettingsPage';
 import { CompaniesPage } from '../pages/CompaniesPage';
 import { AdminPage } from '../pages/AdminPage';
+import { ManualEntryPage } from '../pages/ManualEntryPage';
 import { SubTabs, type SubTab } from './SubTabs';
-import { useIsAdmin, usePlan } from '../hooks/usePlan';
+import { useIsAdmin, useIsDataEditor, usePlan } from '../hooks/usePlan';
 import { type PriceRecord } from '../lib/reporting';
 
-type SettingsSub = 'commodities' | 'companies' | 'admin';
+type SettingsSub = 'commodities' | 'companies' | 'admin' | 'manual';
 
 const COMPANIES_TAB: SubTab<SettingsSub> = {
   id: 'companies', label: 'Companies & Materials', icon: Building2,
@@ -17,6 +18,9 @@ const COMMODITIES_TAB: SubTab<SettingsSub> = {
 };
 const ADMIN_TAB: SubTab<SettingsSub> = {
   id: 'admin', label: 'Admin', icon: ShieldCheck,
+};
+const MANUAL_TAB: SubTab<SettingsSub> = {
+  id: 'manual', label: 'Manual entry', icon: PencilLine,
 };
 
 /**
@@ -28,6 +32,7 @@ function subFromHash(): SettingsSub {
   const s = window.location.hash.split('/')[1];
   if (s === 'commodities') return 'commodities';
   if (s === 'admin') return 'admin';
+  if (s === 'manual') return 'manual';
   return 'companies';
 }
 
@@ -43,13 +48,16 @@ export function SettingsSection(
   { records }: { records: PriceRecord[] }
 ) {
   const isAdmin = useIsAdmin();
+  const isDataEditor = useIsDataEditor();
   const { premium } = usePlan();
   const [sub, setSub] = useState<SettingsSub>(subFromHash);
   // Commodity personalization is a premium feature (SM-42); Admin is founder-
-  // only. Companies is always present (shows an upsell for free users).
+  // only; Manual entry is data-editor-only (SM-57). Companies is always
+  // present (shows an upsell for free users).
   const tabs = [
     COMPANIES_TAB,
     ...(premium ? [COMMODITIES_TAB] : []),
+    ...(isDataEditor ? [MANUAL_TAB] : []),
     ...(isAdmin ? [ADMIN_TAB] : []),
   ];
 
@@ -66,7 +74,8 @@ export function SettingsSection(
 
   // Fall back to companies if the user isn't entitled to the requested tab.
   const active: SettingsSub =
-    (sub === 'admin' && !isAdmin) || (sub === 'commodities' && !premium)
+    (sub === 'admin' && !isAdmin) || (sub === 'commodities' && !premium) ||
+    (sub === 'manual' && !isDataEditor)
       ? 'companies' : sub;
 
   return (
@@ -74,6 +83,7 @@ export function SettingsSection(
       <SubTabs tabs={tabs} active={active} onSelect={select} />
       {active === 'companies' && <CompaniesPage records={records} />}
       {active === 'commodities' && premium && <SettingsPage />}
+      {active === 'manual' && isDataEditor && <ManualEntryPage />}
       {active === 'admin' && isAdmin && <AdminPage />}
     </div>
   );
