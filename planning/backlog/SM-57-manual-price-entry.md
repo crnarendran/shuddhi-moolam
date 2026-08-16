@@ -25,6 +25,13 @@ access to it **without** making them a full admin.
 3. **Access = new data-editor role, this tool only.**
    `DATA_EDITOR_EMAILS = [crnarendran, mvsaikishore]` gates ONLY this tool. Full
    admin (Monitor, plans, seed, probe) stays crnarendran-only.
+4. **Entry model = dashboard form writes BOTH stores** (not "edit the sheet +
+   sync"). The dashboard reads Firestore `historical_prices` (not the Sheet), so
+   the form writes Firestore (dashboard updates instantly) AND the master Sheet
+   row (human master stays in sync). The corrected **value** appears in the
+   Sheet; the auto/manual **marker** is authoritative in Firestore
+   (`source: 'manual'`) — an optional Sheet "Source" column for human visibility
+   is deferred (not needed for the sticky guard, which reads Firestore).
 
 ## Design
 ### Roles
@@ -41,10 +48,11 @@ access to it **without** making them a full admin.
   - `clearOverride: true` removes the manual marker (auto may overwrite next
     run) — leaves the last values in place.
 - **Sticky-flag in `process.ts`:** before writing, read
-  `historical_prices/<docId>`; if `source === 'manual'`, do NOT overwrite —
-  instead diff auto-extracted vs manual values and, on any material difference,
-  `sendAlert` + record `manualOverrideKept: true` + `autoVsManualDiffs` on the
-  run doc. Manual value stays.
+  `historical_prices/<docId>`; if `source === 'manual'`, **skip both writes**
+  (the `upsertRow` sheet write AND the `historical_prices` set) so the manual
+  value stays in both stores — instead diff auto-extracted vs manual values
+  and, on any material difference, `sendAlert` + record `manualOverrideKept:
+  true` + `autoVsManualDiffs` on the run doc.
 
 ### Frontend
 - `useIsDataEditor()` hook.
