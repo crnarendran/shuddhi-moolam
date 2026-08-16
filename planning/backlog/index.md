@@ -14,11 +14,6 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
-| [SM-54](SM-54-extraction-no-round-tonne.md) | Stop rounding Rs/tonne values at extraction (restore kg decimals) — **in review on `dev`** | 1 | SM-28, SM-40 |
-| [SM-55](SM-55-extraction-probe-function.md) | Admin extraction-probe function (A/B configs, no writes) — **in review on `dev`** | 2 | SM-28, SM-54 |
-| [SM-56](SM-56-extraction-outlier-check.md) | History-based extraction outlier check (alert on misreads) — **in review on `dev`** | 2 | SM-54, SM-55 |
-| [SM-58](SM-58-consensus-extraction.md) | Consensus extraction (best-of-3) + date-based column selection — **in review on `dev`** | 3 | SM-54, SM-55 |
-| [SM-59] Sortable Monitor columns (asc/desc on all columns) — **in review on `dev`** | 1 | SM-13 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-57](SM-57-manual-price-entry.md) | Manual price entry ("break glass") + data-editor role (mvsaikishore) | 5 | SM-42, SM-56 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
@@ -64,6 +59,14 @@ the full ticket + implementation notes. Do **not** re-plan these.
   Spreads reference/compare, Guidance materials) are namespaced by view context
   (`viewState[contextId][report]`) so each workspace/company keeps its own, with
   a per-context in-memory cache for race-free instant restore on switch.
+- **Extraction accuracy** SM-54…SM-56, SM-58, SM-59: exact Rs/tonne figures (no
+  rounding) + **temperature 0** (deterministic reads — the root fix), date-based
+  two-column selection, consensus (best-of-3), configurable model, admin probe
+  (A/B), history-based outlier alerts + Monitor ⚠ badge, and sortable Monitor
+  columns. Text PDFs now extract deterministically + correctly; 16 MB scanned
+  copies stay unreliable (feed normal-size files). See ADR-006. Also: reprocess
+  now deploys (FUNCS fix) + works on appended runs + bulk-select; run-detail
+  crash fixed.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.
