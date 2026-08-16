@@ -10,18 +10,29 @@ import { recordStage } from './telemetry';
 jest.mock('firebase-admin/firestore', () => {
   const setMock = jest.fn();
   const mockDoc = { set: setMock, collection: jest.fn() };
-  const mockCollection = { doc: jest.fn(() => mockDoc) };
+  // The SM-56 outlier check queries recent history via
+  // orderBy(...).limit(...).get(); declare those upfront so the chain works.
+  const mockCollection = {
+    doc: jest.fn(() => mockDoc),
+    orderBy: jest.fn(),
+    limit: jest.fn(),
+    get: jest.fn(() => Promise.resolve({ docs: [] })),
+  };
+  mockCollection.orderBy.mockReturnValue(mockCollection);
+  mockCollection.limit.mockReturnValue(mockCollection);
   mockDoc.collection.mockReturnValue(mockCollection);
 
   return {
     getFirestore: jest.fn(() => ({
       collection: jest.fn(() => mockCollection)
     })),
+    FieldPath: { documentId: jest.fn(() => 'documentId') },
   };
 });
 
 jest.mock('firebase-functions/logger', () => ({
   info: jest.fn(),
+  warn: jest.fn(),
   error: jest.fn(),
 }));
 jest.mock('../drive/download');
