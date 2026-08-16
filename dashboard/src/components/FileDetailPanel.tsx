@@ -69,6 +69,15 @@ export const FileDetailPanel = ({ run, onClose }: { run: PipelineRun; onClose: (
           </div>
         ) : null}
 
+        {run.status === 'appended' && (
+          <div className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-zinc-800/40 border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
+            <div className="text-xs text-gray-600 dark:text-gray-300">
+              Re-run extraction on this file — e.g. to pick up an extraction fix.
+            </div>
+            <ReprocessButton fileId={run.id} />
+          </div>
+        )}
+
         <div>
           <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Stage Timeline</h4>
           <div className="space-y-3">
