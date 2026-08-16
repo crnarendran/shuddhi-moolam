@@ -21,7 +21,31 @@ export const FileDetailPanel = ({ run, onClose }: { run: PipelineRun; onClose: (
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        
+
+        {run.qualityOutliers && run.qualityOutliers.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                  {run.qualityOutliers.length} value(s) look off vs recent weeks
+                </p>
+                <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-0.5">
+                  Possible extraction misread — verify against the source PDF and reprocess if wrong.
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {run.qualityOutliers.map((o) => (
+                    <li key={o.key} className="text-xs text-amber-800 dark:text-amber-200 flex justify-between gap-3">
+                      <span className="truncate">{o.label}</span>
+                      <span className="font-mono shrink-0">{o.value} vs ~{o.baseline} ({o.deviationPct > 0 ? '+' : ''}{o.deviationPct}%)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {run.status === 'failed' || run.status === 'dead_letter' ? (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-lg p-4">
             <div className="flex items-start justify-between">

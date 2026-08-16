@@ -35,7 +35,8 @@ landing silently. See ADR-006.
 ## Notes
 - Threshold 25% avoids false positives on normal moves while catching the
   308→200 (~35%) class. Tunable.
-- Backend-only for now; the Monitor could surface `qualityOutliers` later.
+- The Monitor surfaces it: a ⚠ badge + count on the run row, and a flagged-
+  fields panel (value vs recent baseline + deviation %) in the detail drawer.
 
 ## Tests
 `outliers.test.ts` (5 cases: flag misread, ignore normal move, median

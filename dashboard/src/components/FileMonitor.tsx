@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { Search, Filter, AlertCircle, FileText, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { Search, Filter, AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { FileDetailPanel } from './FileDetailPanel';
 
 export type PipelineStatus = 'detected' | 'downloaded' | 'extracting' | 'extracted' | 'validating' | 'routing' | 'appended' | 'failed' | 'dead_letter';
@@ -25,6 +25,13 @@ export interface PipelineRun {
     estimatedUsd: number;
   };
   targetTab?: string;
+  qualityOutliers?: {
+    key: string;
+    label: string;
+    value: number;
+    baseline: number;
+    deviationPct: number;
+  }[];
 }
 
 const getStatusConfig = (status: PipelineStatus) => {
@@ -236,6 +243,14 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <FileText className="h-4 w-4 text-gray-400" />
                         <span className="truncate max-w-xs">{run.fileName}</span>
+                        {run.qualityOutliers && run.qualityOutliers.length > 0 && (
+                          <span
+                            title={`${run.qualityOutliers.length} value(s) look off vs recent weeks — check details`}
+                            className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400 text-xs font-normal">
+                            <AlertTriangle className="h-3.5 w-3.5" />
+                            {run.qualityOutliers.length}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium gap-1.5 border border-transparent ${statusConf.color}`}>
