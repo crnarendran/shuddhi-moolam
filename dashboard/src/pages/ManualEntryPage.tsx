@@ -33,6 +33,8 @@ function toDocId(date: string): string | null {
 export function ManualEntryPage() {
   const [date, setDate] = useState('');
   const [values, setValues] = useState<Record<string, string>>({});
+  // The values as loaded, so Save can send only the fields actually changed.
+  const [original, setOriginal] = useState<Record<string, string>>({});
   const [source, setSource] = useState<string | null>(null);
   const [manualFields, setManualFields] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -56,6 +58,7 @@ export function ManualEntryPage() {
         next[c.key] = v === undefined || v === null ? '' : String(v);
       }
       setValues(next);
+      setOriginal(next);
       setSource((data.source as string) ?? null);
       setManualFields(
         Array.isArray(data.manualFields) ? data.manualFields as string[] : []
@@ -72,13 +75,16 @@ export function ManualEntryPage() {
 
   const save = async () => {
     if (!docId) { setErr('Enter a valid date as dd/MM/yyyy.'); return; }
-    // Only send non-empty cells (partial edits keep other fields).
+    // Send only the fields actually changed from what was loaded, so only
+    // those become manual overrides (not every prefilled value).
     const payload: Record<string, string> = {};
     for (const [k, v] of Object.entries(values)) {
-      if (v.trim() !== '') payload[k] = v.trim();
+      if (v.trim() !== '' && v.trim() !== (original[k] ?? '').trim()) {
+        payload[k] = v.trim();
+      }
     }
     if (Object.keys(payload).length === 0) {
-      setErr('Enter at least one value.'); return;
+      setErr('No changes to save — edit a value first.'); return;
     }
     if (!confirm(
       `Save manual prices for ${date}? This writes the master Sheet and ` +
@@ -96,7 +102,7 @@ export function ManualEntryPage() {
         }
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, values: payload });
-      if (r.data.values) setValues(r.data.values);
+      if (r.data.values) { setValues(r.data.values); setOriginal(r.data.values); }
       setSource(r.data.source ?? 'manual');
       setManualFields(r.data.manualFields ?? []);
       setMsg(`Saved ${r.data.written.length} value(s) for ${r.data.docId}.`);
@@ -124,7 +130,7 @@ export function ManualEntryPage() {
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, clearOverride: true });
       // Apply the returned values directly so the grid refreshes at once.
-      if (r.data.values) setValues(r.data.values);
+      if (r.data.values) { setValues(r.data.values); setOriginal(r.data.values); }
       setSource(r.data.source ?? 'auto');
       setManualFields(r.data.manualFields ?? []);
       setMsg(r.data.restored

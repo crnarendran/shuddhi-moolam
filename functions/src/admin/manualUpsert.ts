@@ -94,6 +94,7 @@ export const manualUpsert = onCall(
         delete restored.manualBy;
         delete restored.manualAt;
         delete restored.preManual;
+        delete restored.manualFields;
         restored.date = date;
         restored.last_modified_date = now;
         const tab = await ensureYearTab(date);
