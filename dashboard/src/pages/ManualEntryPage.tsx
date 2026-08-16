@@ -105,12 +105,18 @@ export function ManualEntryPage() {
     )) return;
     setSaving(true); setErr(null); setMsg(null);
     try {
-      const fn = httpsCallable<{ date: string; clearOverride: boolean }, unknown>(
-        functions, fnName('manualUpsert')
-      );
-      await fn({ date, clearOverride: true });
+      const fn = httpsCallable<
+        { date: string; clearOverride: boolean },
+        { restored?: boolean }
+      >(functions, fnName('manualUpsert'));
+      const r = await fn({ date, clearOverride: true });
       setSource('auto');
-      setMsg(`Override cleared for ${docId}. Auto extraction re-enabled.`);
+      // Reload so the restored auto values (and dropped badge) show.
+      await load();
+      setMsg(r.data.restored
+        ? `Override cleared for ${docId}. Restored the automated values.`
+        : `Override cleared for ${docId}. Auto extraction re-enabled ` +
+          '(no prior automated value to restore).');
     } catch (e) {
       setErr((e as { message?: string }).message ?? 'Clear failed.');
     }
