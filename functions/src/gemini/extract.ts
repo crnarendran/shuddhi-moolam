@@ -66,6 +66,8 @@ export interface ExtractOptions {
   thinkingBudget?: number;
   /** Force the inline base64 path regardless of size (probe/testing only). */
   forceInline?: boolean;
+  /** Gemini model id. Defaults to $GEMINI_MODEL, else gemini-3.6-flash. */
+  model?: string;
 }
 
 /**
@@ -113,8 +115,10 @@ export async function extractPricesFromPdf(
     // 1024 is the minimum budget; 0 causes a 400 Bad Request
     thinkingConfig: { thinkingBudget },
   } as unknown as GenerationConfig;
+  const modelName = options.model
+    || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3.6-flash',
+    model: modelName,
     generationConfig,
   });
 

@@ -25,7 +25,7 @@ interface ProbeRun {
 }
 interface ProbeResult {
   filename: string; sizeMb: number; thinkingBudget: number;
-  forceInline: boolean; runs: number; results: ProbeRun[];
+  forceInline: boolean; runs: number; model?: string; results: ProbeRun[];
 }
 
 /**
@@ -43,6 +43,7 @@ export function AdminPage() {
   const [probeFileId, setProbeFileId] = useState(PROBE_FILES[0].id);
   const [probeBudget, setProbeBudget] = useState(1024);
   const [probeRuns, setProbeRuns] = useState(2);
+  const [probeModel, setProbeModel] = useState('');
   const [probing, setProbing] = useState(false);
   const [probeResult, setProbeResult] = useState<ProbeResult | null>(null);
 
@@ -88,11 +89,12 @@ export function AdminPage() {
     setProbing(true); setProbeResult(null); setErr(null);
     try {
       const fn = httpsCallable<
-        { fileId: string; thinkingBudget: number; runs: number },
+        { fileId: string; thinkingBudget: number; runs: number; model?: string },
         ProbeResult
       >(functions, fnName('probeExtraction'), { timeout: 540000 });
       const r = await fn({
         fileId: probeFileId, thinkingBudget: probeBudget, runs: probeRuns,
+        model: probeModel.trim() || undefined,
       });
       setProbeResult(r.data);
     } catch (e) {
@@ -205,6 +207,19 @@ export function AdminPage() {
               className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
                 dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm w-16" />
           </label>
+          <label className="text-xs text-zinc-500 dark:text-zinc-400
+            flex flex-col gap-1">Model (blank = default)
+            <input type="text" list="probe-models" value={probeModel}
+              onChange={(e) => setProbeModel(e.target.value)}
+              placeholder="gemini-3.6-flash"
+              className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
+                dark:border-zinc-700 rounded-md py-1.5 px-2 text-sm w-52" />
+            <datalist id="probe-models">
+              <option value="gemini-3.6-flash" />
+              <option value="gemini-3.6-pro" />
+              <option value="gemini-3.1-pro" />
+            </datalist>
+          </label>
           <button onClick={() => void runProbe()} disabled={probing}
             className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md
               bg-blue-600 text-white disabled:opacity-50 whitespace-nowrap">
@@ -220,7 +235,7 @@ export function AdminPage() {
           <div className="overflow-x-auto">
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
               {probeResult.filename} · {probeResult.sizeMb} MB · budget{' '}
-              {probeResult.thinkingBudget}
+              {probeResult.thinkingBudget} · {probeResult.model}
             </p>
             <table className="text-xs border-collapse">
               <thead className="text-zinc-500 dark:text-zinc-400">

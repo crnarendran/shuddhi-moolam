@@ -22,6 +22,7 @@ interface ProbeInput {
   thinkingBudget?: number;
   forceInline?: boolean;
   runs?: number;
+  model?: string;
 }
 
 /**
@@ -50,6 +51,7 @@ export const probeExtraction = onCall(
       Math.floor(data.thinkingBudget ?? 1024), 1024
     );
     const forceInline = !!data.forceInline;
+    const model = (data.model || '').trim() || undefined;
 
     const { buffer, filename } = await downloadPdf(fileId);
     const sizeMb = Number((buffer.length / 1048576).toFixed(2));
@@ -57,7 +59,7 @@ export const probeExtraction = onCall(
     const results: Array<Record<string, unknown>> = [];
     for (let i = 0; i < runs; i++) {
       const { data: rec, route, usage } = await extractPricesFromPdf(
-        buffer, { thinkingBudget, forceInline }
+        buffer, { thinkingBudget, forceInline, model }
       );
       const source = rec as Record<string, unknown>;
       const watched: Record<string, unknown> = {};
@@ -72,6 +74,9 @@ export const probeExtraction = onCall(
       });
     }
 
-    return { filename, sizeMb, thinkingBudget, forceInline, runs, results };
+    return {
+      filename, sizeMb, thinkingBudget, forceInline, runs,
+      model: model || 'gemini-3.6-flash (default)', results,
+    };
   }
 );
