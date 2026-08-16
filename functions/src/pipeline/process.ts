@@ -15,10 +15,10 @@ import { detectOutliers } from '../reporting/outliers';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
 
-// How many extraction passes to vote over (SM-58). With temperature 0 the
-// reads are already near-deterministic, so 3 is a cheap safety net against
-// any residual variance; set to 1 to disable. Tunable via CONSENSUS_RUNS.
-const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 3;
+// Extraction passes to vote over (SM-58). Temperature 0 already makes the
+// reads deterministic, so 1 pass by default (single API call). Raise
+// CONSENSUS_RUNS to re-enable majority voting if variance ever returns.
+const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 1;
 
 export const processPendingPdf = onDocumentWritten(
   {
