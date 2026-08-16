@@ -12,11 +12,15 @@ import { sortTabByDateDesc } from './sort';
  * Idempotency is enforced by checking if the date exists.
  * @param {string} tabTitle - The name of the tab to append to.
  * @param {ExtractionRecord} record - The extracted data record.
+ * @param {boolean} skipSort - When true, skip the per-row re-sort (the
+ *   caller is responsible for sorting once at the end — used by the bulk
+ *   backfill to avoid one full-tab sort per row).
  * @returns {Promise<'insert' | 'update'>} Resolves when complete.
  */
 export async function upsertRow(
   tabTitle: string,
-  record: ExtractionRecord
+  record: ExtractionRecord,
+  skipSort = false
 ): Promise<'insert' | 'update'> {
   const masterSheetId = MASTER_SHEET_ID;
   if (!masterSheetId) {
@@ -64,7 +68,7 @@ export async function upsertRow(
         values: [rowArray],
       },
     });
-    await sortTabByDateDesc(tabTitle);
+    if (!skipSort) await sortTabByDateDesc(tabTitle);
     return 'update';
   } else {
     // 3. Append new row
@@ -77,7 +81,7 @@ export async function upsertRow(
         values: [rowArray],
       },
     });
-    await sortTabByDateDesc(tabTitle);
+    if (!skipSort) await sortTabByDateDesc(tabTitle);
     return 'insert';
   }
 }

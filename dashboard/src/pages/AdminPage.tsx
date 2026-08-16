@@ -40,6 +40,8 @@ export function AdminPage() {
   const [err, setErr] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState<string | null>(null);
   const [probeFileId, setProbeFileId] = useState(PROBE_FILES[0].id);
   const [probeBudget, setProbeBudget] = useState(1024);
   const [probeRuns, setProbeRuns] = useState(2);
@@ -83,6 +85,30 @@ export function AdminPage() {
       setErr((e as { message?: string }).message ?? 'Seed failed.');
     }
     setSeeding(false);
+  };
+
+  const backfill = async () => {
+    if (!confirm(
+      'Rewrite every master Sheet row from Firestore (the correct kg ' +
+      'decimals)? This repairs values the old sort had rounded. It does ' +
+      'NOT re-extract any PDF and does not change Firestore.'
+    )) return;
+    setBackfilling(true); setBackfillMsg(null); setErr(null);
+    try {
+      const fn = httpsCallable<unknown, {
+        scanned: number; written: number; tabs: string[]; skipped: string[];
+      }>(functions, fnName('backfillSheetFromHistory'), { timeout: 540000 });
+      const r = await fn({});
+      const d = r.data;
+      setBackfillMsg(
+        `Rewrote ${d.written}/${d.scanned} rows across ` +
+        `${d.tabs.join(', ') || 'no'} tab(s)` +
+        (d.skipped.length ? ` · skipped ${d.skipped.length}` : '')
+      );
+    } catch (e) {
+      setErr((e as { message?: string }).message ?? 'Backfill failed.');
+    }
+    setBackfilling(false);
   };
 
   const runProbe = async () => {
@@ -160,6 +186,32 @@ export function AdminPage() {
             bg-blue-600 text-white disabled:opacity-50 whitespace-nowrap">
           <Database className="h-4 w-4" />
           {seeding ? 'Copying…' : 'Copy prod → staging & dev'}
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-zinc-200 dark:border-zinc-700
+        p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100
+            flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />Repair master Sheet decimals</h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xl">
+            Rewrites every master Sheet row from Firestore, which holds the
+            correct kg decimals (e.g. 47.5). Repairs rows an earlier sort bug
+            had rounded to whole numbers. Does NOT re-extract any PDF and does
+            not modify Firestore. Safe to re-run.
+          </p>
+          {backfillMsg && (
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+              Done — {backfillMsg}
+            </p>
+          )}
+        </div>
+        <button onClick={() => void backfill()} disabled={backfilling}
+          className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md
+            bg-blue-600 text-white disabled:opacity-50 whitespace-nowrap">
+          <RefreshCw className="h-4 w-4" />
+          {backfilling ? 'Repairing…' : 'Repair sheet from Firestore'}
         </button>
       </div>
 
