@@ -18,6 +18,7 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | [SM-55](SM-55-extraction-probe-function.md) | Admin extraction-probe function (A/B configs, no writes) — **in review on `dev`** | 2 | SM-28, SM-54 |
 | [SM-56](SM-56-extraction-outlier-check.md) | History-based extraction outlier check (alert on misreads) — **in review on `dev`** | 2 | SM-54, SM-55 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
+| [SM-57](SM-57-manual-price-entry.md) | Manual price entry ("break glass") + data-editor role (mvsaikishore) | 5 | SM-42, SM-56 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
 
