@@ -73,7 +73,19 @@ the full ticket + implementation notes. Do **not** re-plan these.
   from Firestore. Manual price entry ("break glass") + data-editor role
   (mvsaikishore): data-editor-gated `manualUpsert` writes both stores with a
   sticky `source:'manual'` guard in `process.ts` (auto won't overwrite; flags
-  disagreements), Settings ▸ Manual entry UI, Monitor ✎ badge.
+  disagreements), Settings ▸ Manual entry UI, Monitor ✎ badge. Also: Manual
+  entry lists existing overrides (click a row to edit).
+- **Global Company·Product selector** SM-60: one header control (Company —
+  My workspace / own / shared → Product) drives every report through
+  `ViewContext` (`scopeKeys` + `productWeights`). Material-driven Cost Impact
+  (weights read-only from the product's BOM; Custom when "All products");
+  Price Review / Seasonal / Spreads auto-filter via `scopeKeys`; Guidance
+  reads it as a **multi-select** (the header control is single-select
+  elsewhere, multi on Guidance) and its own in-page pickers were removed.
+  Subsumed an interim per-page Cost-Impact picker. Guidance baseline also
+  changed 6-mo → 1-quarter. NOTE: the commits for this were mislabeled
+  SM-58/59 (a numbering slip — the real SM-58/59 are the extraction
+  consensus / sortable-columns items above); code comments still say 58/59.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.
