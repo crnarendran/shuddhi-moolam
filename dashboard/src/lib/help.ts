@@ -125,7 +125,8 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
         'blended-cost-over-time chart overlays one line per material; your ' +
         'selection is remembered.',
       'Each selected material gets its own card: current blended cost vs its ' +
-        '6-month baseline, seasonal buy-timing (weighted by each commodity’s ' +
+        '1-quarter baseline, seasonal buy-timing (weighted by each ' +
+        'commodity’s ' +
         'share), and cheaper same-unit substitutions with the per-kg saving.',
       'A coloured dot on each card matches its line in the chart above.',
     ],

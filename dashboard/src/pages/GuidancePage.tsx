@@ -82,7 +82,7 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
           <p className="text-xs text-zinc-500 dark:text-zinc-400
             flex items-center gap-1">
-            vs 6-mo baseline<InfoTip term="Rolling baseline" /></p>
+            vs 1-qtr baseline<InfoTip term="Rolling baseline" /></p>
           <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
             ${baseline.pct === null ? 'text-zinc-400'
               : up ? 'text-red-600 dark:text-red-400'

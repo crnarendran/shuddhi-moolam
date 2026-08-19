@@ -154,10 +154,11 @@ export function substitutionSuggestions(
 
 /**
  * Latest blended cost vs a trailing rolling baseline (mean of the prior
- * `window` months, excluding the latest). Nulls when history is short.
+ * `window` months, excluding the latest). Defaults to 3 months = one
+ * quarter. Nulls when history is short.
  */
 export function costVsBaseline(
-  series: Map<string, number>, window = 6
+  series: Map<string, number>, window = 3
 ): { latest: number | null; baseline: number | null; pct: number | null } {
   const keys = [...series.keys()].sort();
   if (keys.length === 0) return { latest: null, baseline: null, pct: null };

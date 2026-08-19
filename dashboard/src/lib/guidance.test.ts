@@ -40,6 +40,17 @@ describe('costVsBaseline', () => {
     expect(r.baseline).toBe(110); // mean of 100,120
     expect(r.pct).toBeCloseTo(((80 - 110) / 110) * 100, 6);
   });
+
+  it('defaults to a 1-quarter (3-month) baseline', () => {
+    const s = new Map([
+      ['2026-04', 100], ['2026-05', 100], ['2026-06', 200],
+      ['2026-07', 300], ['2026-08', 80],
+    ]);
+    const r = costVsBaseline(s); // default window
+    // prior 3 months before Aug = May,Jun,Jul = 100,200,300 → mean 200
+    // (a 6-month window would include Apr and give 175)
+    expect(r.baseline).toBe(200);
+  });
 });
 
 describe('substitutionSuggestions', () => {
