@@ -267,7 +267,9 @@ function App() {
               </nav>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="hidden sm:block"><ContextSwitcher /></div>
+              <div className="hidden sm:block"><ContextSwitcher
+                multiProduct={section === 'reports' && report === 'guidance'}
+              /></div>
               <button
                 onClick={() => setIsDark(!isDark)}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
@@ -337,7 +339,9 @@ function App() {
                 <Icon className="h-4 w-4" /> {label}
               </button>
             ))}
-            <div className="px-1 pt-2"><ContextSwitcher align="left" /></div>
+            <div className="px-1 pt-2"><ContextSwitcher align="left"
+              multiProduct={section === 'reports' && report === 'guidance'}
+            /></div>
           </div>
         </nav>
       </div>

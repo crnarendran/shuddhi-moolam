@@ -2,6 +2,7 @@ import { Building2, Eye } from 'lucide-react';
 import { useCompanies } from '../hooks/useCompanies';
 import { usePlan } from '../hooks/usePlan';
 import { useView } from '../context/ViewContext';
+import { MultiSelect } from './MultiSelect';
 
 const selCls = 'px-2.5 py-1.5 rounded-md text-sm border bg-white ' +
   'dark:bg-zinc-900 max-w-[11rem] truncate';
@@ -9,17 +10,20 @@ const selCls = 'px-2.5 py-1.5 rounded-md text-sm border bg-white ' +
 /**
  * Global Company·Product selector (SM-59). One control drives every report:
  * pick a company (My workspace, your own, or one shared with you) and,
- * optionally, a product/recipe within it. Selecting a product scopes the
- * reports to its commodities and feeds its BOM weights into Cost Impact.
- * Hidden when there's no company to pick.
+ * optionally, a product/recipe within it. The product control adapts to the
+ * active report — a single-select normally, a multi-select on Guidance
+ * (`multiProduct`) so several products can be compared. Hidden when there's
+ * no company to pick.
  * @param props.align Layout hint ('left' fills width in the mobile drawer).
+ * @param props.multiProduct Render the product control as a multi-select.
  */
 export function ContextSwitcher(
-  { align = 'right' }: { align?: 'left' | 'right' }
+  { align = 'right', multiProduct = false }:
+  { align?: 'left' | 'right'; multiProduct?: boolean }
 ) {
   const { companies, shared: sharedCompanies } = useCompanies();
   const { premium } = usePlan();
-  const { companyId, materialId, materials, isShared, setSelection } =
+  const { companyId, materialIds, materials, isShared, setSelection } =
     useView();
 
   if (companies.length === 0 && sharedCompanies.length === 0) return null;
@@ -39,7 +43,7 @@ export function ContextSwitcher(
           aria-label="Company"
           className={`${selCls} ${companyBorder}`}
           value={companyId ?? ''}
-          onChange={(e) => setSelection(e.target.value || null, null)}
+          onChange={(e) => setSelection(e.target.value || null, [])}
         >
           {premium && <option value="">My workspace</option>}
           {companies.map((c) => (
@@ -54,20 +58,28 @@ export function ContextSwitcher(
           )}
         </select>
       </div>
-      {companyId && (
+      {companyId && (multiProduct ? (
+        <MultiSelect
+          label="Products"
+          options={materials.map((m) => ({ value: m.id ?? '', label: m.name }))}
+          selected={materialIds}
+          onChange={(ids) => setSelection(companyId, ids)}
+        />
+      ) : (
         <select
           aria-label="Product"
           className={`${selCls} border-zinc-300 dark:border-zinc-700
             text-zinc-700 dark:text-zinc-200`}
-          value={materialId ?? ''}
-          onChange={(e) => setSelection(companyId, e.target.value || null)}
+          value={materialIds[0] ?? ''}
+          onChange={(e) =>
+            setSelection(companyId, e.target.value ? [e.target.value] : [])}
         >
           <option value="">All products</option>
           {materials.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
-      )}
+      ))}
     </div>
   );
 }

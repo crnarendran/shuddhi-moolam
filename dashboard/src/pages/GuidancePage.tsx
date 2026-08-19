@@ -4,18 +4,16 @@ import { CalendarClock, Shuffle, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   ALL_COMMODITIES, monthKeyLabel, parseIssueDate, type PriceRecord,
 } from '../lib/reporting';
-import { useCompanies, useMaterials } from '../hooks/useCompanies';
+import { useCompanies } from '../hooks/useCompanies';
 import { useView } from '../context/ViewContext';
-import { type Company, type Material } from '../lib/materials';
+import { type Material } from '../lib/materials';
 import {
   blendedCostSeries, materialSeasonalIndex, cheapestMonths,
   substitutionSuggestions, costVsBaseline, DEFAULT_SUB_GROUPS,
 } from '../lib/guidance';
-import { useViewState } from '../hooks/useViewState';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
 import { PrintButton } from '../components/PrintButton';
-import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
 import { fmtNum as fmt } from '../lib/format';
@@ -34,10 +32,6 @@ function latestRecord(records: PriceRecord[]): PriceRecord | null {
 
 const card = 'bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 ' +
   'dark:border-zinc-700 p-4';
-
-const GUIDANCE_DEFAULTS: { companyId: string; materialIds: string[] } = {
-  companyId: '', materialIds: [],
-};
 
 interface MaterialGuidance {
   material: Material;
@@ -148,53 +142,14 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
 export function GuidancePage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
-  const { companies, shared: sharedCompanies, signedIn } = useCompanies();
-  // Company follows the global Company·Product selector (SM-59); Guidance
-  // keeps its own material multi-select (seeded from the global product).
-  const { companyId: globalCompany, materialId: globalMaterial } = useView();
-  const { value: gv, setValue: setGv } = useViewState(
-    'guidance', GUIDANCE_DEFAULTS
-  );
+  const { signedIn } = useCompanies();
+  // Company + product(s) come from the global Company·Product selector
+  // (SM-59). On Guidance that selector is a multi-select, so `products` may
+  // hold several materials to compare side by side.
+  const { companyId, company, products, materials } = useView();
 
-  // Owned + shared-with-me companies, deduped, in a stable order.
-  const allCompanies = useMemo(() => {
-    const map = new Map<string, Company>();
-    [...companies, ...sharedCompanies].forEach(
-      (c) => c.id && map.set(c.id, c)
-    );
-    return [...map.values()];
-  }, [companies, sharedCompanies]);
-
-  // Use the globally-selected company; fall back to the first available one
-  // when the global selection is My workspace (Guidance needs a company).
-  const active = useMemo(() => {
-    if (globalCompany && allCompanies.some((c) => c.id === globalCompany)) {
-      return globalCompany;
-    }
-    return allCompanies[0]?.id ?? null;
-  }, [globalCompany, allCompanies]);
-  const { materials } = useMaterials(active);
-
-  const activeMaterialIds = useMemo(() => {
-    const valid = (gv.materialIds ?? []).filter(
-      (id) => materials.some((m) => m.id === id)
-    );
-    if (valid.length) return valid;
-    if (globalMaterial && materials.some((m) => m.id === globalMaterial)) {
-      return [globalMaterial];
-    }
-    return materials[0]?.id ? [materials[0].id] : [];
-  }, [gv.materialIds, materials, globalMaterial]);
-
-  const chartMaterials: Material[] = useMemo(
-    () => activeMaterialIds
-      .map((id) => materials.find((m) => m.id === id))
-      .filter((m): m is Material => !!m),
-    [activeMaterialIds, materials]
-  );
+  const chartMaterials: Material[] = products;
   const multi = chartMaterials.length > 1;
-
-  const setMaterialIds = (ids: string[]) => setGv({ materialIds: ids });
 
   const record = useMemo(() => latestRecord(records), [records]);
   // Full guidance computed per selected material.
@@ -267,12 +222,28 @@ export function GuidancePage(
         text-center">Sign in to view purchasing guidance.</div>
     );
   }
-  if (allCompanies.length === 0 || materials.length === 0) {
+  if (!companyId) {
     return (
       <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
         text-center">
-        Add a company and at least one material in the{' '}
+        Pick a company in the header selector (top right) to see guidance.
+      </div>
+    );
+  }
+  if (materials.length === 0) {
+    return (
+      <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
+        text-center">
+        Add at least one material to this company in the{' '}
         <span className="font-medium">Companies</span> tab to get guidance.
+      </div>
+    );
+  }
+  if (products.length === 0) {
+    return (
+      <div className="text-zinc-500 dark:text-zinc-400 text-sm py-12
+        text-center">
+        Select one or more products in the header selector to compare.
       </div>
     );
   }
@@ -281,18 +252,12 @@ export function GuidancePage(
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['guidance']} />
       <div className="flex flex-wrap items-center gap-2">
-        {active && (
+        {company && (
           <span className="text-sm font-medium text-zinc-600
             dark:text-zinc-300">
-            {allCompanies.find((c) => c.id === active)?.name}
+            {company.name}
           </span>
         )}
-        <MultiSelect
-          label="Materials"
-          options={materials.map((m) => ({ value: m.id ?? '', label: m.name }))}
-          selected={activeMaterialIds}
-          onChange={setMaterialIds}
-        />
         <div className="ml-auto"><PrintButton /></div>
       </div>
 
