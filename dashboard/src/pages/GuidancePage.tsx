@@ -32,8 +32,6 @@ function latestRecord(records: PriceRecord[]): PriceRecord | null {
   return best;
 }
 
-const selCls = 'bg-zinc-50 dark:bg-zinc-900 border border-zinc-300 ' +
-  'dark:border-zinc-700 rounded-md py-2 px-3 text-sm';
 const card = 'bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 ' +
   'dark:border-zinc-700 p-4';
 
@@ -151,7 +149,9 @@ export function GuidancePage(
   { records, isDark }: { records: PriceRecord[]; isDark: boolean }
 ) {
   const { companies, shared: sharedCompanies, signedIn } = useCompanies();
-  const { shared: viewShared } = useView();
+  // Company follows the global Company·Product selector (SM-59); Guidance
+  // keeps its own material multi-select (seeded from the global product).
+  const { companyId: globalCompany, materialId: globalMaterial } = useView();
   const { value: gv, setValue: setGv } = useViewState(
     'guidance', GUIDANCE_DEFAULTS
   );
@@ -165,13 +165,14 @@ export function GuidancePage(
     return [...map.values()];
   }, [companies, sharedCompanies]);
 
+  // Use the globally-selected company; fall back to the first available one
+  // when the global selection is My workspace (Guidance needs a company).
   const active = useMemo(() => {
-    if (viewShared) return viewShared.companyId;
-    if (gv.companyId && allCompanies.some((c) => c.id === gv.companyId)) {
-      return gv.companyId;
+    if (globalCompany && allCompanies.some((c) => c.id === globalCompany)) {
+      return globalCompany;
     }
     return allCompanies[0]?.id ?? null;
-  }, [viewShared, gv.companyId, allCompanies]);
+  }, [globalCompany, allCompanies]);
   const { materials } = useMaterials(active);
 
   const activeMaterialIds = useMemo(() => {
@@ -179,8 +180,11 @@ export function GuidancePage(
       (id) => materials.some((m) => m.id === id)
     );
     if (valid.length) return valid;
+    if (globalMaterial && materials.some((m) => m.id === globalMaterial)) {
+      return [globalMaterial];
+    }
     return materials[0]?.id ? [materials[0].id] : [];
-  }, [gv.materialIds, materials]);
+  }, [gv.materialIds, materials, globalMaterial]);
 
   const chartMaterials: Material[] = useMemo(
     () => activeMaterialIds
@@ -190,8 +194,6 @@ export function GuidancePage(
   );
   const multi = chartMaterials.length > 1;
 
-  const setCompany = (id: string) =>
-    setGv({ companyId: id, materialIds: [] });
   const setMaterialIds = (ids: string[]) => setGv({ materialIds: ids });
 
   const record = useMemo(() => latestRecord(records), [records]);
@@ -279,13 +281,12 @@ export function GuidancePage(
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['guidance']} />
       <div className="flex flex-wrap items-center gap-2">
-        <select className={selCls} value={active ?? ''}
-          disabled={!!viewShared}
-          onChange={(e) => setCompany(e.target.value)}>
-          {allCompanies.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        {active && (
+          <span className="text-sm font-medium text-zinc-600
+            dark:text-zinc-300">
+            {allCompanies.find((c) => c.id === active)?.name}
+          </span>
+        )}
         <MultiSelect
           label="Materials"
           options={materials.map((m) => ({ value: m.id ?? '', label: m.name }))}

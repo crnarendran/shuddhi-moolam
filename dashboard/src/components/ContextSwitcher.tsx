@@ -1,97 +1,72 @@
-import { useState } from 'react';
-import { Building2, ChevronDown, Eye, Check } from 'lucide-react';
+import { Building2, Eye } from 'lucide-react';
 import { useCompanies } from '../hooks/useCompanies';
 import { usePlan } from '../hooks/usePlan';
 import { useView } from '../context/ViewContext';
 
+const selCls = 'px-2.5 py-1.5 rounded-md text-sm border bg-white ' +
+  'dark:bg-zinc-900 max-w-[11rem] truncate';
+
 /**
- * Header "view as" switcher (SM-41/42): premium users flip between their own
- * workspace and companies shared with them; free users (no own workspace) just
- * pick among the companies shared with them. Hidden when there's nothing to
- * switch between.
+ * Global Company·Product selector (SM-59). One control drives every report:
+ * pick a company (My workspace, your own, or one shared with you) and,
+ * optionally, a product/recipe within it. Selecting a product scopes the
+ * reports to its commodities and feeds its BOM weights into Cost Impact.
+ * Hidden when there's no company to pick.
+ * @param props.align Layout hint ('left' fills width in the mobile drawer).
  */
 export function ContextSwitcher(
   { align = 'right' }: { align?: 'left' | 'right' }
 ) {
-  const { shared: sharedCompanies } = useCompanies();
+  const { companies, shared: sharedCompanies } = useCompanies();
   const { premium } = usePlan();
-  const { shared, setShared } = useView();
-  const [open, setOpen] = useState(false);
-  const alignLeft = align === 'left';
+  const { companyId, materialId, materials, isShared, setSelection } =
+    useView();
 
-  // Free users have no "My workspace"; hide the whole control unless there's a
-  // real choice (they only have shares). Premium always shows it (to reach
-  // their own workspace) once at least one company is shared with them.
-  if (sharedCompanies.length === 0) return null;
-  if (!premium && sharedCompanies.length < 2) return null;
-  const current = shared ? shared.companyName
-    : premium ? 'My workspace' : sharedCompanies[0]?.name ?? '';
+  if (companies.length === 0 && sharedCompanies.length === 0) return null;
+
+  const companyBorder = isShared
+    ? 'border-amber-400 text-amber-700 dark:text-amber-300'
+    : 'border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200';
 
   return (
-    <div className={`relative ${alignLeft ? 'w-full' : ''}`}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm
-          border transition-colors ${alignLeft ? 'w-full justify-between ' : ''}${shared
-            ? 'border-amber-400 text-amber-700 dark:text-amber-300 ' +
-              'bg-amber-50 dark:bg-amber-900/20'
-            : 'border-zinc-300 dark:border-zinc-700 text-zinc-700 ' +
-              'dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'}`}
-      >
-        {shared
-          ? <Eye className="h-4 w-4 shrink-0" />
-          : <Building2 className="h-4 w-4 shrink-0" />}
-        <span className="max-w-[150px] truncate">{current}</span>
-        <ChevronDown className="h-4 w-4 shrink-0" />
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className={`absolute mt-1 z-50 rounded-md border
-            border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800
-            shadow-lg py-1 ${alignLeft ? 'left-0 right-0' : 'right-0 w-64'}`}>
-            {premium && (
-              <button
-                onClick={() => { setShared(null); setOpen(false); }}
-                className="w-full text-left px-3 py-2 text-sm flex items-center
-                  justify-between hover:bg-zinc-100 dark:hover:bg-zinc-700
-                  text-zinc-800 dark:text-zinc-100"
-              >
-                <span className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />My workspace</span>
-                {!shared && <Check className="h-4 w-4 text-blue-600" />}
-              </button>
-            )}
-            <p className="px-3 pt-2 pb-1 text-xs font-medium text-zinc-400
-              uppercase tracking-wide">Shared with me</p>
-            {sharedCompanies.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => {
-                  setShared({
-                    companyId: c.id!, companyName: c.name,
-                    ownerEmail: c.ownerEmail ?? '',
-                  });
-                  setOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 text-sm flex items-center
-                  justify-between hover:bg-zinc-100 dark:hover:bg-zinc-700
-                  text-zinc-800 dark:text-zinc-100"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate">{c.name}</span>
-                  {c.ownerEmail && (
-                    <span className="block text-xs text-zinc-400 truncate">
-                      by {c.ownerEmail}</span>
-                  )}
-                </span>
-                {shared?.companyId === c.id && (
-                  <Check className="h-4 w-4 text-amber-600 shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        </>
+    <div className={`flex items-center gap-2 ${align === 'left'
+      ? 'w-full flex-wrap' : ''}`}>
+      <div className="flex items-center gap-1">
+        {isShared
+          ? <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+          : <Building2 className="h-4 w-4 text-zinc-400 shrink-0" />}
+        <select
+          aria-label="Company"
+          className={`${selCls} ${companyBorder}`}
+          value={companyId ?? ''}
+          onChange={(e) => setSelection(e.target.value || null, null)}
+        >
+          {premium && <option value="">My workspace</option>}
+          {companies.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+          {sharedCompanies.length > 0 && (
+            <optgroup label="Shared with me">
+              {sharedCompanies.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </optgroup>
+          )}
+        </select>
+      </div>
+      {companyId && (
+        <select
+          aria-label="Product"
+          className={`${selCls} border-zinc-300 dark:border-zinc-700
+            text-zinc-700 dark:text-zinc-200`}
+          value={materialId ?? ''}
+          onChange={(e) => setSelection(companyId, e.target.value || null)}
+        >
+          <option value="">All products</option>
+          {materials.map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
       )}
     </div>
   );

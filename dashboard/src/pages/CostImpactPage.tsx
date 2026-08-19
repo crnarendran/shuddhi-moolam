@@ -2,18 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   COMMODITIES,
-  ALL_COMMODITIES,
   costImpact,
   commoditiesForView,
   quarterKeyLabel,
-  type Commodity,
   type PriceRecord,
 } from '../lib/reporting';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useView } from '../context/ViewContext';
-import { useCompanies, useMaterials } from '../hooks/useCompanies';
-import { useViewState } from '../hooks/useViewState';
-import { costImpactWeights, type Company } from '../lib/materials';
 import { shouldMigrateWeights } from '../lib/userSettings';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
@@ -66,78 +61,21 @@ export function CostImpactPage(
     void update({ costImpact: { weights: next } });
   };
 
-  const { scopeKeys, shared: viewShared } = useView();
-  const { companies, shared: sharedCompanies } = useCompanies();
-  const { value: sel, setValue: setSel } = useViewState(
-    'costImpactSel', { companyId: '', materialId: '' }
-  );
-
-  // Owned + shared-with-me companies, deduped — so a viewer shared several
-  // companies can pick any of them here (read-only) without changing the
-  // global workspace switcher (SM-58).
-  const allCompanies = useMemo(() => {
-    const map = new Map<string, Company>();
-    [...companies, ...sharedCompanies].forEach(
-      (c) => c.id && map.set(c.id, c)
-    );
-    return [...map.values()];
-  }, [companies, sharedCompanies]);
-  const sharedIds = useMemo(
-    () => new Set(sharedCompanies.map((c) => c.id)), [sharedCompanies]
-  );
-
-  const activeCompany = useMemo(() => {
-    if (sel.companyId && allCompanies.some((c) => c.id === sel.companyId)) {
-      return sel.companyId;
-    }
-    if (viewShared?.companyId &&
-      allCompanies.some((c) => c.id === viewShared.companyId)) {
-      return viewShared.companyId;
-    }
-    return allCompanies[0]?.id ?? null;
-  }, [sel.companyId, viewShared, allCompanies]);
-  const { materials } = useMaterials(activeCompany);
-
-  // Unset/stale → default to the first material; 'custom' = manual weights.
-  const activeMaterialId = useMemo(() => {
-    if (sel.materialId === 'custom') return 'custom';
-    if (sel.materialId && materials.some((m) => m.id === sel.materialId)) {
-      return sel.materialId;
-    }
-    return materials[0]?.id ?? 'custom';
-  }, [sel.materialId, materials]);
-  const activeMaterial = useMemo(
-    () => materials.find((m) => m.id === activeMaterialId) ?? null,
-    [materials, activeMaterialId]
-  );
-
-  // A selected material drives the weights from its BOM (read-only); with no
-  // material ('custom'), the hand-entered weights apply.
-  const effectiveWeights = useMemo(
-    () => activeMaterial
-      ? costImpactWeights(activeMaterial.composition) : weights,
-    [activeMaterial, weights]
-  );
-  const commodities = useMemo(() => {
-    if (activeMaterial) {
-      const keys = [...new Set(
-        activeMaterial.composition.map((c) => c.commodityKey)
-      )];
-      return keys
-        .map((k) => ALL_COMMODITIES.find((c) => c.key === k))
-        .filter((c): c is Commodity => !!c);
-    }
-    return commoditiesForView(
+  // The global Company·Product selector (SM-59) drives this report: a chosen
+  // product supplies BOM weights (read-only) and scopes the commodities; with
+  // no product, the hand-entered Custom weights apply.
+  const { scopeKeys, product, productWeights } = useView();
+  const commodities = useMemo(
+    () => commoditiesForView(
       'cost-impact', settings.personalization, scopeKeys
-    );
-  }, [activeMaterial, settings.personalization, scopeKeys]);
+    ),
+    [settings.personalization, scopeKeys]
+  );
+  const effectiveWeights = productWeights ?? weights;
   const { rows, sum, latestQuarter } = useMemo(
     () => costImpact(records, effectiveWeights, 4, commodities),
     [records, effectiveWeights, commodities]
   );
-
-  const setCompany = (id: string) => setSel({ companyId: id, materialId: '' });
-  const setMaterial = (id: string) => setSel({ materialId: id });
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? 'rgba(148,163,184,0.2)' : 'rgba(100,116,139,0.18)';
@@ -194,41 +132,12 @@ export function CostImpactPage(
         <PrintButton orientation="landscape" />
       </div>
 
-      {allCompanies.length > 0 && (
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600 dark:text-zinc-300">Company</span>
-            <select value={activeCompany ?? ''}
-              onChange={(e) => setCompany(e.target.value)}
-              className="px-3 py-1.5 rounded-md border border-zinc-300
-                dark:border-zinc-700 bg-white dark:bg-zinc-900 min-w-[12rem]">
-              {allCompanies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}{sharedIds.has(c.id) ? ' (shared)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600 dark:text-zinc-300">
-              Product / recipe
-            </span>
-            <select value={activeMaterialId}
-              onChange={(e) => setMaterial(e.target.value)}
-              className="px-3 py-1.5 rounded-md border border-zinc-300
-                dark:border-zinc-700 bg-white dark:bg-zinc-900 min-w-[12rem]">
-              {materials.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-              <option value="custom">Custom weights (manual)</option>
-            </select>
-          </label>
-          <span className="text-xs text-zinc-400 pb-2">
-            {activeMaterial
-              ? 'Weights from this recipe (read-only)'
-              : 'Manual weights'}
-          </span>
-        </div>
+      {product && (
+        <p className="-mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+          Weights are <span className="font-medium">{product.name}</span>’s
+          recipe (read-only) — pick a different product, or “All products”,
+          in the header selector.
+        </p>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -313,7 +222,7 @@ export function CostImpactPage(
                       : `${r.netChange > 0 ? '+' : ''}${fmt(r.netChange)}`}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {activeMaterial ? (
+                    {product ? (
                       <span className="text-zinc-600 dark:text-zinc-300">
                         {fmt(effectiveWeights[r.key] ?? 0, 3)}
                       </span>
@@ -342,8 +251,8 @@ export function CostImpactPage(
         </table>
       </div>
       <p className="text-xs text-zinc-400">
-        {activeMaterial
-          ? `Weights are ${activeMaterial.name}’s recipe — kg of each ` +
+        {product
+          ? `Weights are ${product.name}’s recipe — kg of each ` +
             'commodity per kg of product, from its BOM (edit under Companies ' +
             '& Materials). Impact = net quarterly change × weight.'
           : 'Weights are the kg of each commodity per unit of product; edit ' +

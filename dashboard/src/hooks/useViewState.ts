@@ -29,8 +29,10 @@ export function useViewState<K extends keyof ViewState>(
 ): UseViewState<NonNullable<ViewState[K]>> {
   type T = NonNullable<ViewState[K]>;
   const { settings, update, loading } = useUserSettings();
-  const { shared } = useView();
-  const ctx = shared?.companyId ?? 'own';
+  const { companyId } = useView();
+  // Namespace selections by the active company (own or shared), or 'own' for
+  // My workspace. A shared company keeps the same id it used before (SM-52).
+  const ctx = companyId ?? 'own';
   const [value, setV] = useState<T>(defaults);
   const defaultsRef = useRef(defaults);
   const hydratedCtx = useRef<string | null>(null);
