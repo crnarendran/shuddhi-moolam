@@ -83,27 +83,30 @@ describe('upsertRow', () => {
     }),
   ];
 
-  it('maps record to row and appends to sheet if date not found', async () => {
-    (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
-      data: { values: [['15/07/2026'], ['20/07/2026']] }
-    });
+  it('inserts at the next aligned row (not append) if date not found',
+    async () => {
+      (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
+        // 2 existing column-B rows → new row goes at row 3, column A.
+        data: { values: [['15/07/2026'], ['20/07/2026']] }
+      });
 
-    const action = await upsertRow('Data_2026', { ...mockRecord });
+      const action = await upsertRow('Data_2026', { ...mockRecord });
 
-    expect(action).toBe('insert');
-    expect(sheetsClient.spreadsheets.values.get).toHaveBeenCalledWith({
-      spreadsheetId: MASTER_SHEET_ID,
-      range: 'Data_2026!B:B'
+      expect(action).toBe('insert');
+      expect(sheetsClient.spreadsheets.values.get).toHaveBeenCalledWith({
+        spreadsheetId: MASTER_SHEET_ID,
+        range: 'Data_2026!B:B'
+      });
+      // Must NOT use append (its table-detection can misalign the row).
+      expect(sheetsClient.spreadsheets.values.append).not.toHaveBeenCalled();
+      expect(sheetsClient.spreadsheets.values.update).toHaveBeenCalledTimes(1);
+      expect(sheetsClient.spreadsheets.values.update).toHaveBeenCalledWith({
+        spreadsheetId: MASTER_SHEET_ID,
+        range: `Data_2026!A3:${END}3`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: expectedValues }
+      });
     });
-    expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledTimes(1);
-    expect(sheetsClient.spreadsheets.values.append).toHaveBeenCalledWith({
-      spreadsheetId: MASTER_SHEET_ID,
-      range: `Data_2026!A:${END}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: expectedValues }
-    });
-    expect(sheetsClient.spreadsheets.values.update).not.toHaveBeenCalled();
-  });
 
   it('updates existing row if date is found', async () => {
     (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({

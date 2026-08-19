@@ -71,9 +71,16 @@ export async function upsertRow(
     if (!skipSort) await sortTabByDateDesc(tabTitle);
     return 'update';
   } else {
-    // 3. Append new row
-    const range = `${tabTitle}!A:${endColumnLetter}`;
-    await sheetsClient.spreadsheets.values.append({
+    // 3. Insert a new row at an explicit, column-A-aligned position. We do
+    // NOT use values.append: its "table detection" can misplace the row —
+    // shifting it into the wrong columns and to the bottom — when the tab
+    // holds stray non-data rows (e.g. a manually added averages row) below
+    // the data. `rows` is column B, so its length is the last dated row;
+    // write immediately after it (overwriting any stray row sitting there).
+    const newRowNum = rows.length + 1;
+    const range =
+      `${tabTitle}!A${newRowNum}:${endColumnLetter}${newRowNum}`;
+    await sheetsClient.spreadsheets.values.update({
       spreadsheetId: masterSheetId,
       range,
       valueInputOption: 'USER_ENTERED',
