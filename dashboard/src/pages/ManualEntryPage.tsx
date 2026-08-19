@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  doc, getDoc, collection, query, where, getDocs,
+} from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { PencilLine, Save, Eraser, Search } from 'lucide-react';
 import { db, functions, fnName } from '../firebase';
@@ -24,11 +26,23 @@ function toDocId(date: string): string | null {
   return `${yyyy}-${p2(mm)}-${p2(dd)}`;
 }
 
+const labelFor = (key: string) =>
+  COMPONENTS.find((c) => c.key === key)?.label ?? key;
+
+interface OverrideRow {
+  docId: string;
+  date: string;
+  manualBy: string;
+  manualAt: string;
+  fields: string[];
+}
+
 /**
  * Manual price entry / correction — the "break glass" tool (SM-57). A data
  * editor loads a date, edits the per-kg values, and saves to BOTH the master
  * Sheet and Firestore. A saved date is marked manual and is not overwritten
- * by later automated extraction (until the override is cleared).
+ * by later automated extraction (until the override is cleared). Lists every
+ * existing manual override so they're easy to review and re-edit.
  */
 export function ManualEntryPage() {
   const [date, setDate] = useState('');
@@ -42,14 +56,43 @@ export function ManualEntryPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<OverrideRow[]>([]);
 
   const docId = toDocId(date);
 
-  const load = async () => {
-    if (!docId) { setErr('Enter a valid date as dd/MM/yyyy.'); return; }
+  const loadOverrides = useCallback(async () => {
+    try {
+      const snap = await getDocs(query(
+        collection(db, HISTORICAL), where('source', '==', 'manual')
+      ));
+      const list: OverrideRow[] = snap.docs.map((d) => {
+        const x = d.data() as Record<string, unknown>;
+        return {
+          docId: d.id,
+          date: (x.date as string) || d.id,
+          manualBy: (x.manualBy as string) || '',
+          manualAt: (x.manualAt as string) || '',
+          fields: Array.isArray(x.manualFields)
+            ? x.manualFields as string[] : [],
+        };
+      });
+      // Newest first (docId is YYYY-MM-DD, so it sorts chronologically).
+      list.sort((a, b) => b.docId.localeCompare(a.docId));
+      setOverrides(list);
+    } catch {
+      // Non-fatal: the list is a convenience, not required to enter data.
+    }
+  }, []);
+
+  useEffect(() => { void loadOverrides(); }, [loadOverrides]);
+
+  const load = useCallback(async (d: string = date) => {
+    const id = toDocId(d);
+    if (!id) { setErr('Enter a valid date as dd/MM/yyyy.'); return; }
+    setDate(d);
     setLoading(true); setErr(null); setMsg(null);
     try {
-      const snap = await getDoc(doc(db, HISTORICAL, docId));
+      const snap = await getDoc(doc(db, HISTORICAL, id));
       const data = (snap.exists() ? snap.data() : {}) as
         Record<string, unknown>;
       const next: Record<string, string> = {};
@@ -65,13 +108,13 @@ export function ManualEntryPage() {
       );
       setLoaded(true);
       setMsg(snap.exists()
-        ? `Loaded ${docId}${data.source === 'manual' ? ' (manual)' : ''}`
-        : `No data for ${docId} yet — entering a new date.`);
+        ? `Loaded ${id}${data.source === 'manual' ? ' (manual)' : ''}`
+        : `No data for ${id} yet — entering a new date.`);
     } catch (e) {
       setErr((e as { message?: string }).message ?? 'Load failed.');
     }
     setLoading(false);
-  };
+  }, [date]);
 
   const save = async () => {
     if (!docId) { setErr('Enter a valid date as dd/MM/yyyy.'); return; }
@@ -102,10 +145,13 @@ export function ManualEntryPage() {
         }
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, values: payload });
-      if (r.data.values) { setValues(r.data.values); setOriginal(r.data.values); }
+      if (r.data.values) {
+        setValues(r.data.values); setOriginal(r.data.values);
+      }
       setSource(r.data.source ?? 'manual');
       setManualFields(r.data.manualFields ?? []);
       setMsg(`Saved ${r.data.written.length} value(s) for ${r.data.docId}.`);
+      void loadOverrides();
     } catch (e) {
       setErr((e as { message?: string }).message ?? 'Save failed.');
     }
@@ -130,13 +176,16 @@ export function ManualEntryPage() {
       >(functions, fnName('manualUpsert'));
       const r = await fn({ date, clearOverride: true });
       // Apply the returned values directly so the grid refreshes at once.
-      if (r.data.values) { setValues(r.data.values); setOriginal(r.data.values); }
+      if (r.data.values) {
+        setValues(r.data.values); setOriginal(r.data.values);
+      }
       setSource(r.data.source ?? 'auto');
       setManualFields(r.data.manualFields ?? []);
       setMsg(r.data.restored
         ? `Override cleared for ${docId}. Restored the automated values.`
         : `Override cleared for ${docId}. Auto extraction re-enabled ` +
           '(no prior automated value to restore).');
+      void loadOverrides();
     } catch (e) {
       setErr((e as { message?: string }).message ?? 'Clear failed.');
     }
@@ -187,6 +236,56 @@ export function ManualEntryPage() {
           </span>
         )}
       </div>
+
+      {overrides.length > 0 && (
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700
+          overflow-hidden">
+          <div className="px-3 py-2 text-xs font-semibold text-zinc-600
+            dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/60">
+            Existing manual overrides ({overrides.length}) — click to edit
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-zinc-500
+                  dark:text-zinc-400 border-b border-zinc-200
+                  dark:border-zinc-700">
+                  <th className="px-3 py-2 font-medium">Date</th>
+                  <th className="px-3 py-2 font-medium">Overridden fields</th>
+                  <th className="px-3 py-2 font-medium">By</th>
+                  <th className="px-3 py-2 font-medium">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overrides.map((o) => (
+                  <tr key={o.docId}
+                    onClick={() => void load(o.date)}
+                    className="border-b border-zinc-100 dark:border-zinc-800
+                      last:border-0 cursor-pointer hover:bg-zinc-50
+                      dark:hover:bg-zinc-800/40">
+                    <td className="px-3 py-2 whitespace-nowrap font-medium
+                      text-zinc-800 dark:text-zinc-100">{o.date}</td>
+                    <td className="px-3 py-2 text-zinc-600 dark:text-zinc-300">
+                      {o.fields.length === 0
+                        ? '—'
+                        : o.fields.map(labelFor).join(', ')}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-zinc-500
+                      dark:text-zinc-400">{o.manualBy || '—'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-zinc-500
+                      dark:text-zinc-400"
+                      title={o.manualAt}>
+                      {o.manualAt
+                        ? new Date(o.manualAt).toLocaleDateString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {loaded && (
         <>
