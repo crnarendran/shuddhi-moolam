@@ -23,8 +23,8 @@ export function ContextSwitcher(
 ) {
   const { companies, shared: sharedCompanies } = useCompanies();
   const { premium } = usePlan();
-  const { companyId, materialIds, materials, isShared, setSelection } =
-    useView();
+  const { companyId, materialIds, materials, isShared, setCompany,
+    setProducts } = useView();
 
   if (companies.length === 0 && sharedCompanies.length === 0) return null;
 
@@ -43,7 +43,7 @@ export function ContextSwitcher(
           aria-label="Company"
           className={`${selCls} ${companyBorder}`}
           value={companyId ?? ''}
-          onChange={(e) => setSelection(e.target.value || null, [])}
+          onChange={(e) => setCompany(e.target.value || null)}
         >
           {premium && <option value="">My workspace</option>}
           {companies.map((c) => (
@@ -63,7 +63,7 @@ export function ContextSwitcher(
           label="Products"
           options={materials.map((m) => ({ value: m.id ?? '', label: m.name }))}
           selected={materialIds}
-          onChange={(ids) => setSelection(companyId, ids)}
+          onChange={(ids) => setProducts(ids)}
         />
       ) : (
         <select
@@ -72,7 +72,7 @@ export function ContextSwitcher(
             text-zinc-700 dark:text-zinc-200`}
           value={materialIds[0] ?? ''}
           onChange={(e) =>
-            setSelection(companyId, e.target.value ? [e.target.value] : [])}
+            setProducts(e.target.value ? [e.target.value] : [])}
         >
           <option value="">All products</option>
           {materials.map((m) => (

@@ -18,17 +18,21 @@ export interface SharedView {
 
 interface Selection {
   companyId: string | null;
-  materialIds: string[];
+  /** Product selection remembered PER company, so switching companies keeps
+   *  each one's picked products (SM-60). */
+  byCompany: Record<string, string[]>;
 }
 
 interface ViewCtx {
-  /** Global selection (SM-59): the active company (own or shared) and the
-   *  selected product(s) within it. null companyId = My workspace. The
-   *  selection is a list so Guidance can compare several; single-product
-   *  reports use the first entry. */
+  /** Global selection (SM-60): the active company (own or shared) and the
+   *  product(s) picked for it. null companyId = My workspace. */
   companyId: string | null;
+  /** Products selected for the active company (empty for My workspace). */
   materialIds: string[];
-  setSelection: (companyId: string | null, materialIds: string[]) => void;
+  /** Switch the active company; restores that company's remembered products. */
+  setCompany: (companyId: string | null) => void;
+  /** Set the products for the active company. */
+  setProducts: (materialIds: string[]) => void;
   company: Company | null;
   /** First selected material — the product single-product reports use. */
   product: Material | null;
@@ -48,46 +52,53 @@ interface ViewCtx {
 }
 
 const Ctx = createContext<ViewCtx>({
-  companyId: null, materialIds: [], setSelection: () => {},
-  company: null, product: null, products: [], materials: [], isShared: false,
-  productWeights: null, scopeKeys: null, shared: null, setShared: () => {},
+  companyId: null, materialIds: [], setCompany: () => {},
+  setProducts: () => {}, company: null, product: null, products: [],
+  materials: [], isShared: false, productWeights: null, scopeKeys: null,
+  shared: null, setShared: () => {},
 });
 
 const SEL_KEY = 'sm.viewSelection';
 const LEGACY_SHARED_KEY = 'sm.sharedView';
 
 /** Loads the persisted selection, tolerating the legacy shared-view key and
- *  the earlier single-materialId shape. */
+ *  the earlier {companyId, materialId(s)} shape. */
 function loadSelection(): Selection {
   try {
     const raw = localStorage.getItem(SEL_KEY);
     if (raw) {
-      const p = JSON.parse(raw) as
-        { companyId?: string | null; materialIds?: string[];
-          materialId?: string };
-      return {
-        companyId: p.companyId ?? null,
-        materialIds: Array.isArray(p.materialIds)
-          ? p.materialIds
-          : p.materialId ? [p.materialId] : [],
+      const p = JSON.parse(raw) as {
+        companyId?: string | null;
+        byCompany?: Record<string, string[]>;
+        materialIds?: string[];
+        materialId?: string;
       };
+      if (p.byCompany && typeof p.byCompany === 'object') {
+        return { companyId: p.companyId ?? null, byCompany: p.byCompany };
+      }
+      const ids = Array.isArray(p.materialIds)
+        ? p.materialIds : p.materialId ? [p.materialId] : [];
+      const byCompany: Record<string, string[]> = {};
+      if (p.companyId && ids.length) byCompany[p.companyId] = ids;
+      return { companyId: p.companyId ?? null, byCompany };
     }
     const legacy = localStorage.getItem(LEGACY_SHARED_KEY);
     if (legacy) {
       const s = JSON.parse(legacy) as SharedView;
-      return { companyId: s.companyId ?? null, materialIds: [] };
+      return { companyId: s.companyId ?? null, byCompany: {} };
     }
   } catch { /* ignore */ }
-  return { companyId: null, materialIds: [] };
+  return { companyId: null, byCompany: {} };
 }
 
 /**
- * Provides the global Company·Product view context (SM-59). One selection —
+ * Provides the global Company·Product view context (SM-60). One selection —
  * an optional company (own or shared) and the product(s) within it — drives
  * every report: `scopeKeys` filters commodities and `productWeights` feeds
- * Cost Impact. The product selection is a list; the header control is
- * single-select on most reports and multi-select on Guidance. `shared` stays
- * a derived, back-compatible value so the read-only shared flow is unchanged.
+ * Cost Impact. The product selection is remembered per company, and the
+ * header control is single-select on most reports, multi-select on Guidance.
+ * `shared` stays a derived, back-compatible value so the read-only shared
+ * flow is unchanged.
  * @param props Children to render within the provider.
  */
 export function ViewProvider({ children }: { children: ReactNode }) {
@@ -95,18 +106,25 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [sel, setSel] = useState<Selection>(loadSelection);
   const [materials, setMaterials] = useState<Material[]>([]);
 
-  const persist = useCallback((next: Selection) => {
-    setSel(next);
+  // Persist the whole selection whenever it changes.
+  useEffect(() => {
     try {
-      localStorage.setItem(SEL_KEY, JSON.stringify(next));
+      localStorage.setItem(SEL_KEY, JSON.stringify(sel));
     } catch { /* ignore storage failures (private mode etc.) */ }
+  }, [sel]);
+
+  const setCompany = useCallback((companyId: string | null) => {
+    setSel((prev) => ({ ...prev, companyId }));
   }, []);
 
-  const setSelection = useCallback(
-    (companyId: string | null, materialIds: string[]) =>
-      persist({ companyId, materialIds }),
-    [persist]
-  );
+  const setProducts = useCallback((materialIds: string[]) => {
+    setSel((prev) => prev.companyId
+      ? {
+        companyId: prev.companyId,
+        byCompany: { ...prev.byCompany, [prev.companyId]: materialIds },
+      }
+      : prev);
+  }, []);
 
   const allCompanies = useMemo(() => {
     const map = new Map<string, Company>();
@@ -117,14 +135,14 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [companies, sharedCompanies]);
 
   // Drop a company selection that is no longer visible (e.g. unshared) back to
-  // My workspace, once companies have actually loaded.
+  // My workspace, once companies have actually loaded. Its remembered products
+  // are kept in byCompany in case it reappears.
   useEffect(() => {
     if (sel.companyId && !allCompanies.has(sel.companyId)
       && (companies.length > 0 || sharedCompanies.length > 0)) {
-      persist({ companyId: null, materialIds: [] });
+      setSel((prev) => ({ ...prev, companyId: null }));
     }
-  }, [sel.companyId, allCompanies, companies.length, sharedCompanies.length,
-    persist]);
+  }, [sel.companyId, allCompanies, companies.length, sharedCompanies.length]);
 
   // Subscribe to the selected company's materials (own or shared).
   useEffect(() => {
@@ -141,16 +159,19 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     );
   }, [sel.companyId]);
 
+  const materialIds = sel.companyId
+    ? sel.byCompany[sel.companyId] ?? [] : [];
+
   const company = sel.companyId
     ? allCompanies.get(sel.companyId) ?? null : null;
   const isShared = !!sel.companyId
     && sharedCompanies.some((c) => c.id === sel.companyId);
 
   const products = useMemo(
-    () => sel.materialIds
+    () => materialIds
       .map((id) => materials.find((m) => m.id === id))
       .filter((m): m is Material => !!m),
-    [sel.materialIds, materials]
+    [materialIds, materials]
   );
   const product = products[0] ?? null;
 
@@ -184,13 +205,12 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   }, [isShared, company]);
 
   const setShared = useCallback(
-    (s: SharedView | null) =>
-      persist({ companyId: s?.companyId ?? null, materialIds: [] }),
-    [persist]
+    (s: SharedView | null) => setCompany(s?.companyId ?? null),
+    [setCompany]
   );
 
   const value: ViewCtx = {
-    companyId: sel.companyId, materialIds: sel.materialIds, setSelection,
+    companyId: sel.companyId, materialIds, setCompany, setProducts,
     company, product, products, materials, isShared, productWeights,
     scopeKeys, shared, setShared,
   };
