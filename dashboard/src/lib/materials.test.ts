@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  blendedCost, contributions, massShares, totalGrams,
+  blendedCost, contributions, massShares, totalGrams, costImpactWeights,
 } from './materials';
 import { type PriceRecord } from './reporting';
 
@@ -67,6 +67,20 @@ describe('totalGrams', () => {
       { commodityKey: 'a', ratio: 75 },
       { commodityKey: 'b', ratio: 25 },
     ])).toBe(100);
+  });
+});
+
+describe('costImpactWeights', () => {
+  it('derives kg-per-kg weights (grams ÷ 1000) from the BOM', () => {
+    const w = costImpactWeights([
+      { commodityKey: 'fe_si_mg_mumbai', ratio: 20 }, // 20 g → 0.02 kg
+      { commodityKey: 'crca_bundle_mumbai', ratio: 950 }, // 0.95 kg
+    ]);
+    expect(w.fe_si_mg_mumbai).toBeCloseTo(0.02, 9);
+    expect(w.crca_bundle_mumbai).toBeCloseTo(0.95, 9);
+  });
+  it('treats a non-finite ratio as 0', () => {
+    expect(costImpactWeights([{ commodityKey: 'x', ratio: NaN }]).x).toBe(0);
   });
 });
 

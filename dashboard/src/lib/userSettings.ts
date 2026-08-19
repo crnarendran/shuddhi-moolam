@@ -28,6 +28,9 @@ export interface ViewState {
   seasonal?: { keys?: string[]; metric?: string };
   spreads?: { reference?: string; compare?: string[] };
   guidance?: { companyId?: string; materialIds?: string[] };
+  // Cost-Impact company + single material selection (SM-58). When a material
+  // is chosen, weights derive from its BOM; empty materialId = Custom weights.
+  costImpactSel?: { companyId?: string; materialId?: string };
 }
 
 export interface UserSettings {

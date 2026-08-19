@@ -113,6 +113,25 @@ export function massShares(comp: Composition[]): MassShare[] {
 }
 
 /**
+ * Cost-Impact consumption weights derived from a material's BOM (SM-58): kg of
+ * each commodity per kg of finished product = grams ÷ 1000. This is exactly
+ * the weight the Cost-Impact report multiplies price moves by, so a material's
+ * recipe can drive the report instead of hand-entered weights. Later commodity
+ * entries win if a key repeats.
+ * @param {Composition[]} comp - The material composition (grams per kg).
+ * @returns {Record<string, number>} commodityKey → kg per kg of product.
+ */
+export function costImpactWeights(
+  comp: Composition[]
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const { commodityKey, ratio } of comp) {
+    out[commodityKey] = (Number.isFinite(ratio) ? ratio : 0) / 1000;
+  }
+  return out;
+}
+
+/**
  * Total grams specified per kg of finished material (Σ ratios). A total below
  * 1000 g means the recipe does not fill a full kilogram.
  * @param {Composition[]} comp - The material composition (grams per kg).

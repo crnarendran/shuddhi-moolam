@@ -51,13 +51,15 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
     title: 'Cost impact',
     description:
       'Translates commodity price moves into the effect on YOUR product ' +
-      'cost. You set how much of each commodity goes into a unit (its ' +
-      'consumption weight); the report multiplies each commodity’s ' +
-      'quarterly change by that weight and sums it into a single per-unit ' +
-      'cost impact.',
+      'cost. Pick a company and a product (recipe) and the weights come ' +
+      'straight from its BOM — kg of each commodity per kg of product; or ' +
+      'choose Custom weights to enter them by hand. The report multiplies ' +
+      'each commodity’s quarterly change by that weight and sums it into a ' +
+      'single per-unit cost impact.',
     howToRead: [
-      'Weight = kg of each commodity per unit of product; edit it in the ' +
-        'table (saved to your account).',
+      'Pick a product to pull weights from its recipe (read-only), or ' +
+        'Custom weights to type them in the table (saved to your account). ' +
+        'You can select any company shared with you, read-only.',
       'Each commodity’s latest quarter is compared to its trailing ' +
         'rolling baseline to get a net change.',
       'Impact / kg = net change × weight; the headline "Sum of impact" is ' +
@@ -167,7 +169,9 @@ export const GLOSSARY = {
     'The ₹ cost of 1 kg of finished material — the mass-weighted average of ' +
     'its commodities’ current prices, i.e. Σ(grams × price) ÷ Σ(grams).',
   'Consumption weight':
-    'How much of a commodity (kg) goes into one unit of your product.',
+    'How much of a commodity (kg) goes into one unit of your product — ' +
+    'taken from the selected product’s recipe (BOM), or entered by hand in ' +
+    'Custom mode.',
   'Tier':
     'core = master sheet + dashboards; extended = dashboards only; ' +
     'archived = captured to storage but hidden from reports.',
