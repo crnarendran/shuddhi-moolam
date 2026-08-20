@@ -37,8 +37,15 @@ export interface UserSettings {
   /** Cost-Impact consumption weights (commodityKey -> kg per unit). */
   costImpact?: { weights?: Record<string, number> };
   /** Global Company·Product selector: products picked per company (SM-60),
-   *  synced cross-device. localStorage is the per-device fallback. */
-  productSelection?: { byCompany?: Record<string, string[]> };
+   *  synced cross-device. `single` = single-select reports, `multi` =
+   *  Guidance; kept separate so switching report types doesn't reset either.
+   *  `byCompany` is the earlier combined shape, read for migration only.
+   *  localStorage is the per-device fallback. */
+  productSelection?: {
+    single?: Record<string, string>;
+    multi?: Record<string, string[]>;
+    byCompany?: Record<string, string[]>;
+  };
   /** Global + per-report commodity exclusions (SM-31). */
   personalization?: Personalization;
   /**
