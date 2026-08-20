@@ -36,6 +36,9 @@ export interface ViewState {
 export interface UserSettings {
   /** Cost-Impact consumption weights (commodityKey -> kg per unit). */
   costImpact?: { weights?: Record<string, number> };
+  /** Global Company·Product selector: products picked per company (SM-60),
+   *  synced cross-device. localStorage is the per-device fallback. */
+  productSelection?: { byCompany?: Record<string, string[]> };
   /** Global + per-report commodity exclusions (SM-31). */
   personalization?: Personalization;
   /**

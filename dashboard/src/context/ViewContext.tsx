@@ -1,11 +1,12 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
-  type ReactNode,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef,
+  useState, type ReactNode,
 } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COMPANIES_COLLECTION } from '../lib/config';
 import { useCompanies } from '../hooks/useCompanies';
+import { useUserSettings } from '../hooks/useUserSettings';
 import {
   costImpactWeights, type Company, type Material,
 } from '../lib/materials';
@@ -103,15 +104,41 @@ function loadSelection(): Selection {
  */
 export function ViewProvider({ children }: { children: ReactNode }) {
   const { companies, shared: sharedCompanies } = useCompanies();
+  const { settings, update, loading: settingsLoading } = useUserSettings();
   const [sel, setSel] = useState<Selection>(loadSelection);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const hydratedRef = useRef(false);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Persist the whole selection whenever it changes.
+  // Persist the whole selection to localStorage (per-device) on every change.
   useEffect(() => {
     try {
       localStorage.setItem(SEL_KEY, JSON.stringify(sel));
     } catch { /* ignore storage failures (private mode etc.) */ }
   }, [sel]);
+
+  // Hydrate the per-company product map from the account (cross-device) once
+  // settings load; account entries win, any local-only entries are kept.
+  useEffect(() => {
+    if (settingsLoading || hydratedRef.current) return;
+    hydratedRef.current = true;
+    const stored = settings.productSelection?.byCompany;
+    if (stored && Object.keys(stored).length > 0) {
+      setSel((prev) => ({
+        ...prev, byCompany: { ...prev.byCompany, ...stored },
+      }));
+    }
+  }, [settingsLoading, settings]);
+
+  // Sync the per-company product map to the account (debounced) after
+  // hydration, so the selection follows the user across devices.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      void update({ productSelection: { byCompany: sel.byCompany } });
+    }, 600);
+  }, [sel.byCompany, update]);
 
   const setCompany = useCallback((companyId: string | null) => {
     setSel((prev) => ({ ...prev, companyId }));
