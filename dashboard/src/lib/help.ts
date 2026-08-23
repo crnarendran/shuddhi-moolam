@@ -126,10 +126,10 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
       'Pick a company, then one or more Materials (Select all / Clear). The ' +
         'blended-cost-over-time chart overlays one line per material; your ' +
         'selection is remembered.',
-      'Each selected material gets its own card: current blended cost vs its ' +
-        '1-quarter baseline, seasonal buy-timing (weighted by each ' +
-        'commodity’s ' +
-        'share), and cheaper same-unit substitutions with the per-kg saving.',
+      'Each selected material gets its own card: this quarter’s blended cost ' +
+        '(quarter-to-date) vs the prior calendar quarter, seasonal ' +
+        'buy-timing (weighted by each commodity’s share), and cheaper ' +
+        'same-unit substitutions with the per-kg saving.',
       'A coloured dot on each card matches its line in the chart above.',
     ],
   },
@@ -154,6 +154,10 @@ export const GLOSSARY = {
   'MoM %':
     'Month-over-month percent change — this month’s average vs last ' +
     'month’s.',
+  'Prior quarter':
+    'The calendar quarter before the current one. The current quarter is ' +
+    'quarter-to-date — only the issues published so far in it — so early in ' +
+    'a quarter it rests on few weeks of data.',
   'Rolling baseline':
     'A trailing moving average (e.g. the prior few quarters) used as the ' +
     '"normal" level to compare the latest period against.',

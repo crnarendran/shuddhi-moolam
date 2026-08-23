@@ -2,14 +2,15 @@ import { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { CalendarClock, Shuffle, TrendingDown, TrendingUp } from 'lucide-react';
 import {
-  ALL_COMMODITIES, monthKeyLabel, parseIssueDate, type PriceRecord,
+  ALL_COMMODITIES, monthKeyLabel, quarterKeyLabel, parseIssueDate,
+  type PriceRecord,
 } from '../lib/reporting';
 import { useCompanies } from '../hooks/useCompanies';
 import { useView } from '../context/ViewContext';
 import { type Material } from '../lib/materials';
 import {
-  blendedCostSeries, materialSeasonalIndex, cheapestMonths,
-  substitutionSuggestions, costVsBaseline, DEFAULT_SUB_GROUPS,
+  blendedCostSeries, blendedCostQuarterSeries, materialSeasonalIndex,
+  cheapestMonths, substitutionSuggestions, costVsBaseline, DEFAULT_SUB_GROUPS,
 } from '../lib/guidance';
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
@@ -70,11 +71,15 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
             <InfoTip term="Blended cost" /></p>
           <p className="text-2xl font-semibold mt-1 text-zinc-900
             dark:text-zinc-100">{fmt(baseline.latest)}</p>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            {baseline.latestKey
+              ? `${quarterKeyLabel(baseline.latestKey)} to date` : '—'}
+          </p>
         </div>
         <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
           <p className="text-xs text-zinc-500 dark:text-zinc-400
             flex items-center gap-1">
-            vs 1-qtr baseline<InfoTip term="Rolling baseline" /></p>
+            vs prior quarter<InfoTip term="Prior quarter" /></p>
           <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
             ${baseline.pct === null ? 'text-zinc-400'
               : up ? 'text-red-600 dark:text-red-400'
@@ -84,6 +89,12 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
                 : <TrendingDown className="h-5 w-5" />}
               {baseline.pct > 0 ? '+' : ''}{baseline.pct.toFixed(1)}%</>
             )}
+          </p>
+          <p className="text-xs text-zinc-400 mt-0.5">
+            {baseline.baselineKeys.length > 0
+              ? `vs ${quarterKeyLabel(baseline.baselineKeys[0])}` +
+                ` (${fmt(baseline.baseline)})`
+              : 'no prior quarter yet'}
           </p>
         </div>
       </div>
@@ -161,7 +172,12 @@ export function GuidancePage(
         material: m,
         color: SERIES_COLORS[i % SERIES_COLORS.length],
         series,
-        baseline: costVsBaseline(series),
+        // Quarter-over-quarter: Q-to-date vs the prior calendar quarter,
+        // matching how Cost Impact aggregates (SM-60). The chart above stays
+        // monthly for trend resolution.
+        baseline: costVsBaseline(
+          blendedCostQuarterSeries(m.composition, records)
+        ),
         cheapest: cheapestMonths(seasonal, 3),
         swaps: substitutionSuggestions(
           m.composition, DEFAULT_SUB_GROUPS, ALL_COMMODITIES, record),

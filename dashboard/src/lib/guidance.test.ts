@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  blendedCostSeries, cheapestMonths, substitutionSuggestions, costVsBaseline,
+  blendedCostSeries, blendedCostQuarterSeries, cheapestMonths,
+  substitutionSuggestions, costVsBaseline,
   type SubstitutionGroup,
 } from './guidance';
 import { type Commodity, type PriceRecord } from './reporting';
@@ -41,15 +42,41 @@ describe('costVsBaseline', () => {
     expect(r.pct).toBeCloseTo(((80 - 110) / 110) * 100, 6);
   });
 
-  it('defaults to a 1-quarter (3-month) baseline', () => {
+  it('defaults to the single prior period (quarter-over-quarter)', () => {
     const s = new Map([
-      ['2026-04', 100], ['2026-05', 100], ['2026-06', 200],
-      ['2026-07', 300], ['2026-08', 80],
+      ['2025-Q4', 50], ['2026-Q1', 100], ['2026-Q2', 200], ['2026-Q3', 220],
     ]);
-    const r = costVsBaseline(s); // default window
-    // prior 3 months before Aug = May,Jun,Jul = 100,200,300 → mean 200
-    // (a 6-month window would include Apr and give 175)
-    expect(r.baseline).toBe(200);
+    const r = costVsBaseline(s); // default window = 1
+    expect(r.latestKey).toBe('2026-Q3');
+    expect(r.latest).toBe(220);
+    expect(r.baseline).toBe(200); // Q2 only, not an average of earlier Qs
+    expect(r.baselineKeys).toEqual(['2026-Q2']);
+    expect(r.pct).toBeCloseTo(10, 6);
+  });
+
+  it('reports the latest with no baseline when there is no prior quarter',
+    () => {
+      const r = costVsBaseline(new Map([['2026-Q3', 220]]));
+      expect(r.latest).toBe(220);
+      expect(r.latestKey).toBe('2026-Q3');
+      expect(r.baseline).toBeNull();
+      expect(r.pct).toBeNull();
+      expect(r.baselineKeys).toEqual([]);
+    });
+});
+
+describe('blendedCostQuarterSeries', () => {
+  it('aggregates the blended cost into calendar quarters', () => {
+    const comp = [{ commodityKey: 'fe_si_mg_mumbai', ratio: 1 }];
+    const recs = [
+      { date: '10/04/2026', fe_si_mg_mumbai: '100' }, // Q2
+      { date: '20/05/2026', fe_si_mg_mumbai: '200' }, // Q2
+      { date: '10/07/2026', fe_si_mg_mumbai: '300' }, // Q3
+    ];
+    const s = blendedCostQuarterSeries(comp, recs);
+    expect([...s.keys()]).toEqual(['2026-Q2', '2026-Q3']);
+    expect(s.get('2026-Q2')).toBeCloseTo(150, 6); // (100+200)/2
+    expect(s.get('2026-Q3')).toBeCloseTo(300, 6);
   });
 });
 

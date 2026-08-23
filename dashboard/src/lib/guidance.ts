@@ -3,7 +3,7 @@
 // cost math. No ML — explainable by construction.
 
 import {
-  monthlyAverages, seasonalIndex, normalizePrice, MONTHS,
+  monthlyAverages, quarterlyAverages, seasonalIndex, normalizePrice, MONTHS,
   type Commodity, type PriceRecord,
 } from './reporting';
 import { contributions, totalGrams, type Composition } from './materials';
@@ -35,11 +35,46 @@ export const DEFAULT_SUB_GROUPS: SubstitutionGroup[] = [
 ];
 
 /**
- * Blended material cost per month, keyed "YYYY-MM", as Rs per kg of finished
- * material — the mass-weighted average price Σ(grams × price) ÷ Σ(grams) over
- * the priced rows that month. Same basis as materials.blendedCost (SM-45), so
- * this chart's magnitude matches the Companies editor. Dividing by a constant
- * total mass leaves month-over-month trends and baseline % unchanged.
+ * Blended material cost per period, as Rs per kg of finished material — the
+ * mass-weighted average price Σ(grams × price) ÷ Σ(grams) over the priced
+ * rows in that period. Same basis as materials.blendedCost (SM-45), so the
+ * magnitude matches the Companies editor. Dividing by a constant total mass
+ * leaves period-over-period trends and baseline % unchanged.
+ * @param {Composition[]} comp - The material composition (grams per kg).
+ * @param {PriceRecord[]} records - All price records.
+ * @param {(r: PriceRecord[], field: string) => Map<string, number>} averager
+ *   Per-commodity period averager (monthly or quarterly).
+ * @returns {Map<string, number>} Rs/kg keyed by the averager's period key.
+ */
+function blendedSeriesBy(
+  comp: Composition[],
+  records: PriceRecord[],
+  averager: (r: PriceRecord[], field: string) => Map<string, number>
+): Map<string, number> {
+  const perC = new Map<string, Map<string, number>>();
+  const periods = new Set<string>();
+  for (const { commodityKey } of comp) {
+    const m = averager(records, commodityKey);
+    perC.set(commodityKey, m);
+    for (const k of m.keys()) periods.add(k);
+  }
+  const out = new Map<string, number>();
+  for (const period of [...periods].sort()) {
+    let sum = 0;
+    let grams = 0;
+    for (const { commodityKey, ratio } of comp) {
+      const price = perC.get(commodityKey)?.get(period);
+      if (price === undefined || !Number.isFinite(ratio)) continue;
+      sum += ratio * price;
+      grams += ratio;
+    }
+    if (grams > 0) out.set(period, sum / grams);
+  }
+  return out;
+}
+
+/**
+ * Blended material cost per month, keyed "YYYY-MM" (drives the trend chart).
  * @param {Composition[]} comp - The material composition (grams per kg).
  * @param {PriceRecord[]} records - All price records.
  * @returns {Map<string, number>} Rs/kg keyed "YYYY-MM".
@@ -47,26 +82,22 @@ export const DEFAULT_SUB_GROUPS: SubstitutionGroup[] = [
 export function blendedCostSeries(
   comp: Composition[], records: PriceRecord[]
 ): Map<string, number> {
-  const perC = new Map<string, Map<string, number>>();
-  const months = new Set<string>();
-  for (const { commodityKey } of comp) {
-    const m = monthlyAverages(records, commodityKey);
-    perC.set(commodityKey, m);
-    for (const k of m.keys()) months.add(k);
-  }
-  const out = new Map<string, number>();
-  for (const month of [...months].sort()) {
-    let sum = 0;
-    let grams = 0;
-    for (const { commodityKey, ratio } of comp) {
-      const price = perC.get(commodityKey)?.get(month);
-      if (price === undefined || !Number.isFinite(ratio)) continue;
-      sum += ratio * price;
-      grams += ratio;
-    }
-    if (grams > 0) out.set(month, sum / grams);
-  }
-  return out;
+  return blendedSeriesBy(comp, records, monthlyAverages);
+}
+
+/**
+ * Blended material cost per calendar quarter, keyed "YYYY-Q#" — the basis for
+ * the quarter-over-quarter baseline, matching how Cost Impact aggregates
+ * (SM-60). The latest quarter is quarter-to-date (only the issues published
+ * so far in it).
+ * @param {Composition[]} comp - The material composition (grams per kg).
+ * @param {PriceRecord[]} records - All price records.
+ * @returns {Map<string, number>} Rs/kg keyed "YYYY-Q#".
+ */
+export function blendedCostQuarterSeries(
+  comp: Composition[], records: PriceRecord[]
+): Map<string, number> {
+  return blendedSeriesBy(comp, records, quarterlyAverages);
 }
 
 /**
@@ -153,19 +184,37 @@ export function substitutionSuggestions(
 }
 
 /**
- * Latest blended cost vs a trailing rolling baseline (mean of the prior
- * `window` months, excluding the latest). Defaults to 3 months = one
- * quarter. Nulls when history is short.
+ * Latest period vs the mean of the `window` periods immediately before it
+ * (excluding the latest). Fed the quarterly series with the default window
+ * of 1, this is quarter-to-date vs the prior calendar quarter — real
+ * quarters, consistent with Cost Impact (SM-60). Keys sort chronologically
+ * for both "YYYY-MM" and "YYYY-Q#". Nulls when history is short.
+ * @param {Map<string, number>} series - Period-keyed blended cost.
+ * @param {number} window - How many prior periods to average (default 1).
+ * @param {string} latestKey - The period compared (null when empty).
+ * @returns {{latest: number|null; baseline: number|null; pct: number|null;
+ *   latestKey: string|null; baselineKeys: string[]}} The comparison.
  */
 export function costVsBaseline(
-  series: Map<string, number>, window = 3
-): { latest: number | null; baseline: number | null; pct: number | null } {
+  series: Map<string, number>, window = 1
+): {
+  latest: number | null; baseline: number | null; pct: number | null;
+  latestKey: string | null; baselineKeys: string[];
+} {
   const keys = [...series.keys()].sort();
-  if (keys.length === 0) return { latest: null, baseline: null, pct: null };
-  const latest = series.get(keys[keys.length - 1])!;
-  const prior = keys.slice(-1 - window, -1).map((k) => series.get(k)!);
-  if (prior.length === 0) return { latest, baseline: null, pct: null };
+  const empty = {
+    latest: null, baseline: null, pct: null, latestKey: null,
+    baselineKeys: [] as string[],
+  };
+  if (keys.length === 0) return empty;
+  const latestKey = keys[keys.length - 1];
+  const latest = series.get(latestKey)!;
+  const priorKeys = keys.slice(-1 - window, -1);
+  if (priorKeys.length === 0) {
+    return { ...empty, latest, latestKey };
+  }
+  const prior = priorKeys.map((k) => series.get(k)!);
   const baseline = prior.reduce((a, b) => a + b, 0) / prior.length;
   const pct = baseline > 0 ? ((latest - baseline) / baseline) * 100 : null;
-  return { latest, baseline, pct };
+  return { latest, baseline, pct, latestKey, baselineKeys: priorKeys };
 }
