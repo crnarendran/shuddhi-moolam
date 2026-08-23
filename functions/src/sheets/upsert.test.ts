@@ -108,6 +108,34 @@ describe('upsertRow', () => {
       });
     });
 
+  it('matches an unpadded date cell instead of duplicating the row',
+    async () => {
+      // Regression: Sheets returns some date cells unpadded ("27/7/2026").
+      // An exact string compare missed those and inserted a DUPLICATE row —
+      // that is how 05/05, 19/05 and 01/09/2025 ended up twice in the sheet.
+      (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
+        data: { values: [['15/07/2026'], ['27/7/2026']] }
+      });
+
+      const action = await upsertRow('Data_2026', { ...mockRecord });
+
+      expect(action).toBe('update');
+      expect(sheetsClient.spreadsheets.values.update).toHaveBeenCalledWith(
+        expect.objectContaining({ range: `Data_2026!A2:${END}2` })
+      );
+    });
+
+  it('does not match a different date that looks similar', async () => {
+    (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
+      // 7/27/2026 is month-first: not 27/07/2026, and not a valid d/M/yyyy.
+      data: { values: [['7/27/2026'], ['26/07/2026']] }
+    });
+
+    const action = await upsertRow('Data_2026', { ...mockRecord });
+
+    expect(action).toBe('insert');
+  });
+
   it('updates existing row if date is found', async () => {
     (sheetsClient.spreadsheets.values.get as jest.Mock).mockResolvedValue({
       data: { values: [['15/07/2026'], ['27/07/2026']] }

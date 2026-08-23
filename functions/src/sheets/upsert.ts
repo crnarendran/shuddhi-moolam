@@ -5,6 +5,27 @@ import { MASTER_SHEET_ID } from '../config';
 import { sortTabByDateDesc } from './sort';
 
 /**
+ * Canonical key for an issue date cell, so the idempotency check matches
+ * regardless of zero-padding. Sheets stores some date cells as real dates,
+ * whose formatted text can come back unpadded ("9/6/2025"), which an exact
+ * string compare against "09/06/2025" misses — that inserted DUPLICATE rows
+ * instead of updating them. Returns null when the value isn't a d/M/yyyy
+ * date, so unparseable cells never match.
+ * @param {unknown} value - A column-B date cell or a record's date.
+ * @returns {string | null} "yyyy-mm-dd", or null when unparseable.
+ */
+export function dateKey(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const parts = value.trim().split('/');
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map((p) => parseInt(p, 10));
+  if (Number.isNaN(d) || Number.isNaN(m) || Number.isNaN(y)) return null;
+  if (d < 1 || d > 31 || m < 1 || m > 12) return null;
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${y}-${p2(m)}-${p2(d)}`;
+}
+
+/**
  * Maps the extraction record to an array of values in the order
  * defined by SHEET_HEADERS, and appends or updates the row in the
  * specified tab.
@@ -49,8 +70,11 @@ export async function upsertRow(
   const rows = getResponse.data.values || [];
   let existingRowIndex = -1;
 
+  const wanted = dateKey(record.date);
   for (let i = 0; i < rows.length; i++) {
-    if (rows[i][0] === record.date) {
+    const cell = rows[i][0];
+    if (cell === record.date ||
+      (wanted !== null && dateKey(cell) === wanted)) {
       existingRowIndex = i + 1; // 1-indexed
       break;
     }

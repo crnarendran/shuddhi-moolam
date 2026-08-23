@@ -61,7 +61,7 @@ export function CostImpactPage(
     void update({ costImpact: { weights: next } });
   };
 
-  // The global Company·Product selector (SM-59) drives this report: a chosen
+  // The global Company·Product selector (SM-60) drives this report: a chosen
   // product supplies BOM weights (read-only) and scopes the commodities; with
   // no product, the hand-entered Custom weights apply.
   const { scopeKeys, product, productWeights } = useView();

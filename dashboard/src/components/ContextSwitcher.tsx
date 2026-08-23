@@ -8,7 +8,7 @@ const selCls = 'px-2.5 py-1.5 rounded-md text-sm border bg-white ' +
   'dark:bg-zinc-900 max-w-[11rem] truncate';
 
 /**
- * Global Company·Product selector (SM-59). One control drives every report:
+ * Global Company·Product selector (SM-60). One control drives every report:
  * pick a company (My workspace, your own, or one shared with you) and,
  * optionally, a product/recipe within it. The product control adapts to the
  * active report — a single-select normally, a multi-select on Guidance

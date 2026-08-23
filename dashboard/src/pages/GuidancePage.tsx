@@ -155,7 +155,7 @@ export function GuidancePage(
 ) {
   const { signedIn } = useCompanies();
   // Company + product(s) come from the global Company·Product selector
-  // (SM-59). On Guidance that selector is a multi-select, so `products` may
+  // (SM-60). On Guidance that selector is a multi-select, so `products` may
   // hold several materials to compare side by side.
   const { companyId, company, products, materials } = useView();
 

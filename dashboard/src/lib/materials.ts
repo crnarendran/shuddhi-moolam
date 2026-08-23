@@ -113,7 +113,7 @@ export function massShares(comp: Composition[]): MassShare[] {
 }
 
 /**
- * Cost-Impact consumption weights derived from a material's BOM (SM-58): kg of
+ * Cost-Impact consumption weights derived from a material's BOM (SM-60): kg of
  * each commodity per kg of finished product = grams ÷ 1000. This is exactly
  * the weight the Cost-Impact report multiplies price moves by, so a material's
  * recipe can drive the report instead of hand-entered weights. Later commodity
