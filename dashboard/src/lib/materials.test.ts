@@ -12,27 +12,34 @@ const rec: PriceRecord = {
 };
 
 describe('blendedCost', () => {
-  it('is the mass-weighted average price (Rs/kg)', () => {
+  it('is the cost of 1 kg of finished product: Σ(g × price) ÷ 1000', () => {
     const comp = [
       { commodityKey: 'fe_si_mg_mumbai', ratio: 2 },
       { commodityKey: 'crca_bundle_mumbai', ratio: 0.5 },
     ];
-    // (2*190 + 0.5*47400) / (2 + 0.5) = 24080 / 2.5 = 9632
-    expect(blendedCost(comp, rec)).toBe(9632);
+    // (2*190 + 0.5*47400) / 1000 = 24080 / 1000
+    expect(blendedCost(comp, rec)).toBeCloseTo(24.08, 9);
+  });
+
+  it('charges a recipe over 1000 g (melting loss) above its avg price', () => {
+    // 1050 g of a Rs 190 input to make 1 kg -> Rs 199.50, not Rs 190
+    const comp = [{ commodityKey: 'fe_si_mg_mumbai', ratio: 1050 }];
+    expect(blendedCost(comp, rec)).toBeCloseTo(199.5, 9);
   });
 
   it('normalizes ranges to the midpoint', () => {
-    const comp = [{ commodityKey: 'pig_iron_foundry_gr_pune', ratio: 1 }];
-    // single priced row: average === that price
-    expect(blendedCost(comp, rec)).toBe(48500);
+    const comp = [{ commodityKey: 'pig_iron_foundry_gr_pune', ratio: 1000 }];
+    // 1000 g of the 48,500 midpoint
+    expect(blendedCost(comp, rec)).toBeCloseTo(48500, 9);
   });
 
-  it('skips unpriced rows from both numerator and denominator', () => {
+  it('imputes unpriced rows at the priced average, not as free', () => {
     const comp = [
       { commodityKey: 'fe_si_mg_mumbai', ratio: 1 }, // 190
-      { commodityKey: 'missing', ratio: 9 }, // no price -> ignored
+      { commodityKey: 'missing', ratio: 9 }, // no price -> priced at 190
     ];
-    expect(blendedCost(comp, rec)).toBe(190);
+    // 10 g at Rs 190 average / 1000
+    expect(blendedCost(comp, rec)).toBeCloseTo(1.9, 9);
   });
 
   it('returns null when nothing could be priced', () => {

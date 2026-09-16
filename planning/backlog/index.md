@@ -85,7 +85,17 @@ the full ticket + implementation notes. Do **not** re-plan these.
   Subsumed an interim per-page Cost-Impact picker. Guidance baseline also
   changed 6-mo → 1-quarter. NOTE: the commits for this were mislabeled
   SM-58/59 (a numbering slip — the real SM-58/59 are the extraction
-  consensus / sortable-columns items above); code comments still say 58/59.
+  consensus / sortable-columns items above); code comments relabelled to
+  SM-60 on 2026-09-16.
+- **Blended cost = cost of 1 kg of product** SM-61: blended cost changed from
+  the mass-weighted average price Σ(g×p)÷Σg to Σ(g×p)÷1000, so grams added
+  for melting loss raise the cost (Grey Cast Iron, 1,067.5 g: Jul 2026
+  56.3 → 60.1). Shared `costPerKg` in materials.ts drives the Companies
+  editor, Guidance chart + quarter baseline; substitution savings use the
+  same ÷1000 basis; a commodity unpriced in a period is charged at the
+  priced average, not as free. Aligns with Cost Impact's grams÷1000 weights.
+  Also: Guidance baseline is Q-to-date vs prior calendar quarter; upsert
+  matches unpadded date cells (stops duplicate sheet rows).
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

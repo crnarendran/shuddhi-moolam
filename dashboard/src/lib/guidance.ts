@@ -6,7 +6,9 @@ import {
   monthlyAverages, quarterlyAverages, seasonalIndex, normalizePrice, MONTHS,
   type Commodity, type PriceRecord,
 } from './reporting';
-import { contributions, totalGrams, type Composition } from './materials';
+import {
+  contributions, costPerKg, totalGrams, GRAMS_PER_KG, type Composition,
+} from './materials';
 
 export interface SubstitutionGroup {
   name: string;
@@ -35,11 +37,11 @@ export const DEFAULT_SUB_GROUPS: SubstitutionGroup[] = [
 ];
 
 /**
- * Blended material cost per period, as Rs per kg of finished material — the
- * mass-weighted average price Σ(grams × price) ÷ Σ(grams) over the priced
- * rows in that period. Same basis as materials.blendedCost (SM-45), so the
- * magnitude matches the Companies editor. Dividing by a constant total mass
- * leaves period-over-period trends and baseline % unchanged.
+ * Blended material cost per period: the cost of making 1 kg of finished
+ * product from that period's average prices, Σ(grams × avg price) ÷ 1000
+ * (SM-61), via materials.costPerKg — the same basis as the Companies editor
+ * and Cost Impact's grams ÷ 1000 weights. A commodity with no price in a
+ * period is charged at the priced average rather than treated as free.
  * @param {Composition[]} comp - The material composition (grams per kg).
  * @param {PriceRecord[]} records - All price records.
  * @param {(r: PriceRecord[], field: string) => Map<string, number>} averager
@@ -59,6 +61,7 @@ function blendedSeriesBy(
     for (const k of m.keys()) periods.add(k);
   }
   const out = new Map<string, number>();
+  const recipeGrams = totalGrams(comp);
   for (const period of [...periods].sort()) {
     let sum = 0;
     let grams = 0;
@@ -68,7 +71,8 @@ function blendedSeriesBy(
       sum += ratio * price;
       grams += ratio;
     }
-    if (grams > 0) out.set(period, sum / grams);
+    const cost = costPerKg(sum, grams, recipeGrams);
+    if (cost !== null) out.set(period, cost);
   }
   return out;
 }
@@ -140,10 +144,9 @@ export interface SwapSuggestion {
 
 /**
  * For each composition member in a substitution group, the cheapest
- * same-unit alternative and its saving per kg of finished material (positive
- * only), ranked. The saving scales the price delta by the commodity's mass
- * share (ratio ÷ total grams) so it is expressed in the same Rs/kg-of-blend
- * units as the blended cost (SM-45).
+ * same-unit alternative and its saving per kg of finished product (positive
+ * only), ranked. The saving is the price delta × the commodity's grams ÷ 1000,
+ * the same Rs-per-kg-of-product basis as the blended cost (SM-61).
  * @param {Composition[]} comp - The material composition (grams per kg).
  * @param {SubstitutionGroup[]} groups - Interchangeable commodity groups.
  * @param {Commodity[]} commodities - The commodity registry (for units).
@@ -157,7 +160,6 @@ export function substitutionSuggestions(
   latest: PriceRecord | null
 ): SwapSuggestion[] {
   const byKey = new Map(commodities.map((c) => [c.key, c]));
-  const grams = totalGrams(comp);
   const out: SwapSuggestion[] = [];
   for (const { commodityKey, ratio } of comp) {
     const cur = byKey.get(commodityKey);
@@ -174,8 +176,8 @@ export function substitutionSuggestions(
       if (!best || price < best.price) best = { c, price };
     }
     if (!best || best.c.key === commodityKey) continue;
-    const saving = grams > 0
-      ? ((curPrice - best.price) * ratio) / grams
+    const saving = Number.isFinite(ratio)
+      ? ((curPrice - best.price) * ratio) / GRAMS_PER_KG
       : 0;
     if (saving <= 0) continue;
     out.push({ from: cur, to: best.c, saving, groupName: group.name });

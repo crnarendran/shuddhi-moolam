@@ -17,12 +17,21 @@ const comp = [
 ];
 
 describe('blendedCostSeries', () => {
-  it('is the mass-weighted average price per month (Rs/kg)', () => {
+  it('is the monthly cost of 1 kg of product: Σ(g × avg) ÷ 1000', () => {
     const s = blendedCostSeries(comp, recs);
-    // Jun: (2*200 + 0.1*50000) / 2.1 = 5400 / 2.1
-    expect(s.get('2026-06')).toBeCloseTo(5400 / 2.1, 6);
-    // Aug: (2*180 + 0.1*46000) / 2.1 = 4960 / 2.1
-    expect(s.get('2026-08')).toBeCloseTo(4960 / 2.1, 6);
+    // Jun: (2*200 + 0.1*50000) / 1000
+    expect(s.get('2026-06')).toBeCloseTo(5.4, 9);
+    // Aug: (2*180 + 0.1*46000) / 1000
+    expect(s.get('2026-08')).toBeCloseTo(4.96, 9);
+  });
+
+  it('imputes a commodity missing that month at the priced average', () => {
+    const gap: PriceRecord[] = [
+      { date: '10/09/2026', fe_si_mg_mumbai: '170' }, // crca missing
+    ];
+    // priced avg 170 over 2.1 g total -> 170 * 2.1 / 1000
+    expect(blendedCostSeries(comp, gap).get('2026-09'))
+      .toBeCloseTo(0.357, 9);
   });
 });
 
@@ -75,8 +84,9 @@ describe('blendedCostQuarterSeries', () => {
     ];
     const s = blendedCostQuarterSeries(comp, recs);
     expect([...s.keys()]).toEqual(['2026-Q2', '2026-Q3']);
-    expect(s.get('2026-Q2')).toBeCloseTo(150, 6); // (100+200)/2
-    expect(s.get('2026-Q3')).toBeCloseTo(300, 6);
+    // 1 g per kg: Q2 avg (100+200)/2 = 150 -> 150 / 1000
+    expect(s.get('2026-Q2')).toBeCloseTo(0.15, 9);
+    expect(s.get('2026-Q3')).toBeCloseTo(0.3, 9);
   });
 });
 
@@ -104,8 +114,8 @@ describe('substitutionSuggestions', () => {
     );
     expect(s).toHaveLength(1);
     expect(s[0].to.key).toBe('fe_si_70_75_raipur');
-    // (120 - 108) * 3 / 3 grams = 12 Rs per kg of blend
-    expect(s[0].saving).toBe(120 - 108);
+    // (120 - 108) * 3 g / 1000 = Rs 0.036 per kg of finished product
+    expect(s[0].saving).toBeCloseTo(0.036, 9);
   });
 
   it('does not suggest when the current is already cheapest', () => {

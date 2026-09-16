@@ -101,8 +101,9 @@ export const REPORT_HELP: Record<string, ReportHelp> = {
         '% on the right is that commodity’s share of a kilogram (grams ÷ ' +
         '1000). A recipe need not total 1000 g: the balance to 1 kg is ' +
         'melting loss / burn-off, not missing data.',
-      'Blended cost is the mass-weighted average price — the ₹ cost of 1 kg ' +
-        'of the finished material at the latest commodity prices.',
+      'Blended cost is the ₹ cost of making 1 kg of finished material at ' +
+        'the latest prices: Σ(grams × price) ÷ 1000. Extra grams you add to ' +
+        'cover melting loss are paid for, so they raise the cost.',
       'Share read-only: click Share on a company and invite by email. The ' +
         'invitee gets a link (and an email) to VIEW — not edit — that ' +
         'company’s materials and its charts/guidance, limited to its ' +
@@ -170,8 +171,9 @@ export const GLOSSARY = {
     'How many standard deviations the latest value is from its historical ' +
     'mean; beyond ±2σ is unusual.',
   'Blended cost':
-    'The ₹ cost of 1 kg of finished material — the mass-weighted average of ' +
-    'its commodities’ current prices, i.e. Σ(grams × price) ÷ Σ(grams).',
+    'The ₹ cost of making 1 kg of finished material: Σ(grams × price) ÷ ' +
+    '1000. Grams added for melting loss raise it. A commodity with no price ' +
+    'in the period is charged at the average of the priced ones.',
   'Consumption weight':
     'How much of a commodity (kg) goes into one unit of your product — ' +
     'taken from the product selected in the header (its recipe/BOM), or ' +

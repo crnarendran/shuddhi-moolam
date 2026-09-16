@@ -1,7 +1,8 @@
 // Company + material (bill-of-materials) model and pure cost math (SM-32,
-// SM-45). A material is a mix of commodities measured in GRAMS PER KG of the
-// finished product (so a full recipe sums to 1000 g). Blended cost is the
-// mass-weighted average commodity price, i.e. Rs per kg of finished material.
+// SM-45, SM-61). A material is a mix of commodities measured in GRAMS PER KG
+// of the finished product (a recipe may exceed 1000 g to cover melting loss).
+// Blended cost is the cost of making 1 kg of finished product:
+// Σ(grams × price) ÷ 1000.
 // The math is pure and registry-free so it is unit-tested in isolation.
 
 import { normalizePrice, type PriceRecord } from './reporting';
@@ -40,15 +41,36 @@ export interface Contribution {
   pct: number;
 }
 
+/** Grams in the kilogram of finished product a recipe is written for. */
+export const GRAMS_PER_KG = 1000;
+
 /**
- * Blended cost of a composition at the given price record, as Rs per kg of
- * finished material: the mass-weighted average price Σ(grams × price) ÷
- * Σ(grams), taken over the priced rows. Commodities with no price or a bad
- * ratio are skipped (they lower neither the numerator nor the denominator);
- * returns null when nothing could be priced.
+ * Cost of making 1 kg of finished product from priced inputs (SM-61):
+ * Σ(grams × price) ÷ 1000. A recipe above 1000 g — e.g. extra charge to cover
+ * melting loss — therefore costs more than its average input price, which is
+ * the point. Priced mass is scaled up to the full recipe mass, so a
+ * commodity with no price in the period is charged at the average of the
+ * priced ones rather than treated as free (a missing weekly price must not
+ * cheapen the product). With every row priced this is exactly Σ(g × p) ÷ 1000.
+ * @param {number} weighted - Σ(grams × price) over the priced rows.
+ * @param {number} pricedGrams - Σ grams over the priced rows.
+ * @param {number} recipeGrams - Σ grams over the whole recipe.
+ * @returns {number | null} Rs per kg of finished product, or null.
+ */
+export function costPerKg(
+  weighted: number, pricedGrams: number, recipeGrams: number
+): number | null {
+  if (pricedGrams <= 0) return null;
+  return (weighted / pricedGrams) * recipeGrams / GRAMS_PER_KG;
+}
+
+/**
+ * Blended cost of a composition at the given price record: the cost of 1 kg
+ * of finished product (see costPerKg). Returns null when nothing could be
+ * priced.
  * @param {Composition[]} comp - The material composition (grams per kg).
  * @param {PriceRecord | null} record - A price record (e.g. the latest).
- * @returns {number | null} Rs per kg of finished material, or null.
+ * @returns {number | null} Rs per kg of finished product, or null.
  */
 export function blendedCost(
   comp: Composition[],
@@ -63,7 +85,7 @@ export function blendedCost(
     weighted += ratio * price;
     grams += ratio;
   }
-  return grams > 0 ? weighted / grams : null;
+  return costPerKg(weighted, grams, totalGrams(comp));
 }
 
 /**
