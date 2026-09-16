@@ -17,6 +17,7 @@ import { PrintButton } from '../components/PrintButton';
 import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
+import { CHART_MAX_DIGITS, fmtChartValue } from '../lib/format';
 
 // Empty defaults so an unset selection (first run) is distinguishable from an
 // explicitly cleared one ([]): the former defaults to the first commodity,
@@ -81,7 +82,7 @@ export function SeasonalPage(
 
   const overlayOption = {
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', valueFormatter: fmtChartValue },
     legend: {
       data: overlayByKey.map((o) => o.label),
       textStyle: { color: axisColor }, top: 0,
@@ -107,7 +108,9 @@ export function SeasonalPage(
       return yrs.map((y) => ({
         name: o.label,
         type: 'line',
-        data: o.by.get(y),
+        data: (o.by.get(y) ?? []).map((v) =>
+          typeof v === 'number'
+            ? Number(v.toFixed(CHART_MAX_DIGITS)) : v),
         smooth: true,
         connectNulls: false,
         symbol: 'none',

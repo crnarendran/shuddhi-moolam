@@ -16,7 +16,7 @@ import { PrintButton } from '../components/PrintButton';
 import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
-import { fmtNum as fmt } from '../lib/format';
+import { fmtChartValue, fmtNum as fmt } from '../lib/format';
 
 // Empty defaults so first run (unset) is distinguishable from an explicit
 // clear ([]); first run picks sensible defaults, clear shows an empty-state.
@@ -94,7 +94,7 @@ export function SpreadsPage(
   const option = {
     grid: { left: 8, right: 16, top: single ? 16 : 28, bottom: 8,
       containLabel: true },
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', valueFormatter: fmtChartValue },
     legend: single ? undefined
       : { data: perCompare.map((p) => p.label), textStyle:
         { color: axisColor }, top: 0 },
