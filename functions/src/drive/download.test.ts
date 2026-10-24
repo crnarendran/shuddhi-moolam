@@ -38,7 +38,7 @@ describe('Download PDF logic', () => {
         data: {
           mimeType: 'application/pdf',
           size: '1024',
-          name: 'test_report.pdf'
+          name: 'test_report.pdf',
         },
       })
       .mockResolvedValueOnce({
@@ -50,9 +50,54 @@ describe('Download PDF logic', () => {
     expect(result.buffer.length).toBeGreaterThan(0);
     expect(result.filename).toBe('test_report.pdf');
     expect(drive.files.get).toHaveBeenCalledTimes(2);
+    expect(drive.files.get).toHaveBeenNthCalledWith(1, {
+      fileId: 'f3',
+      fields:
+        'mimeType, size, name, ' +
+        'lastModifyingUser(emailAddress), owners(emailAddress)',
+    });
     expect(drive.files.get).toHaveBeenLastCalledWith(
       { fileId: 'f3', alt: 'media' },
       { responseType: 'arraybuffer' }
     );
   });
+
+  it('should extract uploaderEmail from lastModifyingUser', async () => {
+    (drive.files.get as jest.Mock)
+      .mockResolvedValueOnce({
+        data: {
+          mimeType: 'application/pdf',
+          size: '1024',
+          name: 'report.pdf',
+          lastModifyingUser: { emailAddress: 'uploader@example.com' },
+          owners: [{ emailAddress: 'owner@example.com' }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: new ArrayBuffer(8),
+      });
+
+    const result = await downloadPdf('f4');
+    expect(result.uploaderEmail).toBe('uploader@example.com');
+  });
+
+  it('should fallback to owners email if lastModifyingUser is absent',
+    async () => {
+      (drive.files.get as jest.Mock)
+        .mockResolvedValueOnce({
+          data: {
+            mimeType: 'application/pdf',
+            size: '1024',
+            name: 'report.pdf',
+            owners: [{ emailAddress: 'owner@example.com' }],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: new ArrayBuffer(8),
+        });
+
+      const result = await downloadPdf('f5');
+      expect(result.uploaderEmail).toBe('owner@example.com');
+    }
+  );
 });

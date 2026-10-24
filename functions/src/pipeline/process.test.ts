@@ -6,6 +6,11 @@ import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
 import { recordStage } from './telemetry';
+import {
+  sendPipelineSuccessEmail,
+  sendPipelineFailureEmail,
+  resolveOutcomeRecipients,
+} from './outcomeEmail';
 
 // Data returned by the SM-57 sticky-guard read of historical/<docId>.
 // undefined → no manual override (normal path); set to a manual record to
@@ -34,7 +39,7 @@ jest.mock('firebase-admin/firestore', () => {
 
   return {
     getFirestore: jest.fn(() => ({
-      collection: jest.fn(() => mockCollection)
+      collection: jest.fn(() => mockCollection),
     })),
     FieldPath: { documentId: jest.fn(() => 'documentId') },
   };
@@ -52,26 +57,34 @@ jest.mock('../sheets/upsert');
 jest.mock('../sheets/audit');
 jest.mock('../utils/alert');
 jest.mock('./telemetry');
+jest.mock('./outcomeEmail');
 
 describe('processPendingPdf', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockManualDocData = undefined;
+    (resolveOutcomeRecipients as jest.Mock).mockReturnValue([
+      'uploader@example.com',
+      'crnarendran@gmail.com',
+      'mvsaikishore@gmail.com',
+    ]);
+    (sendPipelineSuccessEmail as jest.Mock).mockResolvedValue(true);
+    (sendPipelineFailureEmail as jest.Mock).mockResolvedValue(true);
   });
 
   const mockEvent = {
     params: { fileId: '123' },
     data: {
       before: { data: () => ({ status: 'pending' }) },
-      after: { data: () => ({ status: 'detected', detectedAt: 1000 }) }
+      after: { data: () => ({ status: 'detected', detectedAt: 1000 }) },
     },
   };
 
   it('should successfully process a PDF end-to-end', async () => {
     (downloadPdf as jest.Mock).mockResolvedValue({
       buffer: Buffer.from('pdf'),
-      filename: 'test.pdf'
+      filename: 'test.pdf',
+      uploaderEmail: 'uploader@example.com',
     });
     (extractPricesConsensus as jest.Mock).mockResolvedValue({
       data: { date: '27/07/2026' },
@@ -79,7 +92,7 @@ describe('processPendingPdf', () => {
       usage: {
         totalTokenCount: 150,
         promptTokenCount: 100,
-        candidatesTokenCount: 50
+        candidatesTokenCount: 50,
       },
     });
     (ensureYearTab as jest.Mock).mockResolvedValue('2026');
@@ -88,7 +101,7 @@ describe('processPendingPdf', () => {
 
     // Cast handler to unknown then invoke
     const handler = processPendingPdf as unknown as {
-      run: (e: unknown) => Promise<void>
+      run: (e: unknown) => Promise<void>;
     };
     await handler.run(mockEvent);
 
@@ -97,17 +110,28 @@ describe('processPendingPdf', () => {
     expect(ensureYearTab).toHaveBeenCalledWith('27/07/2026');
     expect(upsertRow).toHaveBeenCalledWith('2026', {
       date: '27/07/2026',
-      filename: 'test.pdf'
+      filename: 'test.pdf',
     });
     expect(logAuditTrail).toHaveBeenCalledWith('insert', {
       date: '27/07/2026',
-      filename: 'test.pdf'
+      filename: 'test.pdf',
     });
     expect(recordStage).toHaveBeenCalledWith('123', 'downloading');
     expect(recordStage).toHaveBeenCalledWith('123', 'extracting', {
       fileName: 'test.pdf',
+      uploaderEmail: 'uploader@example.com',
     });
     expect(recordStage).toHaveBeenCalledWith('123', 'routing');
+    expect(recordStage).toHaveBeenCalledWith('123', 'upserting');
+    expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filename: 'test.pdf',
+        fileId: '123',
+        tabTitle: '2026',
+        action: 'insert',
+        uploaderEmail: 'uploader@example.com',
+      })
+    );
     expect(recordStage).toHaveBeenCalledWith(
       '123',
       'appended',
@@ -121,58 +145,93 @@ describe('processPendingPdf', () => {
         durationMs: expect.any(Number),
         year: 2026,
         targetTab: '2026',
+        notification: {
+          emailSent: true,
+          recipients: expect.any(Array),
+          sentAt: expect.any(Number),
+        },
       })
     );
     expect(sendAlert).not.toHaveBeenCalled();
   });
 
-  it('keeps a manual override: skips writes, flags disagreement', async () => {
-    // inoculant is Rs/kg (not tonne→kg converted) so the raw value is the
-    // final value — auto 308 vs stored manual 300 → material diff.
-    mockManualDocData = {
-      source: 'manual', inoculant_2_6mm_mumbai: '300',
-    };
-    (downloadPdf as jest.Mock).mockResolvedValue({
-      buffer: Buffer.from('pdf'), filename: 'test.pdf',
-    });
-    (extractPricesConsensus as jest.Mock).mockResolvedValue({
-      data: { date: '18/05/2026', inoculant_2_6mm_mumbai: '308' },
-      route: 'inline',
-      usage: {
-        totalTokenCount: 10, promptTokenCount: 5, candidatesTokenCount: 5,
-      },
-    });
+  it('keeps a manual override: skips writes, flags disagreement',
+    async () => {
+      mockManualDocData = {
+        source: 'manual',
+        inoculant_2_6mm_mumbai: '300',
+      };
+      (downloadPdf as jest.Mock).mockResolvedValue({
+        buffer: Buffer.from('pdf'),
+        filename: 'test.pdf',
+        uploaderEmail: 'uploader@example.com',
+      });
+      (extractPricesConsensus as jest.Mock).mockResolvedValue({
+        data: { date: '18/05/2026', inoculant_2_6mm_mumbai: '308' },
+        route: 'inline',
+        usage: {
+          totalTokenCount: 10,
+          promptTokenCount: 5,
+          candidatesTokenCount: 5,
+        },
+      });
 
-    const handler = processPendingPdf as unknown as {
-      run: (e: unknown) => Promise<void>
-    };
-    await handler.run(mockEvent);
+      const handler = processPendingPdf as unknown as {
+        run: (e: unknown) => Promise<void>;
+      };
+      await handler.run(mockEvent);
 
-    // Neither store is overwritten.
-    expect(upsertRow).not.toHaveBeenCalled();
-    // The disagreement is surfaced.
-    expect(sendAlert).toHaveBeenCalled();
-    expect(recordStage).toHaveBeenCalledWith(
-      '123', 'appended',
-      expect.objectContaining({ manualOverrideKept: true })
-    );
-  });
+      expect(upsertRow).not.toHaveBeenCalled();
+      expect(sendAlert).toHaveBeenCalled();
+      expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: 'test.pdf',
+          fileId: '123',
+          action: 'MANUAL_OVERRIDE_KEPT',
+          autoVsManualDiffs: expect.any(Array),
+        })
+      );
+      expect(recordStage).toHaveBeenCalledWith(
+        '123',
+        'appended',
+        expect.objectContaining({
+          manualOverrideKept: true,
+          notification: expect.objectContaining({ emailSent: true }),
+        })
+      );
+    }
+  );
 
   it('handles failures, records failed stage, alerts', async () => {
     const error = new Error('Extraction failed');
     (downloadPdf as jest.Mock).mockResolvedValue({
       buffer: Buffer.from('pdf'),
-      filename: 'test.pdf'
+      filename: 'test.pdf',
+      uploaderEmail: 'uploader@example.com',
     });
     (extractPricesConsensus as jest.Mock).mockRejectedValue(error);
 
     const handler = processPendingPdf as unknown as {
-      run: (e: unknown) => Promise<void>
+      run: (e: unknown) => Promise<void>;
     };
     await handler.run(mockEvent);
 
+    expect(sendPipelineFailureEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileId: '123',
+        filename: 'test.pdf',
+        failingStage: 'extracting',
+        errorMessage: 'Extraction failed',
+        uploaderEmail: 'uploader@example.com',
+      })
+    );
     expect(recordStage).toHaveBeenCalledWith('123', 'failed', {
-      error: { stage: 'process', message: 'Extraction failed' }
+      error: { stage: 'extracting', message: 'Extraction failed' },
+      notification: {
+        emailSent: true,
+        recipients: expect.any(Array),
+        sentAt: expect.any(Number),
+      },
     });
     expect(sendAlert).toHaveBeenCalledWith(
       'Pipeline Extraction Failed',

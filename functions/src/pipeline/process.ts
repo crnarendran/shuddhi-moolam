@@ -8,13 +8,19 @@ import { ensureYearTab } from '../sheets/routing';
 import { upsertRow } from '../sheets/upsert';
 import { logAuditTrail } from '../sheets/audit';
 import { sendAlert } from '../utils/alert';
-import { recordStage } from './telemetry';
+import { recordStage, PipelineStatus } from './telemetry';
 import { estimateGeminiCostUsd } from './cost';
 import { toKgRecord } from './units';
 import { detectOutliers } from '../reporting/outliers';
 import { diffAutoVsManual } from '../admin/manualEntry';
+import {
+  sendPipelineSuccessEmail,
+  sendPipelineFailureEmail,
+  resolveOutcomeRecipients,
+} from './outcomeEmail';
 
 const geminiApiKeySecret = defineSecret('GEMINI_API_KEY');
+const resendApiKeySecret = defineSecret('RESEND_API_KEY');
 
 // Extraction passes to vote over (SM-58). Temperature 0 already makes the
 // reads deterministic, so 1 pass by default (single API call). Raise
@@ -25,11 +31,11 @@ export const processPendingPdf = onDocumentWritten(
   {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     document: `${require('../config').FIRESTORE_COLLECTION}/{fileId}`,
-    secrets: [geminiApiKeySecret],
+    secrets: [geminiApiKeySecret, resendApiKeySecret],
     timeoutSeconds: 540,
     maxInstances: 2,
     concurrency: 1,
-    memory: '1GiB'
+    memory: '1GiB',
   },
   async (event) => {
     const after = event.data?.after;
@@ -44,22 +50,37 @@ export const processPendingPdf = onDocumentWritten(
       const detectedAt = after?.data()?.detectedAt as number | undefined;
       logger.info(`Started processing pending PDF`, { fileId });
 
+      let currentStage: PipelineStatus = 'downloading';
+      let uploaderEmail: string | undefined;
+      let fileNameRecorded: string | undefined;
+
       try {
         // 1. Download
+        currentStage = 'downloading';
         await recordStage(fileId, 'downloading');
-        const { buffer: pdfBuffer, filename } = await downloadPdf(fileId);
+        const downloadRes = await downloadPdf(fileId);
+        uploaderEmail = downloadRes.uploaderEmail;
+        const filename = downloadRes.filename;
+        fileNameRecorded = filename;
+        const pdfBuffer = downloadRes.buffer;
 
         // 2. Extract (record the filename now so the monitor shows it)
-        await recordStage(fileId, 'extracting', { fileName: filename });
+        currentStage = 'extracting';
+        await recordStage(fileId, 'extracting', {
+          fileName: filename,
+          ...(uploaderEmail ? { uploaderEmail } : {}),
+        });
         const { data: rawRecord, usage } = await extractPricesConsensus(
-          pdfBuffer, {}, consensusRuns
+          pdfBuffer,
+          {},
+          consensusRuns
         );
         const record = toKgRecord(rawRecord);
 
         // Overwrite the filename with the full path/filename
         record.filename = filename;
 
-        // Compute the historical doc id up front — used by the sticky guard
+        // Compute the historical doc id up front — used by sticky guard
         // here and the write further down.
         const [day, month, year] = record.date.split('/');
         const docId = `${year}-${month}-${day}`;
@@ -67,29 +88,56 @@ export const processPendingPdf = onDocumentWritten(
         const historicalCol = require('../config').HISTORICAL_COLLECTION;
 
         // SM-57 sticky guard: if a data editor manually set this date, keep
-        // it — skip BOTH writes (Sheet + Firestore) so the manual value
-        // stays, and instead flag if the fresh auto read disagrees so a human
-        // notices auto vs manual differ.
+        // it — skip BOTH writes (Sheet + Firestore) so manual value stays,
+        // and instead flag if fresh auto read disagrees.
         const existingDoc = await getFirestore()
-          .collection(historicalCol).doc(docId).get();
+          .collection(historicalCol)
+          .doc(docId)
+          .get();
         const existing = existingDoc.data() as
-          Record<string, unknown> | undefined;
+          | Record<string, unknown>
+          | undefined;
         if (existing?.source === 'manual') {
           const diffs = diffAutoVsManual(
-            record as unknown as Record<string, unknown>, existing
+            record as unknown as Record<string, unknown>,
+            existing
           );
           if (diffs.length > 0) {
             logger.warn('Manual override kept; auto read disagrees', {
-              fileId, docId, diffs,
+              fileId,
+              docId,
+              diffs,
             });
             await sendAlert(
               `Manual override kept for ${filename}`,
-              diffs.map((x) =>
-                `${x.key}: auto ${x.auto} vs manual ${x.manual}`).join('\n'),
+              diffs
+                .map((x) => `${x.key}: auto ${x.auto} vs manual ${x.manual}`)
+                .join('\n'),
               `manual-diff-${docId}`
             );
           }
           const nowManual = Date.now();
+          currentStage = 'appended';
+          const emailSent = await sendPipelineSuccessEmail({
+            filename,
+            fileId,
+            record,
+            tabTitle: year || '2026',
+            action: 'MANUAL_OVERRIDE_KEPT',
+            autoVsManualDiffs: diffs,
+            durationMs:
+              typeof detectedAt === 'number'
+                ? nowManual - detectedAt
+                : undefined,
+            uploaderEmail,
+          });
+          const recipients = resolveOutcomeRecipients(uploaderEmail);
+          const notification = {
+            emailSent,
+            recipients,
+            sentAt: nowManual,
+          };
+
           await recordStage(fileId, 'appended', {
             manualOverrideKept: true,
             autoVsManualDiffs: diffs,
@@ -98,18 +146,23 @@ export const processPendingPdf = onDocumentWritten(
             ...(typeof detectedAt === 'number'
               ? { durationMs: nowManual - detectedAt }
               : {}),
+            notification,
           });
           logger.info('Kept manual override; skipped writes', {
-            fileId, docId, diffCount: diffs.length,
+            fileId,
+            docId,
+            diffCount: diffs.length,
           });
           return;
         }
 
         // 3. Ensure tab
+        currentStage = 'routing';
         await recordStage(fileId, 'routing');
         const tabTitle = await ensureYearTab(record.date);
 
         // 4. Append
+        currentStage = 'upserting';
         await recordStage(fileId, 'upserting');
         const action = await upsertRow(tabTitle, record);
         await logAuditTrail(action, record);
@@ -126,9 +179,7 @@ export const processPendingPdf = onDocumentWritten(
           .doc(timestampId)
           .set(record);
 
-        // 4.6 Quality check (SM-56): flag any value that deviates sharply
-        // from recent weeks — a safety net for extraction misreads on the
-        // dense image tables (e.g. inoculant 308 read as 200). Non-blocking.
+        // 4.6 Quality check (SM-56): flag deviations from recent weeks
         let qualityOutliers: ReturnType<typeof detectOutliers> = [];
         try {
           const histSnap = await getFirestore()
@@ -140,19 +191,23 @@ export const processPendingPdf = onDocumentWritten(
             .filter((d) => d.id !== docId)
             .map((d) => d.data() as Record<string, unknown>);
           qualityOutliers = detectOutliers(
-            record as unknown as Record<string, unknown>, history
+            record as unknown as Record<string, unknown>,
+            history
           );
           if (qualityOutliers.length > 0) {
             logger.warn('Extraction quality: outliers detected', {
-              fileId, outliers: qualityOutliers,
+              fileId,
+              outliers: qualityOutliers,
             });
             await sendAlert(
               `Extraction check: ${qualityOutliers.length} outlier(s) ` +
                 `in ${filename}`,
               qualityOutliers
-                .map((o) =>
-                  `${o.label}: ${o.value} vs ~${o.baseline} ` +
-                  `(${o.deviationPct > 0 ? '+' : ''}${o.deviationPct}%)`)
+                .map(
+                  (o) =>
+                    `${o.label}: ${o.value} vs ~${o.baseline} ` +
+                    `(${o.deviationPct > 0 ? '+' : ''}${o.deviationPct}%)`
+                )
                 .join('\n'),
               `outlier-${docId}`
             );
@@ -162,6 +217,7 @@ export const processPendingPdf = onDocumentWritten(
         }
 
         // 5. Success
+        currentStage = 'appended';
         const now = Date.now();
         const tokensIn = usage.promptTokenCount || 0;
         const tokensOut = usage.candidatesTokenCount || 0;
@@ -172,6 +228,29 @@ export const processPendingPdf = onDocumentWritten(
           tokensOut,
           thinkingTokens
         );
+
+        const emailSent = await sendPipelineSuccessEmail({
+          filename,
+          fileId,
+          record,
+          tabTitle,
+          action: action as 'APPEND' | 'UPDATE',
+          durationMs:
+            typeof detectedAt === 'number' ? now - detectedAt : undefined,
+          tokensIn,
+          tokensOut,
+          totalTokens,
+          estCostUsd: estimatedUsd,
+          qualityOutliers,
+          uploaderEmail,
+        });
+        const recipients = resolveOutcomeRecipients(uploaderEmail);
+        const notification = {
+          emailSent,
+          recipients,
+          sentAt: now,
+        };
+
         await recordStage(fileId, 'appended', {
           gemini: {
             tokensIn,
@@ -188,20 +267,40 @@ export const processPendingPdf = onDocumentWritten(
           ...(typeof detectedAt === 'number'
             ? { durationMs: now - detectedAt }
             : {}),
+          notification,
         });
 
         logger.info(`Successfully processed PDF`, {
           fileId,
           costTokens: usage.totalTokenCount,
         });
-
       } catch (err: unknown) {
         // 6. Failure handling
         const error = err as Error;
-        logger.error(`Failed to process PDF`, { fileId, error: error.message });
+        logger.error(`Failed to process PDF`, {
+          fileId,
+          error: error.message,
+        });
+
+        const nowFail = Date.now();
+        const emailSent = await sendPipelineFailureEmail({
+          fileId,
+          filename: fileNameRecorded,
+          failingStage: currentStage,
+          errorMessage: error.message,
+          timestamp: nowFail,
+          uploaderEmail,
+        });
+        const recipients = resolveOutcomeRecipients(uploaderEmail);
+        const notification = {
+          emailSent,
+          recipients,
+          sentAt: nowFail,
+        };
 
         await recordStage(fileId, 'failed', {
-          error: { stage: 'process', message: error.message }
+          error: { stage: currentStage, message: error.message },
+          notification,
         });
 
         await sendAlert(

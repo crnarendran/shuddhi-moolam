@@ -9,22 +9,24 @@ const MAX_PDF_SIZE_BYTES =
 
 /**
  * Downloads a PDF file from Google Drive into a Buffer.
- * Checks mimeType and size constraints before downloading.
+ * Checks mimeType and size constraints before downloading, and extracts
+ * the uploader's email address if present (SM-62).
  * @param {string} fileId - The ID of the Drive file to download.
- * @returns {Promise<{buffer: Buffer, filename: string}>} A Buffer
- * containing the PDF bytes and its filename.
+ * @returns {Promise<object>} Buffer, filename, and optional uploader email.
  */
 export async function downloadPdf(
   fileId: string
-): Promise<{buffer: Buffer, filename: string}> {
+): Promise<{ buffer: Buffer; filename: string; uploaderEmail?: string }> {
   logger.info(`Fetching metadata for file ${fileId}`);
 
   const meta = await drive.files.get({
     fileId,
-    fields: 'mimeType, size, name',
+    fields:
+      'mimeType, size, name, ' +
+      'lastModifyingUser(emailAddress), owners(emailAddress)',
   });
 
-  const { mimeType, size, name } = meta.data;
+  const { mimeType, size, name, lastModifyingUser, owners } = meta.data;
 
   if (mimeType !== 'application/pdf') {
     throw new Error(
@@ -40,6 +42,9 @@ export async function downloadPdf(
     );
   }
 
+  const uploaderEmail =
+    lastModifyingUser?.emailAddress || owners?.[0]?.emailAddress;
+
   logger.info(`Downloading file ${fileId} (${sizeBytes} bytes)`);
 
   const response = await drive.files.get(
@@ -49,6 +54,7 @@ export async function downloadPdf(
 
   return {
     buffer: Buffer.from(response.data as ArrayBuffer),
-    filename: name || fileId
+    filename: name || fileId,
+    ...(uploaderEmail ? { uploaderEmail } : {}),
   };
 }

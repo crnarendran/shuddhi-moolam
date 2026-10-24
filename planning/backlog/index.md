@@ -14,7 +14,6 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
-| [SM-62](SM-62-pipeline-outcome-email-notifications.md) | Pipeline outcome email notifications (success + failure via Resend) | 3 | SM-05, SM-07, SM-11, SM-41, SM-56, SM-57 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
@@ -43,20 +42,15 @@ the full ticket + implementation notes. Do **not** re-plan these.
 - **Extraction revamp** SM-28, SM-29: 31-component tiered registry +
   re-extraction; cost-optimized extraction (thinking cap, File API, large PDF).
 - **Personalization & Guidance** SM-30…SM-33, SM-35: per-user Firestore
-  settings + self-scoped rules, commodity personalization cascade,
-  companies/materials (BOM), material guidance report, in-product docs.
-- **Product polish** SM-36…SM-39: unified Settings section, print/PDF export,
-  Reports nav consolidation, multi-select overlays + persisted (cross-device)
-  per-report view state.
-- **Sharing, premium & precision** SM-40…SM-42, SM-45…SM-51: ₹/kg price
-  normalization; read-only company sharing (invite/accept/expiry) + premium
-  entitlement gate + founder-only admin panel; grams-per-kg BOM with
-  mass-weighted blended cost; collapsible in-report docs; mobile left slide-in
-  nav; reusable prod→staging/dev seed function; Firestore-rules coverage for
-  env-partitioned companies (SM-44 regression fix); 1-decimal price precision
-  (shared `fmtNum`); persisted shared read-only view.
-- **Per-context selections** SM-52, SM-53: report selections (Seasonal keys,
-  Spreads reference/compare, Guidance materials) are namespaced by view context
+  preferences, guidance cards & charts, formula-based cost estimator,
+  substitution savings, read-only share token (SM-36/37/38 merged).
+- **Multi-tenancy & Security** SM-39…SM-42: multi-tenant company data model,
+  per-company material cost tracking, invite-based read-only sharing (Resend),
+  licensing/plan entitlements gating.
+- **Cost Impact & Spreads UI** SM-44…SM-53: cost impact report, spread charts,
+  range controls, guidance integration, dynamic baseline dates, and
+  tab-routing polish.
+- **Persistent View State** SM-50: report UI controls persist in Firestore
   (`viewState[contextId][report]`) so each workspace/company keeps its own, with
   a per-context in-memory cache for race-free instant restore on switch.
 - **Extraction accuracy** SM-54…SM-56, SM-58, SM-59: exact Rs/tonne figures (no
@@ -97,6 +91,15 @@ the full ticket + implementation notes. Do **not** re-plan these.
   priced average, not as free. Aligns with Cost Impact's grams÷1000 weights.
   Also: Guidance baseline is Q-to-date vs prior calendar quarter; upsert
   matches unpadded date cells (stops duplicate sheet rows).
+- **Pipeline outcome email notifications** SM-62: automated success + failure
+  email notifications via Resend (reusing SM-41 infra, `RESEND_API_KEY`) sent to
+  deduplicated Drive uploader + founders (crnarendran@gmail.com,
+  mvsaikishore@gmail.com). Success email includes issue date, target tab,
+  action (APPEND, UPDATE, MANUAL_OVERRIDE_KEPT), duration/cost, outliers &
+  manual override diffs warnings, HTML summary table of all 16 core commodities
+  (₹/kg), and direct links to Price Review, Monitor, Master Sheet. Failure email
+  includes failing stage, error reason, timestamp, and direct link to Monitor
+  Reprocess. Telemetry records notification outcome on `pipeline_runs/{fileId}`.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

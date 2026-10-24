@@ -2,10 +2,10 @@
 id: SM-62
 title: Pipeline outcome email notifications (success + failure via Resend)
 type: feature
-status: pending
+status: done
 points: 3
 depends_on: [SM-05, SM-07, SM-11, SM-41, SM-56, SM-57]
-tags: [backlog, pipeline, email, notifications, telemetry, drive]
+tags: [archive, pipeline, email, notifications, telemetry, drive]
 ---
 # SM-62 — Pipeline outcome email notifications (success + failure)
 
@@ -24,7 +24,7 @@ whether extraction succeeded or failed.
 
 ## Architecture & Design
 Reuses the existing **Resend** email infrastructure introduced in
-[SM-41](../archive/SM-41-readonly-company-sharing.md) (`functions/src/sharing/email.ts`,
+[SM-41](SM-41-readonly-company-sharing.md) (`functions/src/sharing/email.ts`,
 `RESEND_API_KEY` secret, `FROM = 'Shuddhi-Moolam <sai-shuddhi-moolam-no-reply@narensportal.com>'`)
 and aligns with [ADR-001](../../knowledge/adr/001-event-driven-architecture.md).
 

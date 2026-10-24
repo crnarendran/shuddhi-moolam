@@ -18,7 +18,10 @@ export interface PipelineRun {
   fileName?: string;
   folderPath?: string;
   status: PipelineStatus;
-  stages: Record<string, { startedAt: number; endedAt?: number; ok?: boolean }>;
+  stages: Record<
+    string,
+    { startedAt: number; endedAt?: number; ok?: boolean }
+  >;
   detectedAt: number;
   completedAt?: number;
   issueDate?: string;
@@ -37,6 +40,14 @@ export interface PipelineRun {
   };
   durationMs?: number;
   cost?: { estimatedUsd: number };
+  /** Drive uploader email address (SM-62). */
+  uploaderEmail?: string;
+  /** Outcome email notification telemetry (SM-62). */
+  notification?: {
+    emailSent: boolean;
+    recipients: string[];
+    sentAt: number;
+  };
   /** Values that deviated sharply from recent weeks (SM-56). */
   qualityOutliers?: Outlier[];
   /** A manual override existed, so auto writes were skipped (SM-57). */
@@ -50,7 +61,7 @@ export interface PipelineRun {
  * @param {string} fileId The ID of the file being processed.
  * @param {PipelineStatus} status The new status of the pipeline run.
  * @param {Partial<PipelineRun>} patch Optional fields to update on the record.
- * @returns {Promise<void>} A promise that resolves when the update is complete.
+ * @returns {Promise<void>} A promise that resolves when update completes.
  */
 export async function recordStage(
   fileId: string,
