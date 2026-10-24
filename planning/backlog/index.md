@@ -14,6 +14,7 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
+| [SM-63](SM-63-google-analytics-user-journey-tracking.md) | Google Analytics 4 (GA4) initialization + SPA user journey & feature intelligence tracking | 3 | SM-12, SM-36, SM-38, SM-60 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
