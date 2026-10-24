@@ -28,6 +28,7 @@ interface Message {
 
 import { auth } from '../firebase';
 import { CHAT_ENDPOINT_URL } from '../lib/config';
+import { trackEvent } from '../lib/analytics';
 
 export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean; onClose: () => void; contextText?: string }) {
   const [messages, setMessages] = useState<Message[]>([
@@ -67,6 +68,10 @@ export function AIChatPanel({ isOpen, onClose, contextText }: { isOpen: boolean;
     e?.preventDefault();
     const textToSend = overrideText || input;
     if (!textToSend.trim() || isLoading) return;
+
+    void trackEvent('ai_chat_question_sent', {
+      prompt_length: textToSend.trim().length,
+    });
 
     if (!overrideText) setInput('');
     setIsLoading(true);

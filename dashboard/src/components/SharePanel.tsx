@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Send, RefreshCw, Trash2, Copy, Check } from 'lucide-react';
 import { useInvitations } from '../hooks/useSharing';
 import { inviteDisplayStatus, type InviteDisplayStatus } from '../lib/sharing';
+import { trackEvent } from '../lib/analytics';
 
 const STATUS_STYLE: Record<InviteDisplayStatus, string> = {
   waiting: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 ' +
@@ -38,6 +39,7 @@ export function SharePanel(
     setBusy(true); setNote(null); setLink(null);
     try {
       const r = await create(companyId, to);
+      void trackEvent('share_invite_sent', { company_id: companyId });
       setEmail('');
       setLink(r.acceptUrl);
       setNote(r.emailSent

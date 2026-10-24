@@ -1,4 +1,5 @@
 import { Printer } from 'lucide-react';
+import { trackEvent } from '../lib/analytics';
 
 /**
  * A "Print / PDF" action for a report. Uses the browser's native print
@@ -13,6 +14,9 @@ export function PrintButton(
   { label?: string; orientation?: 'portrait' | 'landscape' }
 ) {
   const handlePrint = () => {
+    void trackEvent('export_report_pdf', {
+      page_path: window.location.hash || '#reports/guidance',
+    });
     const html = document.documentElement;
     const wasDark = html.classList.contains('dark');
     const style = document.createElement('style');

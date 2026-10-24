@@ -13,6 +13,7 @@ import { useView } from '../context/ViewContext';
 import { usePlan } from '../hooks/usePlan';
 import { REPORT_HELP } from '../lib/help';
 import { fmtNum as fmt } from '../lib/format';
+import { trackEvent } from '../lib/analytics';
 
 /** The most recent price record (by dd/MM/yyyy), or null. */
 function latestRecord(records: PriceRecord[]): PriceRecord | null {
@@ -286,12 +287,20 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && newName.trim()) {
-                void addCompany(newName.trim()); setNewName('');
+                const name = newName.trim();
+                void addCompany(name);
+                void trackEvent('company_saved', { company_name: name });
+                setNewName('');
               }
             }} />
           <button className="px-2 rounded-md bg-blue-600 text-white"
             onClick={() => {
-              if (newName.trim()) { void addCompany(newName.trim()); setNewName(''); }
+              if (newName.trim()) {
+                const name = newName.trim();
+                void addCompany(name);
+                void trackEvent('company_saved', { company_name: name });
+                setNewName('');
+              }
             }}><Plus className="h-4 w-4" /></button>
         </div>
         {companies.length === 0 && (
@@ -358,6 +367,10 @@ export function CompaniesPage({ records }: { records: PriceRecord[] }) {
                 onCancel={() => setEditing(null)}
                 onSave={(m) => {
                   void saveMaterial({ ...m, unit: 'per kg' });
+                  void trackEvent('material_saved', {
+                    material_name: m.name,
+                    company_id: active ?? '',
+                  });
                   setEditing(null);
                 }} />
             )}

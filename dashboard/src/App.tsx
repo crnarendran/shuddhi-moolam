@@ -18,10 +18,15 @@ import { SubTabs, type SubTab } from './components/SubTabs';
 import { AIChatPanel } from './components/AIChatPanel';
 import { ContextSwitcher } from './components/ContextSwitcher';
 import { useView } from './context/ViewContext';
-import { useIsAdmin, usePlan } from './hooks/usePlan';
+import { useIsAdmin, useIsDataEditor, usePlan } from './hooks/usePlan';
 import { useCompanies } from './hooks/useCompanies';
 import { acceptInvite } from './hooks/useSharing';
 import { type PriceRecord } from './lib/reporting';
+import {
+  trackPageView,
+  identifyAnalyticsUser,
+  trackEvent,
+} from './lib/analytics';
 
 // Top-level sections keep the primary nav to three items (no scroll).
 type Section = 'reports' | 'monitor' | 'settings';
@@ -78,10 +83,22 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { shared, setShared } = useView();
   const isAdmin = useIsAdmin();
+  const isDataEditor = useIsDataEditor();
   const { premium } = usePlan();
   const { shared: sharedCompanies } = useCompanies();
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    void identifyAnalyticsUser({
+      uid: user ? user.uid : null,
+      plan: premium ? 'premium' : 'free',
+      isAdmin,
+      isDataEditor,
+      workspaceMode: shared ? 'shared' : 'own',
+    });
+  }, [loading, user, premium, isAdmin, isDataEditor, shared]);
 
   // Free users have no workspace of their own — drop them straight into the
   // company shared with them, so there's no confusing "My workspace" (SM-42).
@@ -139,13 +156,19 @@ function App() {
   // The URL hash is the source of truth for navigation (survives refresh,
   // shareable). Keep component state in sync with it.
   useEffect(() => {
-    const onHash = () => setRoute(parseHash());
+    const onHash = () => {
+      setRoute(parseHash());
+      void trackPageView(window.location.hash);
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
   // Normalise an empty hash to the default report so deep-links are stable.
   useEffect(() => {
-    if (!window.location.hash) window.location.hash = `reports/${DEFAULT_REPORT}`;
+    if (!window.location.hash) {
+      window.location.hash = `reports/${DEFAULT_REPORT}`;
+    }
+    void trackPageView(window.location.hash);
   }, []);
 
   const goToSection = (id: Section) => {
@@ -271,7 +294,13 @@ function App() {
                 multiProduct={section === 'reports' && report === 'guidance'}
               /></div>
               <button
-                onClick={() => setIsDark(!isDark)}
+                onClick={() => {
+                  const next = !isDark;
+                  setIsDark(next);
+                  void trackEvent('theme_toggled', {
+                    theme: next ? 'dark' : 'light',
+                  });
+                }}
                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
                 aria-label="Toggle theme"
               >
@@ -408,7 +437,10 @@ function App() {
 
       {hasChat && !isChatOpen && (
         <button
-          onClick={() => setIsChatOpen(true)}
+          onClick={() => {
+            setIsChatOpen(true);
+            void trackEvent('ai_chat_open', { report });
+          }}
           className="print:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-full shadow-lg transition-colors"
         >
           <MessageSquare className="w-5 h-5" />

@@ -18,6 +18,7 @@ import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
 import { CHART_MAX_DIGITS, fmtChartValue } from '../lib/format';
+import { trackEvent } from '../lib/analytics';
 
 // Empty defaults so an unset selection (first run) is distinguishable from an
 // explicitly cleared one ([]): the former defaults to the first commodity,
@@ -45,7 +46,13 @@ export function SeasonalPage(
     }
     return sv.keys.filter((k) => commodities.some((c) => c.key === k));
   }, [sv.keys, commodities]);
-  const setKeys = (next: string[]) => setSv({ keys: next });
+  const setKeys = (next: string[]) => {
+    setSv({ keys: next });
+    void trackEvent('select_seasonal_commodities', {
+      commodity_keys: next.slice(0, 5).join(','),
+      selected_count: next.length,
+    });
+  };
 
   const labelOf = (k: string) =>
     commodities.find((c) => c.key === k)?.label ?? k;

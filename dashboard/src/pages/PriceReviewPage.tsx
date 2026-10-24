@@ -14,6 +14,7 @@ import { ReportIntro } from '../components/ReportIntro';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 import { fmtNum as fmt } from '../lib/format';
+import { trackEvent } from '../lib/analytics';
 
 const PRICE_REVIEW_DEFAULTS = { threshold: 5 };
 
@@ -40,7 +41,10 @@ export function PriceReviewPage(
   const { value: prView, setValue: setPrView } =
     useViewState('priceReview', PRICE_REVIEW_DEFAULTS);
   const threshold = prView.threshold ?? 5;
-  const setThreshold = (n: number) => setPrView({ threshold: n });
+  const setThreshold = (n: number) => {
+    setPrView({ threshold: n });
+    void trackEvent('change_price_review_threshold', { threshold_pct: n });
+  };
   const { settings } = useUserSettings();
   const { scopeKeys } = useView();
   const commodities = useMemo(

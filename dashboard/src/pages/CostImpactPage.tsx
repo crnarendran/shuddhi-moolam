@@ -15,6 +15,7 @@ import { InfoTip } from '../components/InfoTip';
 import { PrintButton } from '../components/PrintButton';
 import { REPORT_HELP } from '../lib/help';
 import { fmtNum as fmt } from '../lib/format';
+import { trackEvent } from '../lib/analytics';
 
 const STORE_KEY = 'cost_weights_v1';
 
@@ -56,6 +57,7 @@ export function CostImpactPage(
   const setWeight = (key: string, val: number) => {
     const next = { ...weights, [key]: isNaN(val) ? 0 : val };
     setWeights(next);
+    void trackEvent('update_cost_impact_weight', { commodity_key: key });
     // Keep a local fallback (for signed-out use) and persist to the account.
     try { localStorage.setItem(STORE_KEY, JSON.stringify(next)); } catch { /* */ }
     void update({ costImpact: { weights: next } });

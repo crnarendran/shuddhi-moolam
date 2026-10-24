@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { type ReportHelp } from '../lib/help';
+import { trackEvent } from '../lib/analytics';
 
 // One shared preference across every report, persisted so advanced users can
 // collapse the inline docs once and have them stay collapsed (SM-46).
@@ -25,6 +26,10 @@ export function ReportIntro({ help }: { help: ReportHelp }) {
   const [open, setOpen] = useState<boolean>(initialOpen);
   const toggle = () => setOpen((v) => {
     const next = !v;
+    void trackEvent('toggle_report_guide', {
+      title: help.title,
+      expanded: next,
+    });
     try {
       localStorage.setItem(KEY, next ? '1' : '0');
     } catch {

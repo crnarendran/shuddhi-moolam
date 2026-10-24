@@ -8,6 +8,7 @@ import {
 } from '../lib/userSettings';
 import { ReportIntro } from '../components/ReportIntro';
 import { REPORT_HELP } from '../lib/help';
+import { trackEvent } from '../lib/analytics';
 
 const REPORTS: { id: ReportId; label: string }[] = [
   { id: 'price-review', label: 'Price Review' },
@@ -57,16 +58,28 @@ export function SettingsPage() {
 
   const toggleGlobal = (key: string) => {
     const set = new Set(p.globalExcluded);
+    const willExclude = !set.has(key);
     if (set.has(key)) set.delete(key);
     else set.add(key);
+    void trackEvent('commodity_preference_toggled', {
+      scope: 'global',
+      commodity_key: key,
+      action: willExclude ? 'hide' : 'show',
+    });
     save({ ...p, globalExcluded: [...set] });
   };
   const setGlobal = (keys: string[]) => save({ ...p, globalExcluded: keys });
 
   const toggleReport = (reportId: ReportId, key: string) => {
     const cur = new Set(p.reports[reportId]?.excluded ?? []);
+    const willExclude = !cur.has(key);
     if (cur.has(key)) cur.delete(key);
     else cur.add(key);
+    void trackEvent('commodity_preference_toggled', {
+      scope: reportId,
+      commodity_key: key,
+      action: willExclude ? 'hide' : 'show',
+    });
     save({
       ...p,
       reports: { ...p.reports, [reportId]: { excluded: [...cur] } },

@@ -17,6 +17,7 @@ import { MultiSelect } from '../components/MultiSelect';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
 import { fmtChartValue, fmtNum as fmt } from '../lib/format';
+import { trackEvent } from '../lib/analytics';
 
 // Empty defaults so first run (unset) is distinguishable from an explicit
 // clear ([]); first run picks sensible defaults, clear shows an empty-state.
@@ -56,8 +57,17 @@ export function SpreadsPage(
     return sv.compare.filter(has);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sv.compare, commodities, reference]);
-  const setReference = (k: string) => setSv({ reference: k });
-  const setCompare = (next: string[]) => setSv({ compare: next });
+  const setReference = (k: string) => {
+    setSv({ reference: k });
+    void trackEvent('select_spread_reference', { reference_key: k });
+  };
+  const setCompare = (next: string[]) => {
+    setSv({ compare: next });
+    void trackEvent('select_spread_compare', {
+      compare_keys: next.slice(0, 5).join(','),
+      selected_count: next.length,
+    });
+  };
 
   const single = compare.length === 1;
 

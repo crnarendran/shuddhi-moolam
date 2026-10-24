@@ -3,6 +3,7 @@ import { useCompanies } from '../hooks/useCompanies';
 import { usePlan } from '../hooks/usePlan';
 import { useView } from '../context/ViewContext';
 import { MultiSelect } from './MultiSelect';
+import { trackEvent } from '../lib/analytics';
 
 const selCls = 'px-2.5 py-1.5 rounded-md text-sm border bg-white ' +
   'dark:bg-zinc-900 max-w-[11rem] truncate';
@@ -43,7 +44,19 @@ export function ContextSwitcher(
           aria-label="Company"
           className={`${selCls} ${companyBorder}`}
           value={companyId ?? ''}
-          onChange={(e) => setCompany(e.target.value || null)}
+          onChange={(e) => {
+            const val = e.target.value || null;
+            setCompany(val);
+            const context_type = !val
+              ? 'workspace'
+              : sharedCompanies.some((c) => c.id === val)
+                ? 'shared'
+                : 'owned';
+            void trackEvent('select_company_context', {
+              context_type,
+              company_id: val || 'workspace',
+            });
+          }}
         >
           {premium && <option value="">My workspace</option>}
           {companies.map((c) => (
@@ -63,7 +76,14 @@ export function ContextSwitcher(
           label="Products"
           options={materials.map((m) => ({ value: m.id ?? '', label: m.name }))}
           selected={materialIds}
-          onChange={(ids) => setMulti(ids)}
+          onChange={(ids) => {
+            setMulti(ids);
+            void trackEvent('select_product_filter', {
+              mode: 'multi',
+              selected_count: ids.length,
+              has_selection: ids.length > 0,
+            });
+          }}
         />
       ) : (
         <select
@@ -71,7 +91,15 @@ export function ContextSwitcher(
           className={`${selCls} border-zinc-300 dark:border-zinc-700
             text-zinc-700 dark:text-zinc-200`}
           value={materialId ?? ''}
-          onChange={(e) => setSingle(e.target.value || null)}
+          onChange={(e) => {
+            const val = e.target.value || null;
+            setSingle(val);
+            void trackEvent('select_product_filter', {
+              mode: 'single',
+              selected_count: val ? 1 : 0,
+              has_selection: !!val,
+            });
+          }}
         >
           <option value="">All products</option>
           {materials.map((m) => (

@@ -2,7 +2,7 @@
 id: SM-63
 title: Google Analytics 4 (GA4) initialization + SPA user journey & feature intelligence tracking
 type: feature
-status: pending
+status: done
 points: 3
 depends_on: [SM-12, SM-36, SM-38, SM-60]
 tags: [backlog, dashboard, analytics, ga4, telemetry, ux]
