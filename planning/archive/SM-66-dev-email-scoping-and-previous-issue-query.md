@@ -1,7 +1,7 @@
 ---
 id: SM-66
 title: Dev email recipient scoping and indexless previous issue query
-status: in_progress
+status: shipped
 points: 2
 assigned_to: sm-orchestrator
 created_at: 2026-11-04
