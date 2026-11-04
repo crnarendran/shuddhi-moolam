@@ -22,29 +22,50 @@ describe('Outcome Email Notifications (SM-62)', () => {
   });
 
   describe('resolveOutcomeRecipients', () => {
-    it('returns founder emails when uploader is missing', () => {
-      const recipients = resolveOutcomeRecipients(undefined);
+    it('restricts recipients strictly to crnarendran@gmail.com in dev', () => {
+      expect(resolveOutcomeRecipients(undefined, 'dev')).toEqual([
+        'crnarendran@gmail.com',
+      ]);
+      expect(
+        resolveOutcomeRecipients('vendor@supplier.com', 'dev')
+      ).toEqual(['crnarendran@gmail.com']);
+      expect(
+        resolveOutcomeRecipients('mvsaikishore@gmail.com', 'dev')
+      ).toEqual(['crnarendran@gmail.com']);
+    });
+
+    it('returns founder emails in non-dev when uploader is missing', () => {
+      const recipients = resolveOutcomeRecipients(undefined, 'prod');
       expect(recipients).toEqual(
         FOUNDER_EMAILS.map((e) => e.toLowerCase())
       );
     });
 
-    it('includes valid uploader email deduplicated with founders', () => {
-      const recipients = resolveOutcomeRecipients('CRNARENDRAN@GMAIL.COM');
-      expect(recipients).toEqual(
-        FOUNDER_EMAILS.map((e) => e.toLowerCase())
-      );
+    it('includes valid uploader in non-dev envs deduplicated with founders',
+      () => {
+        const recipients = resolveOutcomeRecipients(
+          'CRNARENDRAN@GMAIL.COM',
+          'prod'
+        );
+        expect(recipients).toEqual(
+          FOUNDER_EMAILS.map((e) => e.toLowerCase())
+        );
 
-      const custom = resolveOutcomeRecipients('vendor@supplier.com');
-      expect(custom).toContain('vendor@supplier.com');
-      expect(custom).toContain('crnarendran@gmail.com');
-      expect(custom).toContain('mvsaikishore@gmail.com');
-      expect(custom.length).toBe(3);
-    });
+        const custom = resolveOutcomeRecipients(
+          'vendor@supplier.com',
+          'staging'
+        );
+        expect(custom).toContain('vendor@supplier.com');
+        expect(custom).toContain('crnarendran@gmail.com');
+        expect(custom).toContain('mvsaikishore@gmail.com');
+        expect(custom.length).toBe(3);
+      }
+    );
 
-    it('filters out service account emails (*.gserviceaccount.com)', () => {
+    it('filters out service account emails in non-dev', () => {
       const recipients = resolveOutcomeRecipients(
-        'bot@sai-shuddhi-moolam.iam.gserviceaccount.com'
+        'bot@sai-shuddhi-moolam.iam.gserviceaccount.com',
+        'prod'
       );
       expect(recipients).toEqual(
         FOUNDER_EMAILS.map((e) => e.toLowerCase())
@@ -108,11 +129,9 @@ describe('Outcome Email Notifications (SM-62)', () => {
         expect(mockSend).toHaveBeenCalledTimes(1);
         const callArgs = mockSend.mock.calls[0][0];
         expect(callArgs.from).toBe(OUTCOME_EMAIL_FROM);
-        expect(callArgs.to).toEqual([
-          'analyst@domain.com',
-          'crnarendran@gmail.com',
-          'mvsaikishore@gmail.com',
-        ]);
+        // In dev (default test env), recipient is scoped
+        // to crnarendran@gmail.com (SM-66).
+        expect(callArgs.to).toEqual(['crnarendran@gmail.com']);
         expect(callArgs.subject).toBe(
           'Shuddhi-Moolam: Processed MMR_10082026.pdf (Issue 10/08/2026)'
         );
@@ -243,7 +262,9 @@ describe('Outcome Email Notifications (SM-62)', () => {
         expect(res).toBe(true);
         expect(mockSend).toHaveBeenCalledTimes(1);
         const callArgs = mockSend.mock.calls[0][0];
-        expect(callArgs.to).toContain('uploader@domain.com');
+        // In dev (default test env), recipient is scoped
+        // to crnarendran@gmail.com (SM-66).
+        expect(callArgs.to).toEqual(['crnarendran@gmail.com']);
         expect(callArgs.subject).toBe(
           'Shuddhi-Moolam: Failed to process corrupted.pdf'
         );

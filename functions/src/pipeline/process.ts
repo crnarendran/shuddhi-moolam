@@ -28,8 +28,11 @@ const resendApiKeySecret = defineSecret('RESEND_API_KEY');
 const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 1;
 
 /**
- * Fetches the closest earlier historical record strictly before docId (SM-64).
- * Returns null if no earlier issue exists or if the query fails.
+ * Fetches the closest earlier historical record strictly before docId
+ * (SM-64, SM-66). Returns null if no earlier issue exists or if the query
+ * fails. Avoids explicit .orderBy(desc) which requires a composite index
+ * in Firestore; natural order of __name__ is ascending, so the last doc in
+ * the result set is the closest preceding issue.
  * @param {string} docId Current document ID (yyyy-MM-dd).
  * @returns {Promise<Record<string, unknown> | null>} Previous record or null.
  */
@@ -42,13 +45,12 @@ async function getPreviousIssue(
     const snap = await getFirestore()
       .collection(historicalCol)
       .where(FieldPath.documentId(), '<', docId)
-      .orderBy(FieldPath.documentId(), 'desc')
-      .limit(1)
       .get();
     if (snap.empty || !snap.docs || snap.docs.length === 0) {
       return null;
     }
-    return snap.docs[0].data() as Record<string, unknown>;
+    const closest = snap.docs[snap.docs.length - 1];
+    return closest.data() as Record<string, unknown>;
   } catch (err) {
     logger.warn('Failed to fetch previous issue for comparison', {
       docId,

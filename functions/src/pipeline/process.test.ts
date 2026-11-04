@@ -17,6 +17,7 @@ import {
 // exercise the guard.
 let mockManualDocData: Record<string, unknown> | undefined;
 let mockPreviousDocData: Record<string, unknown> | null = null;
+let mockPreviousDocs: Array<Record<string, unknown>> | null = null;
 let mockPreviousQueryThrows = false;
 let lastWhereArgs: unknown[] = [];
 
@@ -48,6 +49,15 @@ jest.mock('firebase-admin/firestore', () => {
         if (hasWhere) {
           if (mockPreviousQueryThrows) {
             return Promise.reject(new Error('Firestore read error'));
+          }
+          if (mockPreviousDocs && mockPreviousDocs.length > 0) {
+            return Promise.resolve({
+              empty: false,
+              docs: mockPreviousDocs.map((d, i) => ({
+                id: `prev-${i}`,
+                data: () => d,
+              })),
+            });
           }
           if (!mockPreviousDocData) {
             return Promise.resolve({ empty: true, docs: [] });
@@ -93,6 +103,7 @@ describe('processPendingPdf', () => {
     jest.clearAllMocks();
     mockManualDocData = undefined;
     mockPreviousDocData = null;
+    mockPreviousDocs = null;
     mockPreviousQueryThrows = false;
     lastWhereArgs = [];
     (resolveOutcomeRecipients as jest.Mock).mockReturnValue([
@@ -262,6 +273,37 @@ describe('processPendingPdf', () => {
       expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           previousRecord: mockPreviousDocData,
+        })
+      );
+    }
+  );
+
+  it('selects closest earlier issue when multiple earlier docs exist',
+    async () => {
+      const earlier1 = { date: '13/07/2026', copper_cathode: '1350' };
+      const earlier2 = { date: '20/07/2026', copper_cathode: '1379' };
+      mockPreviousDocs = [earlier1, earlier2];
+      (downloadPdf as jest.Mock).mockResolvedValue({
+        buffer: Buffer.from('pdf'),
+        filename: 'test.pdf',
+        uploaderEmail: 'uploader@example.com',
+      });
+      (extractPricesConsensus as jest.Mock).mockResolvedValue({
+        data: { date: '27/07/2026', copper_cathode: '1392' },
+        route: 'inline',
+        usage: { totalTokenCount: 100 },
+      });
+      (ensureYearTab as jest.Mock).mockResolvedValue('2026');
+      (upsertRow as jest.Mock).mockResolvedValue('insert');
+
+      const handler = processPendingPdf as unknown as {
+        run: (e: unknown) => Promise<void>;
+      };
+      await handler.run(mockEvent);
+
+      expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousRecord: earlier2,
         })
       );
     }

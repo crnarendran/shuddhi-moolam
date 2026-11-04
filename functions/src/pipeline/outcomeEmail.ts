@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import * as logger from 'firebase-functions/logger';
 import { COMPONENTS } from '../gemini/components';
-import { APP_BASE_URL, MASTER_SHEET_ID } from '../config';
+import { APP_BASE_URL, APP_ENV, MASTER_SHEET_ID } from '../config';
 import { type Outlier } from '../reporting/outliers';
 import { computeChanges, formatPriceChange } from './priceChange';
 
@@ -42,10 +42,18 @@ export interface PipelineFailureEmailOptions {
 /**
  * Resolves deduplicated, lowercased recipients for pipeline outcome
  * notifications. Ignores automated service account emails.
+ * Restricts recipients strictly to crnarendran@gmail.com in dev (SM-66).
  * @param {string} [uploaderEmail] Optional uploader email from Drive.
+ * @param {string} [env] Target environment (defaults to APP_ENV).
  * @returns {string[]} Deduplicated list of recipient email addresses.
  */
-export function resolveOutcomeRecipients(uploaderEmail?: string): string[] {
+export function resolveOutcomeRecipients(
+  uploaderEmail?: string,
+  env: string = APP_ENV
+): string[] {
+  if (env === 'dev') {
+    return ['crnarendran@gmail.com'];
+  }
   const set = new Set<string>();
   if (uploaderEmail) {
     const clean = uploaderEmail.trim().toLowerCase();
