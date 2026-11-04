@@ -54,7 +54,7 @@ jobs:
       - if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
         run: npm install
       - name: Sync docs

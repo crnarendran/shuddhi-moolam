@@ -11,7 +11,7 @@
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "dependencies": {
@@ -29,7 +29,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.9",
+    "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "eslint": "^8.57.0",
