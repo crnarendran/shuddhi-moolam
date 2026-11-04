@@ -2,7 +2,7 @@
 id: SM-64
 title: Outcome email — price trend + change vs previous issue columns
 type: feature
-status: pending
+status: done
 points: 2
 depends_on: [SM-62, SM-40, SM-50]
 tags: [backlog, pipeline, email, notifications, reporting]

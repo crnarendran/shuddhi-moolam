@@ -128,6 +128,54 @@ describe('Outcome Email Notifications (SM-62)', () => {
         expect(callArgs.html).toContain('#price-review');
         expect(callArgs.html).toContain('#monitor');
         expect(callArgs.html).toContain('spreadsheets/d/');
+        expect(callArgs.html).toContain('No previous issue found');
+      }
+    );
+
+    it('renders Trend and Change vs prev columns when previousRecord exists',
+      async () => {
+        process.env.RESEND_API_KEY = 're_test_123';
+        const mockSend = jest.fn().mockResolvedValue({ error: null });
+        (Resend as unknown as jest.Mock).mockImplementation(() => ({
+          emails: { send: mockSend },
+        }));
+
+        const res = await sendPipelineSuccessEmail({
+          filename: 'MMR_27072026.pdf',
+          fileId: 'file-2707',
+          record: {
+            date: '27/07/2026',
+            copper_cathode: '1392.00',
+            tin_ingot: '4994.60',
+            melting_foundry_scrap_mumbai: '51',
+            aluminium_ingot: '215',
+          },
+          previousRecord: {
+            date: '20/07/2026',
+            copper_cathode: '1379.60',
+            tin_ingot: '5024.60',
+            melting_foundry_scrap_mumbai: '51',
+            // aluminium_ingot omitted to test missing in previous
+          },
+          tabTitle: '2026',
+          action: 'APPEND',
+        });
+
+        expect(res).toBe(true);
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        const callArgs = mockSend.mock.calls[0][0];
+        expect(callArgs.html).toContain('Trend');
+        expect(callArgs.html).toContain('Change vs prev');
+        expect(callArgs.html).toContain('Change vs previous issue 20/07/2026');
+        // Up trend for copper
+        expect(callArgs.html).toContain('▲ Up');
+        expect(callArgs.html).toContain('+12.40 (+0.9%)');
+        // Down trend for tin
+        expect(callArgs.html).toContain('▼ Down');
+        expect(callArgs.html).toContain('−30.00 (−0.6%)');
+        // Flat trend for scrap
+        expect(callArgs.html).toContain('▬ Flat');
+        expect(callArgs.html).toContain('0.00 (0.0%)');
       }
     );
 

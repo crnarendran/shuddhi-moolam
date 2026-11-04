@@ -27,6 +27,37 @@ const resendApiKeySecret = defineSecret('RESEND_API_KEY');
 // CONSENSUS_RUNS to re-enable majority voting if variance ever returns.
 const consensusRuns = parseInt(process.env.CONSENSUS_RUNS || '', 10) || 1;
 
+/**
+ * Fetches the closest earlier historical record strictly before docId (SM-64).
+ * Returns null if no earlier issue exists or if the query fails.
+ * @param {string} docId Current document ID (yyyy-MM-dd).
+ * @returns {Promise<Record<string, unknown> | null>} Previous record or null.
+ */
+async function getPreviousIssue(
+  docId: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const historicalCol = require('../config').HISTORICAL_COLLECTION;
+    const snap = await getFirestore()
+      .collection(historicalCol)
+      .where(FieldPath.documentId(), '<', docId)
+      .orderBy(FieldPath.documentId(), 'desc')
+      .limit(1)
+      .get();
+    if (snap.empty || !snap.docs || snap.docs.length === 0) {
+      return null;
+    }
+    return snap.docs[0].data() as Record<string, unknown>;
+  } catch (err) {
+    logger.warn('Failed to fetch previous issue for comparison', {
+      docId,
+      error: err,
+    });
+    return null;
+  }
+}
+
 export const processPendingPdf = onDocumentWritten(
   {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -118,10 +149,12 @@ export const processPendingPdf = onDocumentWritten(
           }
           const nowManual = Date.now();
           currentStage = 'appended';
+          const previousRecord = await getPreviousIssue(docId);
           const emailSent = await sendPipelineSuccessEmail({
             filename,
             fileId,
             record,
+            previousRecord,
             tabTitle: year || '2026',
             action: 'MANUAL_OVERRIDE_KEPT',
             autoVsManualDiffs: diffs,
@@ -229,10 +262,12 @@ export const processPendingPdf = onDocumentWritten(
           thinkingTokens
         );
 
+        const previousRecord = await getPreviousIssue(docId);
         const emailSent = await sendPipelineSuccessEmail({
           filename,
           fileId,
           record,
+          previousRecord,
           tabTitle,
           action: action as 'APPEND' | 'UPDATE',
           durationMs:

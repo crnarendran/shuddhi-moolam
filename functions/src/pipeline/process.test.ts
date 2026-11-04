@@ -16,6 +16,9 @@ import {
 // undefined → no manual override (normal path); set to a manual record to
 // exercise the guard.
 let mockManualDocData: Record<string, unknown> | undefined;
+let mockPreviousDocData: Record<string, unknown> | null = null;
+let mockPreviousQueryThrows = false;
+let lastWhereArgs: unknown[] = [];
 
 jest.mock('firebase-admin/firestore', () => {
   const setMock = jest.fn();
@@ -25,16 +28,42 @@ jest.mock('firebase-admin/firestore', () => {
     get: jest.fn(() => Promise.resolve({ data: () => mockManualDocData })),
     collection: jest.fn(),
   };
-  // The SM-56 outlier check queries recent history via
-  // orderBy(...).limit(...).get(); declare those upfront so the chain works.
-  const mockCollection = {
-    doc: jest.fn(() => mockDoc),
-    orderBy: jest.fn(),
-    limit: jest.fn(),
-    get: jest.fn(() => Promise.resolve({ docs: [] })),
+
+  const createQuery = (hasWhere = false) => {
+    const q: {
+      doc: jest.Mock;
+      where: jest.Mock;
+      orderBy: jest.Mock;
+      limit: jest.Mock;
+      get: jest.Mock;
+    } = {
+      doc: jest.fn(() => mockDoc),
+      where: jest.fn((...args: unknown[]) => {
+        lastWhereArgs = args;
+        return createQuery(true);
+      }),
+      orderBy: jest.fn(() => createQuery(hasWhere)),
+      limit: jest.fn(() => createQuery(hasWhere)),
+      get: jest.fn(() => {
+        if (hasWhere) {
+          if (mockPreviousQueryThrows) {
+            return Promise.reject(new Error('Firestore read error'));
+          }
+          if (!mockPreviousDocData) {
+            return Promise.resolve({ empty: true, docs: [] });
+          }
+          return Promise.resolve({
+            empty: false,
+            docs: [{ id: 'prev-id', data: () => mockPreviousDocData }],
+          });
+        }
+        return Promise.resolve({ empty: true, docs: [] });
+      }),
+    };
+    return q;
   };
-  mockCollection.orderBy.mockReturnValue(mockCollection);
-  mockCollection.limit.mockReturnValue(mockCollection);
+
+  const mockCollection = createQuery(false);
   mockDoc.collection.mockReturnValue(mockCollection);
 
   return {
@@ -63,6 +92,9 @@ describe('processPendingPdf', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockManualDocData = undefined;
+    mockPreviousDocData = null;
+    mockPreviousQueryThrows = false;
+    lastWhereArgs = [];
     (resolveOutcomeRecipients as jest.Mock).mockReturnValue([
       'uploader@example.com',
       'crnarendran@gmail.com',
@@ -197,6 +229,68 @@ describe('processPendingPdf', () => {
         expect.objectContaining({
           manualOverrideKept: true,
           notification: expect.objectContaining({ emailSent: true }),
+        })
+      );
+    }
+  );
+
+  it('queries strictly earlier docId and passes previousRecord to email',
+    async () => {
+      mockPreviousDocData = {
+        date: '20/07/2026',
+        copper_cathode: '1379.60',
+      };
+      (downloadPdf as jest.Mock).mockResolvedValue({
+        buffer: Buffer.from('pdf'),
+        filename: 'test.pdf',
+        uploaderEmail: 'uploader@example.com',
+      });
+      (extractPricesConsensus as jest.Mock).mockResolvedValue({
+        data: { date: '27/07/2026', copper_cathode: '1392.00' },
+        route: 'inline',
+        usage: { totalTokenCount: 100 },
+      });
+      (ensureYearTab as jest.Mock).mockResolvedValue('2026');
+      (upsertRow as jest.Mock).mockResolvedValue('insert');
+
+      const handler = processPendingPdf as unknown as {
+        run: (e: unknown) => Promise<void>;
+      };
+      await handler.run(mockEvent);
+
+      expect(lastWhereArgs).toEqual(['documentId', '<', '2026-07-27']);
+      expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousRecord: mockPreviousDocData,
+        })
+      );
+    }
+  );
+
+  it('tolerates previous issue lookup failure and still sends success email',
+    async () => {
+      mockPreviousQueryThrows = true;
+      (downloadPdf as jest.Mock).mockResolvedValue({
+        buffer: Buffer.from('pdf'),
+        filename: 'test.pdf',
+        uploaderEmail: 'uploader@example.com',
+      });
+      (extractPricesConsensus as jest.Mock).mockResolvedValue({
+        data: { date: '27/07/2026' },
+        route: 'inline',
+        usage: { totalTokenCount: 100 },
+      });
+      (ensureYearTab as jest.Mock).mockResolvedValue('2026');
+      (upsertRow as jest.Mock).mockResolvedValue('insert');
+
+      const handler = processPendingPdf as unknown as {
+        run: (e: unknown) => Promise<void>;
+      };
+      await handler.run(mockEvent);
+
+      expect(sendPipelineSuccessEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          previousRecord: null,
         })
       );
     }

@@ -14,7 +14,6 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
-| [SM-64](SM-64-outcome-email-price-change-columns.md) | Outcome email — price trend + change vs previous issue columns | 2 | SM-62, SM-40, SM-50 |
 | [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
 | [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
@@ -107,6 +106,13 @@ the full ticket + implementation notes. Do **not** re-plan these.
   document title synchronization on hash-based SPA routes; user plan, role,
   and workspace identification; dropdown and feature interaction instrumentation
   across company/product context, report controls, AI chat, PDF export, and settings.
+- **Outcome email: price trend & change vs previous issue** SM-64: added Trend
+  (▲ Up / ▼ Down / ▬ Flat / —) and Change vs prev (signed ₹/kg delta + %)
+  columns to the Core Commodity Prices table in the outcome email; pure
+  `computePriceChange` helper with |Δ|<0.005 flat threshold and zero-guard;
+  strictly-earlier historical issue query (< docId) with graceful null fallback
+  on first issue or query error; context subtitle indicating previous issue date
+  or "No previous issue found"; wired across normal and manualOverrideKept paths.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

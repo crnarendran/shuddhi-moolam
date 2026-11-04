@@ -3,6 +3,7 @@ import * as logger from 'firebase-functions/logger';
 import { COMPONENTS } from '../gemini/components';
 import { APP_BASE_URL, MASTER_SHEET_ID } from '../config';
 import { type Outlier } from '../reporting/outliers';
+import { computeChanges, formatPriceChange } from './priceChange';
 
 export const FOUNDER_EMAILS = [
   'crnarendran@gmail.com',
@@ -16,6 +17,7 @@ export interface PipelineSuccessEmailOptions {
   filename: string;
   fileId: string;
   record: Record<string, unknown> & { date: string };
+  previousRecord?: Record<string, unknown> | null;
   tabTitle: string;
   action: 'APPEND' | 'UPDATE' | 'MANUAL_OVERRIDE_KEPT';
   durationMs?: number;
@@ -124,6 +126,21 @@ export async function sendPipelineSuccessEmail(
   }
 
   const coreComponents = COMPONENTS.filter((c) => c.tier === 'core');
+  const coreKeys = coreComponents.map((c) => c.key);
+  const changes = computeChanges(
+    opts.record as Record<string, unknown>,
+    opts.previousRecord ?? null,
+    coreKeys
+  );
+
+  const prevDate =
+    opts.previousRecord && typeof opts.previousRecord.date === 'string'
+      ? opts.previousRecord.date
+      : null;
+  const contextSubtitle = prevDate
+    ? `Change vs previous issue ${prevDate}`
+    : 'No previous issue found';
+
   const tableRows = coreComponents
     .map((c) => {
       const val = opts.record[c.key];
@@ -131,6 +148,7 @@ export async function sendPipelineSuccessEmail(
         val !== undefined && val !== null && String(val).trim() !== ''
           ? String(val)
           : '—';
+      const formatted = formatPriceChange(changes[c.key]);
       return (
         '<tr>' +
         '<td style="padding:6px 10px;border-bottom:1px solid #eee">' +
@@ -140,6 +158,12 @@ export async function sendPipelineSuccessEmail(
         '<td style="padding:6px 10px;border-bottom:1px solid #eee;' +
         'text-align:right;font-family:monospace">' +
         `<b>${displayVal}</b></td>` +
+        '<td style="padding:6px 10px;border-bottom:1px solid #eee;' +
+        'text-align:center;white-space:nowrap;' +
+        `color:${formatted.trendColor}">${formatted.trendText}</td>` +
+        '<td style="padding:6px 10px;border-bottom:1px solid #eee;' +
+        'text-align:right;font-family:monospace;white-space:nowrap;' +
+        `color:${formatted.trendColor}">${formatted.changeText}</td>` +
         '</tr>'
       );
     })
@@ -171,8 +195,10 @@ export async function sendPipelineSuccessEmail(
     `<td style="padding:4px 8px">${costStr} ${tokensStr}</td></tr>` +
     '</table>' +
     warningsHtml +
-    '<h3 style="color:#374151;margin:16px 0 8px;font-size:15px">' +
+    '<h3 style="color:#374151;margin:16px 0 4px;font-size:15px">' +
     'Core Commodity Prices (₹/kg)</h3>' +
+    '<p style="margin:0 0 12px;font-size:12px;color:#6b7280">' +
+    `${contextSubtitle}</p>` +
     '<table style="width:100%;border-collapse:collapse;font-size:13px;' +
     'margin-bottom:20px">' +
     '<thead>' +
@@ -183,6 +209,10 @@ export async function sendPipelineSuccessEmail(
     'Market</th>' +
     '<th style="padding:6px 10px;border-bottom:2px solid #e5e7eb;' +
     'text-align:right">Price (₹/kg)</th>' +
+    '<th style="padding:6px 10px;border-bottom:2px solid #e5e7eb;' +
+    'text-align:center;white-space:nowrap">Trend</th>' +
+    '<th style="padding:6px 10px;border-bottom:2px solid #e5e7eb;' +
+    'text-align:right;white-space:nowrap">Change vs prev</th>' +
     '</tr>' +
     '</thead>' +
     `<tbody>${tableRows}</tbody>` +
