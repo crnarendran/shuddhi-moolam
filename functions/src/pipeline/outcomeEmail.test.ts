@@ -129,9 +129,11 @@ describe('Outcome Email Notifications (SM-62)', () => {
         expect(mockSend).toHaveBeenCalledTimes(1);
         const callArgs = mockSend.mock.calls[0][0];
         expect(callArgs.from).toBe(OUTCOME_EMAIL_FROM);
-        // In dev (default test env), recipient is scoped
-        // to crnarendran@gmail.com (SM-66).
-        expect(callArgs.to).toEqual(['crnarendran@gmail.com']);
+        // Compare against resolveOutcomeRecipients so CI sed-rewriting
+        // APP_ENV on staging/main does not break the test.
+        expect(callArgs.to).toEqual(
+          resolveOutcomeRecipients('analyst@domain.com')
+        );
         expect(callArgs.subject).toBe(
           'Shuddhi-Moolam: Processed MMR_10082026.pdf (Issue 10/08/2026)'
         );
@@ -262,9 +264,9 @@ describe('Outcome Email Notifications (SM-62)', () => {
         expect(res).toBe(true);
         expect(mockSend).toHaveBeenCalledTimes(1);
         const callArgs = mockSend.mock.calls[0][0];
-        // In dev (default test env), recipient is scoped
-        // to crnarendran@gmail.com (SM-66).
-        expect(callArgs.to).toEqual(['crnarendran@gmail.com']);
+        expect(callArgs.to).toEqual(
+          resolveOutcomeRecipients('uploader@domain.com')
+        );
         expect(callArgs.subject).toBe(
           'Shuddhi-Moolam: Failed to process corrupted.pdf'
         );

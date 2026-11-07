@@ -219,11 +219,11 @@ export const processPendingPdf = onDocumentWritten(
         try {
           const histSnap = await getFirestore()
             .collection(historicalCol)
-            .orderBy(FieldPath.documentId(), 'desc')
-            .limit(9)
             .get();
           const history = histSnap.docs
             .filter((d) => d.id !== docId)
+            .slice(-8)
+            .reverse()
             .map((d) => d.data() as Record<string, unknown>);
           qualityOutliers = detectOutliers(
             record as unknown as Record<string, unknown>,
