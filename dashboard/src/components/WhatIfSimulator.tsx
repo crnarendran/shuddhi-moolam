@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type ReactElement, useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -18,6 +18,26 @@ interface Props {
   material: Material;
   latest: PriceRecord | null;
   commodities: Commodity[];
+}
+
+/**
+ * Creates a null-prototype dictionary so keys like `__proto__`,
+ * `toString`, and `constructor` cannot collide with Object.prototype.
+ * @returns {T} Empty null-prototype dictionary.
+ */
+function emptyDict<T>(): T {
+  return Object.create(null) as T;
+}
+
+/**
+ * Safely checks whether `obj` defines `key` as an own property without
+ * walking the prototype chain.
+ * @param {object} obj - Dictionary object to inspect.
+ * @param {string} key - Property key to test.
+ * @returns {boolean} True when `key` is an own property on `obj`.
+ */
+function hasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 /**
@@ -59,19 +79,28 @@ const numInputCls =
  * Lets buyers tweak BOM gram ratios and commodity price moves (%) without
  * persisting changes to Firestore.
  * @param {Props} props - Material recipe, latest price record, commodity list.
+ * @returns {ReactElement} Collapsible what-if simulator panel.
  */
-export function WhatIfSimulator({ material, latest, commodities }: Props) {
+export function WhatIfSimulator({
+  material,
+  latest,
+  commodities,
+}: Props): ReactElement {
   const [open, setOpen] = useState(false);
   const [overrides, setOverrides] = useState<
     Record<string, ScenarioOverride>
-  >({});
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  >(emptyDict);
+  const [rowRatios, setRowRatios] = useState<Record<number, number>>(
+    emptyDict
+  );
+  const [drafts, setDrafts] = useState<Record<string, string>>(emptyDict);
   const [trackedId, setTrackedId] = useState(material.id);
 
   if (trackedId !== material.id) {
     setTrackedId(material.id);
-    setOverrides({});
-    setDrafts({});
+    setOverrides(emptyDict());
+    setRowRatios(emptyDict());
+    setDrafts(emptyDict());
   }
 
   const labelByKey = useMemo(
@@ -86,9 +115,10 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
         latest,
         overrides,
         DEFAULT_SUB_GROUPS,
-        commodities
+        commodities,
+        rowRatios
       ),
-    [material.composition, latest, overrides, commodities]
+    [material.composition, latest, overrides, commodities, rowRatios]
   );
 
   const updateOverride = (
@@ -96,7 +126,8 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
     patch: Partial<ScenarioOverride>
   ) => {
     setOverrides((prev) => {
-      const nextEntry = { ...prev[key], ...patch };
+      const existing = hasOwn(prev, key) ? prev[key] : undefined;
+      const nextEntry: ScenarioOverride = { ...existing, ...patch };
       if (nextEntry.ratio === undefined) delete nextEntry.ratio;
       if (nextEntry.priceDeltaPct === undefined) {
         delete nextEntry.priceDeltaPct;
@@ -104,7 +135,10 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
       if (nextEntry.priceOverride === undefined) {
         delete nextEntry.priceOverride;
       }
-      const next = { ...prev };
+      const next = Object.assign(
+        emptyDict<Record<string, ScenarioOverride>>(),
+        prev
+      );
       if (Object.keys(nextEntry).length === 0) {
         delete next[key];
       } else {
@@ -115,25 +149,60 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
   };
 
   const handleGramsChange = (
-    key: string,
+    idx: number,
     raw: string,
     baseGrams: number
   ) => {
-    setDrafts((prev) => ({ ...prev, [`g:${key}`]: raw }));
+    const draftKey = `g:${idx}`;
+    setDrafts((prev) => {
+      const next = Object.assign(
+        emptyDict<Record<string, string>>(),
+        prev
+      );
+      next[draftKey] = raw;
+      return next;
+    });
     if (raw.trim() === '') {
-      updateOverride(key, { ratio: undefined });
+      setRowRatios((prev) => {
+        if (!hasOwn(prev, String(idx))) return prev;
+        const next = Object.assign(
+          emptyDict<Record<number, number>>(),
+          prev
+        );
+        delete next[idx];
+        return next;
+      });
       return;
     }
     const parsed = Number(raw);
     if (!Number.isFinite(parsed)) return;
     const clamped = Math.max(0, parsed);
-    updateOverride(key, {
-      ratio: clamped === baseGrams ? undefined : clamped,
+    setRowRatios((prev) => {
+      if (clamped === baseGrams) {
+        if (!hasOwn(prev, String(idx))) return prev;
+        const next = Object.assign(
+          emptyDict<Record<number, number>>(),
+          prev
+        );
+        delete next[idx];
+        return next;
+      }
+      const next = Object.assign(emptyDict<Record<number, number>>(), prev);
+      next[idx] = clamped;
+      return next;
     });
   };
 
-  const handlePctChange = (key: string, raw: string) => {
-    setDrafts((prev) => ({ ...prev, [`p:${key}`]: raw }));
+  const handlePctChange = (idx: number, key: string, raw: string) => {
+    const draftKey = `p:${idx}`;
+    setDrafts((prev) => {
+      const next = Object.assign(
+        emptyDict<Record<string, string>>(),
+        prev
+      );
+      next[draftKey] = raw;
+      return next;
+    });
     const trimmed = raw.trim();
     if (trimmed === '' || trimmed === '-') {
       updateOverride(key, { priceDeltaPct: undefined });
@@ -148,19 +217,24 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
 
   const clearDraft = (draftKey: string) => {
     setDrafts((prev) => {
-      if (!(draftKey in prev)) return prev;
-      const next = { ...prev };
+      if (!hasOwn(prev, draftKey)) return prev;
+      const next = Object.assign(emptyDict<Record<string, string>>(), prev);
       delete next[draftKey];
       return next;
     });
   };
 
   const handleReset = () => {
-    setOverrides({});
-    setDrafts({});
+    setOverrides(emptyDict());
+    setRowRatios(emptyDict());
+    setDrafts(emptyDict());
   };
 
   const hasDelta = result.hasChanges && result.delta !== null;
+  const canReset =
+    result.hasChanges ||
+    Object.keys(overrides).length > 0 ||
+    Object.keys(rowRatios).length > 0;
 
   return (
     <div className="mt-4 pt-3 border-t border-zinc-200 dark:border-zinc-700">
@@ -173,7 +247,10 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
             flex items-center gap-2 hover:text-zinc-900
             dark:hover:text-white transition-colors"
         >
-          <SlidersHorizontal className="h-4 w-4 text-zinc-500" />
+          <SlidersHorizontal
+            className="h-4 w-4 text-zinc-500"
+            aria-hidden="true"
+          />
           <span>What-if scenario</span>
           {hasDelta && (
             <span
@@ -186,13 +263,19 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
             </span>
           )}
           {open ? (
-            <ChevronDown className="h-4 w-4 text-zinc-400" />
+            <ChevronDown
+              className="h-4 w-4 text-zinc-400"
+              aria-hidden="true"
+            />
           ) : (
-            <ChevronRight className="h-4 w-4 text-zinc-400" />
+            <ChevronRight
+              className="h-4 w-4 text-zinc-400"
+              aria-hidden="true"
+            />
           )}
         </button>
 
-        {result.hasChanges && (
+        {canReset && (
           <button
             type="button"
             onClick={handleReset}
@@ -202,7 +285,7 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
               dark:border-zinc-700 hover:bg-zinc-100
               dark:hover:bg-zinc-700/60 transition-colors"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             Reset
           </button>
         )}
@@ -269,33 +352,63 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
                   text-[11px] uppercase tracking-wide text-zinc-500
                   dark:text-zinc-400 border-b border-zinc-200
                   dark:border-zinc-700">
-                  <th className="py-2 px-3 font-medium">Commodity</th>
-                  <th className="py-2 px-2 font-medium text-right">
+                  <th scope="col" className="py-2 px-3 font-medium">
+                    Commodity
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-2 px-2 font-medium text-right"
+                  >
                     Grams / kg
                   </th>
-                  <th className="py-2 px-2 font-medium text-right">
+                  <th
+                    scope="col"
+                    className="py-2 px-2 font-medium text-right"
+                  >
                     Price move %
                   </th>
-                  <th className="py-2 px-3 font-medium text-right">
+                  <th
+                    scope="col"
+                    className="py-2 px-3 font-medium text-right"
+                  >
                     Unit price
                   </th>
-                  <th className="py-2 px-3 font-medium text-right">
+                  <th
+                    scope="col"
+                    className="py-2 px-3 font-medium text-right"
+                  >
                     Contribution
                   </th>
-                  <th className="py-2 px-3 font-medium text-right">Delta</th>
+                  <th
+                    scope="col"
+                    className="py-2 px-3 font-medium text-right"
+                  >
+                    Delta
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200
                 dark:divide-zinc-700">
                 {result.items.map((item, idx) => {
                   const label = labelByKey.get(item.key) ?? item.key;
-                  const ov = overrides[item.key];
-                  const gramDraft = drafts[`g:${item.key}`];
-                  const pctDraft = drafts[`p:${item.key}`];
+                  const ov = hasOwn(overrides, item.key)
+                    ? overrides[item.key]
+                    : undefined;
+                  const rowRatio = hasOwn(rowRatios, String(idx))
+                    ? rowRatios[idx]
+                    : undefined;
+                  const gramDraftKey = `g:${idx}`;
+                  const pctDraftKey = `p:${idx}`;
+                  const gramDraft = hasOwn(drafts, gramDraftKey)
+                    ? drafts[gramDraftKey]
+                    : undefined;
+                  const pctDraft = hasOwn(drafts, pctDraftKey)
+                    ? drafts[pctDraftKey]
+                    : undefined;
                   const gramValue =
                     gramDraft !== undefined
                       ? gramDraft
-                      : String(ov?.ratio ?? item.baseGrams);
+                      : String(rowRatio ?? ov?.ratio ?? item.baseGrams);
                   const pctValue =
                     pctDraft !== undefined
                       ? pctDraft
@@ -323,12 +436,12 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
                           value={gramValue}
                           onChange={(e) =>
                             handleGramsChange(
-                              item.key,
+                              idx,
                               e.target.value,
                               item.baseGrams
                             )
                           }
-                          onBlur={() => clearDraft(`g:${item.key}`)}
+                          onBlur={() => clearDraft(gramDraftKey)}
                         />
                       </td>
                       <td className="py-2 px-2 text-right">
@@ -336,14 +449,16 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
                           type="number"
                           step={1}
                           placeholder="0"
-                          disabled={item.basePrice === null}
+                          disabled={
+                            item.basePrice === null || item.basePrice === 0
+                          }
                           aria-label={`${label} price move percent`}
                           className={numInputCls}
                           value={pctValue}
                           onChange={(e) =>
-                            handlePctChange(item.key, e.target.value)
+                            handlePctChange(idx, item.key, e.target.value)
                           }
-                          onBlur={() => clearDraft(`p:${item.key}`)}
+                          onBlur={() => clearDraft(pctDraftKey)}
                         />
                       </td>
                       <td className="py-2 px-3 text-right whitespace-nowrap
@@ -363,13 +478,29 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
                         )}
                       </td>
                       <td className="py-2 px-3 text-right whitespace-nowrap">
-                        ₹{fmt(item.scenarioContribution, 2)}
+                        {item.scenarioContribution === null ? (
+                          '—'
+                        ) : (
+                          <span>
+                            ₹{fmt(item.scenarioContribution, 2)}
+                            {item.scenarioImputed && (
+                              <span
+                                className="ml-1 text-[10px] text-zinc-400
+                                  dark:text-zinc-500"
+                                title="Imputed from priced average"
+                              >
+                                (est)
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </td>
                       <td
                         className={`py-2 px-3 text-right whitespace-nowrap
                           font-medium ${deltaTone(item.deltaContribution)}`}
                       >
-                        {Math.abs(item.deltaContribution) < 1e-9
+                        {item.deltaContribution === null ||
+                        Math.abs(item.deltaContribution) < 1e-9
                           ? '—'
                           : formatSigned(item.deltaContribution, 2)}
                       </td>
@@ -388,8 +519,11 @@ export function WhatIfSimulator({ material, latest, commodities }: Props) {
               </h5>
               <ul className="text-sm text-zinc-700 dark:text-zinc-300
                 space-y-1">
-                {result.scenarioSwaps.map((s) => (
-                  <li key={s.from.key} className="flex items-start gap-2">
+                {result.scenarioSwaps.map((s, idx) => (
+                  <li
+                    key={`${s.from.key}-${s.to.key}-${idx}`}
+                    className="flex items-start gap-2"
+                  >
                     <span className="text-green-600 dark:text-green-400
                       font-semibold">
                       −{fmt(s.saving)}
