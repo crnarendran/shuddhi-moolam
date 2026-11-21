@@ -3,7 +3,7 @@ id: SM-43
 title: Normalize tonne→kg at import + migrate storage & master Sheet to kg
 type: ticket
 points: 5
-status: planned
+status: shipped
 depends_on: [SM-40, SM-05, SM-07]
 tags: [backlog, data, units, migration, pipeline, sheets, careful]
 ---

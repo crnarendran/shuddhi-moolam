@@ -15,6 +15,7 @@ import {
 import { ReportIntro } from '../components/ReportIntro';
 import { InfoTip } from '../components/InfoTip';
 import { PrintButton } from '../components/PrintButton';
+import { WhatIfSimulator } from '../components/WhatIfSimulator';
 import { SERIES_COLORS } from '../lib/chartColors';
 import { REPORT_HELP } from '../lib/help';
 import { fmtNum as fmt } from '../lib/format';
@@ -47,9 +48,17 @@ interface MaterialGuidance {
  * Full guidance block for a single material: cost-vs-baseline tiles, seasonal
  * buy-timing, and cheaper-alternative substitutions. Rendered once per
  * selected material so guidance covers every comparison, not just the first.
- * @param props The pre-computed guidance for one material.
+ * @param props The pre-computed guidance, latest record, and dot flag.
  */
-function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean }) {
+function MaterialCard({
+  g,
+  latest,
+  showDot,
+}: {
+  g: MaterialGuidance;
+  latest: PriceRecord | null;
+  showDot: boolean;
+}) {
   const { material, color, baseline, cheapest, swaps } = g;
   const up = baseline.pct !== null && baseline.pct > 0;
   return (
@@ -146,6 +155,12 @@ function MaterialCard({ g, showDot }: { g: MaterialGuidance; showDot: boolean })
           </ul>
         )}
       </div>
+
+      <WhatIfSimulator
+        material={material}
+        latest={latest}
+        commodities={ALL_COMMODITIES}
+      />
     </div>
   );
 }
@@ -289,7 +304,12 @@ export function GuidancePage(
 
       {/* Full guidance per selected material. */}
       {guidance.map((g) => (
-        <MaterialCard key={g.material.id} g={g} showDot={multi} />
+        <MaterialCard
+          key={g.material.id}
+          g={g}
+          latest={record}
+          showDot={multi}
+        />
       ))}
 
       <p className="text-xs text-zinc-400">
