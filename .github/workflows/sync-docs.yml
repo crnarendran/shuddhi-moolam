@@ -7,12 +7,7 @@ name: Sync Docs to Portal
 #   push to staging -> portal_docs      (env=staging)
 #   push to dev     -> portal_docs_dev  (env=dev)
 #
-# Requires a repo secret holding a Firebase service account JSON key with
-# Firestore write access to docs-portal-staging (and docs-portal-prod for the
-# manual prod run). See knowledge/infrastructure.md for how to provision one —
-# this workflow does not create it. Until the secret exists the job SKIPS (see
-# the `if:` guard) rather than failing red on every push. A new page also needs
-# a one-time docs-portal redeploy before its route exists — see that same doc.
+# Delegated to provider-neutral `scripts/ci/run.mjs sync-docs`.
 
 on:
   push:
@@ -41,67 +36,22 @@ on:
 
 jobs:
   sync-docs:
+    if: vars.CI_PROVIDER != 'cloudbuild'
     runs-on: ubuntu-latest
-    # `secrets` is not available in a job-level `if:`, so surface presence as a
-    # job-level env var (which CAN read secrets) and gate the steps on it. Until
-    # the secret is provisioned the steps skip and the job stays green. A manual
-    # run always proceeds.
-    env:
-      HAS_STAGING_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING != '' }}
     steps:
-      - if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
+      - name: Checkout code
         uses: actions/checkout@v4
-      - if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
+
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
-        run: npm install
-      - name: Sync docs
-        if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
+
+      - name: Sync docs via neutral runner
         env:
-          FIREBASE_SERVICE_ACCOUNT_STAGING: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING }}
-          FIREBASE_SERVICE_ACCOUNT_PROD: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_PROD }}
-        run: |
-          # A manual prod run targets docs-portal-prod / portal_docs. Otherwise
-          # derive the env from the branch that triggered the push: dev writes
-          # the dev preview collection, staging writes the live collection.
-          TARGET="${{ github.event.inputs.target || '' }}"
-          if [ "$TARGET" = "prod" ]; then
-            echo "$FIREBASE_SERVICE_ACCOUNT_PROD" > /tmp/sa.json
-            PROJECT_ID="docs-portal-prod"
-            ENV="staging"
-          else
-            echo "$FIREBASE_SERVICE_ACCOUNT_STAGING" > /tmp/sa.json
-            PROJECT_ID="docs-portal-staging"
-            if [ "${{ github.ref_name }}" = "dev" ]; then ENV="dev"; else ENV="staging"; fi
-          fi
-          export GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json
-          npm run sync:docs -- --env=$ENV --project-id=$PROJECT_ID
-      
-      - name: Trigger Portal Rebuild
-        if: ${{ env.HAS_STAGING_SECRET == 'true' || github.event_name == 'workflow_dispatch' }}
-        env:
+          DOCS_TARGET: ${{ github.event.inputs.target || '' }}
+          FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING }}
+          FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_PROD: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_PROD }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ secrets.DOCS_PORTAL_DISPATCH_TOKEN }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "Skipping portal rebuild: DOCS_PORTAL_DISPATCH_TOKEN not set."
-            exit 0
-          fi
-          
-          if [ "${{ github.event.inputs.target }}" = "prod" ]; then
-            PORTAL_REF="main"
-          elif [ "${{ github.ref_name }}" = "dev" ]; then
-            PORTAL_REF="dev"
-          else
-            PORTAL_REF="staging"
-          fi
-          
-          gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/crnarendran/docs-portal/dispatches \
-            -f "event_type=docs-updated" \
-            -f "client_payload[project]=shuddhi-moolam" \
-            -f "client_payload[ref]=$PORTAL_REF"
+        run: node scripts/ci/run.mjs sync-docs "${{ github.ref_name }}"

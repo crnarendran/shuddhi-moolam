@@ -1,0 +1,53 @@
+# SM-68: Google Cloud Build fallback wrapper for Shuddhi-Moolam.
+# Delegates to provider-neutral `scripts/ci/run.mjs` inside the shared
+# `swarm-ci` image (Node, Java, firebase-tools).
+
+substitutions:
+  _CI_IMAGE: europe-west6-docker.pkg.dev/swarm-ops/ci/swarm-ci:latest
+  _TARGET: deploy
+  _BRANCH: dev
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - CI=1
+    - TZ=UTC
+    - CI_PROVIDER=cloudbuild
+
+timeout: 1800s
+
+steps:
+  - id: deploy
+    name: ${_CI_IMAGE}
+    entrypoint: bash
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        if [ "${_TARGET}" = "deploy" ]; then
+          node scripts/ci/run.mjs deploy "${_BRANCH}"
+        fi
+
+  - id: sync-docs
+    name: ${_CI_IMAGE}
+    entrypoint: bash
+    secretEnv:
+      - FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING
+    args:
+      - -euo
+      - pipefail
+      - -c
+      - |
+        if [ "${_TARGET}" = "sync-docs" ]; then
+          SYNC_BRANCH="${BRANCH_NAME}"
+          if [ -z "$${SYNC_BRANCH}" ]; then
+            SYNC_BRANCH="${_BRANCH}"
+          fi
+          node scripts/ci/run.mjs sync-docs "$${SYNC_BRANCH}"
+        fi
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING/versions/latest
+      env: FIREBASE_SERVICE_ACCOUNT_DOCS_PORTAL_STAGING

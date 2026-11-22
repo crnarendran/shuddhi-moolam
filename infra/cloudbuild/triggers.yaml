@@ -1,0 +1,61 @@
+# SM-68: Cloud Build trigger specifications mirroring `.github/workflows/`.
+# Imported disabled by `scripts/ci/create-triggers.mjs --apply`.
+
+triggers:
+  - name: shuddhi-moolam-deploy-dev
+    workflow: deploy.yml
+    description: Build, test, and deploy dev environment on dev push
+    filename: cloudbuild.yaml
+    disabled: true
+    repositoryEventConfig:
+      push:
+        branch: "^dev$"
+    substitutions:
+      _TARGET: deploy
+      _BRANCH: dev
+
+  - name: shuddhi-moolam-deploy-staging
+    workflow: deploy.yml
+    description: Build, test, and deploy staging environment on staging push
+    filename: cloudbuild.yaml
+    disabled: true
+    repositoryEventConfig:
+      push:
+        branch: "^staging$"
+    substitutions:
+      _TARGET: deploy
+      _BRANCH: staging
+
+  - name: shuddhi-moolam-deploy-prod
+    workflow: deploy.yml
+    description: Build, test, and deploy prod environment on main push
+    filename: cloudbuild.yaml
+    disabled: true
+    repositoryEventConfig:
+      push:
+        branch: "^main$"
+    substitutions:
+      _TARGET: deploy
+      _BRANCH: main
+
+  - name: shuddhi-moolam-sync-docs
+    workflow: sync-docs.yml
+    description: Sync docs to docs-portal-staging on dev or staging push
+    filename: cloudbuild.yaml
+    disabled: true
+    repositoryEventConfig:
+      push:
+        branch: "^(dev|staging)$"
+    includedFiles:
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/**"
+      - "knowledge/**"
+      - "planning/**"
+      - ".agents/skills/**"
+      - "scripts/syncDocs.ts"
+      - ".github/workflows/sync-docs.yml"
+      - "scripts/ci/**"
+      - "cloudbuild.yaml"
+    substitutions:
+      _TARGET: sync-docs

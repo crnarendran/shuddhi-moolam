@@ -121,6 +121,13 @@ the full ticket + implementation notes. Do **not** re-plan these.
   (`scenario.ts`) + collapsible `WhatIfSimulator` panel on `GuidancePage` for
   ephemeral BOM gram tweaks and commodity price moves (`%`), showing blended
   cost delta, per-commodity breakdown, and recalculated swap suggestions.
+- **Cloud Build fallback CI & provider-neutral wrappers** SM-68: extracted
+  `deploy` and `sync-docs` logic into `scripts/ci/run.mjs` (ADC on Cloud
+  Build, `try...finally` temp-key cleanup, fail-closed `APP_ENV` rewrite,
+  native `fetch()` portal dispatch); wrapped `deploy.yml` and `sync-docs.yml`
+  with `if: vars.CI_PROVIDER != 'cloudbuild'`; added `cloudbuild.yaml`,
+  `infra/cloudbuild/triggers.yaml` (4 disabled triggers), `create-triggers.mjs`,
+  and `ciWrappers.test.ts` parity tests.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.
