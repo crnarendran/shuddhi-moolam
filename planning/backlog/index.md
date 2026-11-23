@@ -15,7 +15,7 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | ID | Title | Points | Depends on |
 |---|---|---|---|
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
-| [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting & scheduled alerts (Sharing shipped in SM-39–41; What-If extracted to SM-67) | 8 | SM-33 |
+| [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — scheduled alerts (Sharing shipped in SM-39–41; What-If extracted to SM-67; Forecasting shipped in SM-69) | 5 | SM-33 |
 
 New tweaks/features get the next free id (SM-40+). Add a row here and a ticket
 file, then implement dev → staging → main.
@@ -128,6 +128,10 @@ the full ticket + implementation notes. Do **not** re-plan these.
   with `if: vars.CI_PROVIDER != 'cloudbuild'`; added `cloudbuild.yaml`,
   `infra/cloudbuild/triggers.yaml` (4 disabled triggers), `create-triggers.mjs`,
   and `ciWrappers.test.ts` parity tests.
+- **Guidance 3-Month Forecasting with Confidence Bands** SM-69 *(on
+  `shuddhi-moolam/dev`)*: damped Holt linear trend (`forecast.ts`) with
+  rolling-origin backtest MAE/MAPE, 80% `sqrt(h)` confidence intervals,
+  single-material `GuidancePage` chart band overlay, and monthly card summary.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.
