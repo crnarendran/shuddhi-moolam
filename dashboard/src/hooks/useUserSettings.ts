@@ -10,15 +10,16 @@ import {
 
 interface UseUserSettings {
   settings: UserSettings;
-  update: (patch: Partial<UserSettings>) => Promise<void>;
+  update: (patch: Partial<UserSettings>) => Promise<boolean>;
   loading: boolean;
   signedIn: boolean;
 }
 
 /**
  * Subscribes to the signed-in user's `user_settings/{uid}` doc and exposes
- * an optimistic `update(patch)`. When signed out it returns defaults and
- * `update` is a no-op (nothing to persist). Self-contained: it tracks auth
+ * an optimistic `update(patch)` returning `true` when persisted or `false`
+ * on failure (rolling back local state). When signed out it returns defaults
+ * and `update` is a no-op returning `false`. Self-contained: it tracks auth
  * itself, so any component can call it without prop-drilling the user.
  * @returns {UseUserSettings} settings, update, loading, signedIn.
  */
@@ -57,18 +58,22 @@ export function useUserSettings(): UseUserSettings {
   }, [uid]);
 
   const update = useCallback(
-    async (patch: Partial<UserSettings>) => {
-      if (!uid) return;
-      const next = mergeSettings(settingsRef.current, {
+    async (patch: Partial<UserSettings>): Promise<boolean> => {
+      if (!uid) return false;
+      const prev = settingsRef.current;
+      const next = mergeSettings(prev, {
         ...patch,
         updatedAt: Date.now(),
       });
       setSettings(next);
       try {
         await setDoc(doc(db, 'user_settings', uid), next, { merge: true });
+        return true;
       } catch (e) {
         // Surface instead of silently dropping the write.
         console.error('Failed to save settings', e);
+        setSettings(prev);
+        return false;
       }
     },
     [uid]

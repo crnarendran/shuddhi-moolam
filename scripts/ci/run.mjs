@@ -34,6 +34,7 @@ export const CLOUD_FUNCTIONS = [
   'renewWatch',
   'chatEndpoint',
   'priceReviewAlert',
+  'guidanceAlert',
   'clearTabs',
   'createInvitation',
   'acceptInvitation',

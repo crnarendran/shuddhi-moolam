@@ -15,7 +15,6 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 | ID | Title | Points | Depends on |
 |---|---|---|---|
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
-| [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — scheduled alerts (Sharing shipped in SM-39–41; What-If extracted to SM-67; Forecasting shipped in SM-69) | 5 | SM-33 |
 
 New tweaks/features get the next free id (SM-40+). Add a row here and a ticket
 file, then implement dev → staging → main.
@@ -132,6 +131,12 @@ the full ticket + implementation notes. Do **not** re-plan these.
   `shuddhi-moolam/dev`)*: damped Holt linear trend (`forecast.ts`) with
   rolling-origin backtest MAE/MAPE, 80% `sqrt(h)` confidence intervals,
   single-material `GuidancePage` chart band overlay, and monthly card summary.
+- **Weekly scheduled guidance buy-window alerts** SM-70 *(on
+  `shuddhi-moolam/dev`; completes `SM-34`)*: per-user opt-in + validated email +
+  dip threshold (`userSettings` / `SettingsPage`), Monday cron
+  `guidanceAlert${suffix}` verifying premium entitlement, SM-61 quarterly &
+  next-month seasonal buy signals, and strict non-prod email pinning to
+  `crnarendran@gmail.com`.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

@@ -22,6 +22,7 @@ const EXPECTED_FUNCS = [
   'renewWatch',
   'chatEndpoint',
   'priceReviewAlert',
+  'guidanceAlert',
   'clearTabs',
   'createInvitation',
   'acceptInvitation',
