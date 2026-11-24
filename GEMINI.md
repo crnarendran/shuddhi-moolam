@@ -1,4 +1,4 @@
-<!-- BEGIN GENERATED: swarm-protocol-gemini from swarm-ops GEMINI.md @ 3c2b1b36. Do not edit here: change swarm-ops GEMINI.md and run its scripts/sync-agents-protocol.mjs (§17). -->
+<!-- BEGIN GENERATED: swarm-protocol-gemini from swarm-ops GEMINI.md @ 1725b7a5. Do not edit here: change swarm-ops GEMINI.md and run its scripts/sync-agents-protocol.mjs (§17). -->
 
 ## 0. About this file
 
@@ -239,7 +239,8 @@ chat. A fallback carries the report, never the tool's job.
 - **18.6 One orchestrator per project.** "The orchestrator" means the one
   for the project the work belongs to: `sanjeev-ai/orch-sanjeev-<N>`;
   `swarm-ops/orch-swarm-<N>` (also docs-portal and swarmkit);
-  `shuddhi-moolam/sm-orchestrator`; `dhanavardhana/dv-orchestrator`. The
+  `shuddhi-moolam/sm-orchestrator`; `dhanavardhana/dv-orchestrator`;
+  `pattarai/orch-pattarai-<N>`. The
   live address is on the roster.
   Blocking questions go to your own project's orchestrator. Swarm
   infrastructure (mailbox, locks, queue, dispatcher, watchers) and this

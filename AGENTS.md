@@ -163,7 +163,7 @@ URL after (a) it reaches the `portal_docs` collection via a `staging` sync and
 (b) the `docs-portal` app is redeployed so its static route regenerates — see
 `knowledge/infrastructure.md`.
 
-<!-- BEGIN GENERATED: swarm-protocol from swarm-ops AGENTS.md @ 3c2b1b36. Do not edit here: change swarm-ops AGENTS.md and run its scripts/sync-agents-protocol.mjs (§17). -->
+<!-- BEGIN GENERATED: swarm-protocol from swarm-ops AGENTS.md @ 1725b7a5. Do not edit here: change swarm-ops AGENTS.md and run its scripts/sync-agents-protocol.mjs (§17). -->
 
 ## 5. Swarm Architecture (Multi-Agent Roles)
 
@@ -1253,6 +1253,7 @@ spans projects.
 | swarm-ops | `swarm-ops/orch-swarm-<N>` | docs-portal, swarmkit (swarm tooling and the framework) |
 | shuddhi-moolam | `shuddhi-moolam/sm-orchestrator` | — |
 | dhanavardhana | `dhanavardhana/dv-orchestrator` | — |
+| pattarai | `pattarai/orch-pattarai-<N>` | — |
 
 `<N>` counts successors (`orch-sanjeev-1`, then `-2` at the next §16.4
 retirement). The live address is whatever the roster shows; the handoff file
