@@ -137,6 +137,12 @@ the full ticket + implementation notes. Do **not** re-plan these.
   `guidanceAlert${suffix}` verifying premium entitlement, SM-61 quarterly &
   next-month seasonal buy signals, and strict non-prod email pinning to
   `crnarendran@gmail.com`.
+- **Mobile drawer & MultiSelect alignment** SM-71 *(on
+  `shuddhi-moolam/dev`)*: viewport-safe `multiSelectLayoutClasses` (`align`,
+  `fullWidth`, `mobileFullWidth`) fixing left-edge popover clipping in the
+  mobile drawer (`ContextSwitcher`) and report toolbars (`SeasonalPage`,
+  `SpreadsPage`), `FileMonitor` mobile filter popover (`left-0 sm:right-0`) +
+  wrapping search bar, and `GuidancePage` mobile KPI spacing.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

@@ -223,8 +223,12 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
           </button>
         )}
 
-        <div className="p-4 border-b border-gray-200 dark:border-zinc-700 flex justify-between items-center bg-gray-50/50 dark:bg-zinc-800/30">
-          <div className="relative w-72">
+        <div
+          className="p-4 border-b border-gray-200 dark:border-zinc-700
+            flex flex-wrap gap-2 justify-between items-center
+            bg-gray-50/50 dark:bg-zinc-800/30"
+        >
+          <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input 
               type="text" 
@@ -254,7 +258,12 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
                   className="fixed inset-0 z-10"
                   onClick={() => setFilterOpen(false)}
                 />
-                <div className="absolute right-0 mt-1 z-20 w-48 rounded-md border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg py-1">
+                <div
+                  className="absolute left-0 sm:left-auto sm:right-0 mt-1 z-20
+                    w-48 max-w-[calc(100vw-2rem)] rounded-md border
+                    border-gray-200 dark:border-zinc-700 bg-white
+                    dark:bg-zinc-800 shadow-lg py-1"
+                >
                   {STATUS_FILTERS.map((f) => (
                     <button
                       key={f.id}
@@ -276,7 +285,11 @@ export const FileMonitor = ({ runs, loading }: { runs: PipelineRun[], loading: b
         </div>
 
         {(selected.size > 0 || bulkMsg) && (
-          <div className="px-4 py-2 border-b border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20 flex items-center gap-3 text-sm">
+          <div
+            className="px-4 py-2 border-b border-blue-100
+              dark:border-blue-900/30 bg-blue-50 dark:bg-blue-900/20
+              flex flex-wrap items-center gap-3 text-sm"
+          >
             {selected.size > 0 && (
               <>
                 <span className="text-blue-800 dark:text-blue-200 font-medium">{selected.size} selected</span>

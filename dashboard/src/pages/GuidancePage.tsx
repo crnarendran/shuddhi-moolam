@@ -270,26 +270,34 @@ function MaterialCard({
       </h3>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
+        <div
+          className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-3 sm:p-4"
+        >
           <p className="text-xs text-zinc-500 dark:text-zinc-400
             flex items-center gap-1">
             Blended cost / kg
             <InfoTip term="Blended cost" /></p>
-          <p className="text-2xl font-semibold mt-1 text-zinc-900
-            dark:text-zinc-100">{fmt(baseline.latest)}</p>
+          <p
+            className="text-xl sm:text-2xl font-semibold mt-1 text-zinc-900
+              dark:text-zinc-100"
+          >{fmt(baseline.latest)}</p>
           <p className="text-xs text-zinc-400 mt-0.5">
             {baseline.latestKey
               ? `${quarterKeyLabel(baseline.latestKey)} to date` : '—'}
           </p>
         </div>
-        <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-4">
+        <div
+          className="bg-zinc-50 dark:bg-zinc-800/60 rounded-lg p-3 sm:p-4"
+        >
           <p className="text-xs text-zinc-500 dark:text-zinc-400
             flex items-center gap-1">
             vs prior quarter<InfoTip term="Prior quarter" /></p>
-          <p className={`text-2xl font-semibold mt-1 flex items-center gap-1
-            ${baseline.pct === null ? 'text-zinc-400'
+          <p
+            className={`text-xl sm:text-2xl font-semibold mt-1 flex
+              items-center gap-1 ${baseline.pct === null ? 'text-zinc-400'
               : up ? 'text-red-600 dark:text-red-400'
-                : 'text-green-600 dark:text-green-400'}`}>
+                : 'text-green-600 dark:text-green-400'}`}
+          >
             {baseline.pct === null ? '—' : (
               <>{up ? <TrendingUp className="h-5 w-5" />
                 : <TrendingDown className="h-5 w-5" />}
