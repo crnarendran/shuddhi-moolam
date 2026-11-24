@@ -54,6 +54,57 @@ describe('mergeSettings', () => {
     expect(Object.values(r).every((v) => v !== undefined)).toBe(true);
     expect(r.personalization?.globalExcluded).toEqual(['a']);
   });
+
+  it('merges guidanceAlerts without clobbering sibling fields (SM-70)', () => {
+    const cur = {
+      guidanceAlerts: {
+        enabled: true,
+        email: 'buyer@plant.com',
+        dipThresholdPct: 4,
+      },
+    };
+    const r = mergeSettings(cur, {
+      guidanceAlerts: { enabled: false },
+    });
+    expect(r.guidanceAlerts).toEqual({
+      enabled: false,
+      email: 'buyer@plant.com',
+      dipThresholdPct: 4,
+    });
+  });
+
+  it('drops undefined fields inside guidanceAlerts on merge (SM-70)', () => {
+    const first = mergeSettings({}, {
+      guidanceAlerts: {
+        enabled: true,
+        email: undefined,
+        dipThresholdPct: 3,
+      },
+    });
+    expect('email' in (first.guidanceAlerts ?? {})).toBe(false);
+    expect(first.guidanceAlerts).toEqual({ enabled: true, dipThresholdPct: 3 });
+
+    const cleared = mergeSettings(
+      {
+        guidanceAlerts: {
+          enabled: true,
+          email: 'old@plant.com',
+          dipThresholdPct: 5,
+        },
+      },
+      {
+        guidanceAlerts: {
+          enabled: true,
+          email: undefined,
+        },
+      }
+    );
+    expect('email' in (cleared.guidanceAlerts ?? {})).toBe(false);
+    expect(cleared.guidanceAlerts).toEqual({
+      enabled: true,
+      dipThresholdPct: 5,
+    });
+  });
 });
 
 describe('shouldMigrateWeights', () => {

@@ -14,14 +14,7 @@ scale (1, 2, 3, 5, 8); keep any single execution batch ≤ 5 points.
 
 | ID | Title | Points | Depends on |
 |---|---|---|---|
-| [SM-43](SM-43-tonne-to-kg-storage-migration.md) | Store prices in kg everywhere (import + Firestore + master Sheet) | 5 | SM-40 |
 | [SM-15](SM-15-environment-isolation.md) | Environment isolation — dedicated projects/resources per env (currently one project, env-suffixed) | 3 | SM-09 |
-| [SM-34](SM-34-guidance-forecasting-sharing.md) | Guidance enhancements — forecasting, scheduled alerts, editable substitution groups, sharing | 8 | SM-33 |
-
-> **SM-43** (tonne→kg storage migration) is Antigravity's; status unconfirmed.
-> Note the double-division risk: if prices are stored in kg, SM-40's
-> `toCanonicalPriceRecord` (÷1000 for tonne items) must be removed in the same
-> release or the dashboard divides already-kg values again.
 
 New tweaks/features get the next free id (SM-40+). Add a row here and a ticket
 file, then implement dev → staging → main.
@@ -44,9 +37,13 @@ the full ticket + implementation notes. Do **not** re-plan these.
 - **Personalization & Guidance** SM-30…SM-33, SM-35: per-user Firestore
   preferences, guidance cards & charts, formula-based cost estimator,
   substitution savings, read-only share token (SM-36/37/38 merged).
-- **Multi-tenancy & Security** SM-39…SM-42: multi-tenant company data model,
-  per-company material cost tracking, invite-based read-only sharing (Resend),
-  licensing/plan entitlements gating.
+- **Multi-tenancy & Security** SM-39…SM-42, SM-44: multi-tenant company data
+  model, per-company material cost tracking, invite-based read-only sharing
+  (Resend), licensing/plan entitlements gating, env-partitioned `companies`
+  collections (`companies_dev` / `companies_staging` / `companies`).
+- **Tonne → kg storage migration** SM-43: pipeline `toKgRecord` normalizes
+  `Rs/tonne` fields to ₹/kg before Firestore & Sheet writes; dashboard
+  `toCanonicalPriceRecord` removed.
 - **Cost Impact & Spreads UI** SM-44…SM-53: cost impact report, spread charts,
   range controls, guidance integration, dynamic baseline dates, and
   tab-routing polish.
@@ -118,6 +115,34 @@ the full ticket + implementation notes. Do **not** re-plan these.
   `functions/package.json` (`engines.node: "22"`, `@types/node: "^22.0.0"`),
   `deploy.yml`, `sync-docs.yml`, and `copy-historical.yml`; verified full test
   suite compatibility; confirmed live staging/main functions are ACTIVE.
+- **Guidance Scenario / What-If Simulator** SM-67 *(on `shuddhi-moolam/dev`;
+  awaiting promotion once GitHub Actions resumes)*: pure scenario engine
+  (`scenario.ts`) + collapsible `WhatIfSimulator` panel on `GuidancePage` for
+  ephemeral BOM gram tweaks and commodity price moves (`%`), showing blended
+  cost delta, per-commodity breakdown, and recalculated swap suggestions.
+- **Cloud Build fallback CI & provider-neutral wrappers** SM-68: extracted
+  `deploy` and `sync-docs` logic into `scripts/ci/run.mjs` (ADC on Cloud
+  Build, `try...finally` temp-key cleanup, fail-closed `APP_ENV` rewrite,
+  native `fetch()` portal dispatch); wrapped `deploy.yml` and `sync-docs.yml`
+  with `if: vars.CI_PROVIDER != 'cloudbuild'`; added `cloudbuild.yaml`,
+  `infra/cloudbuild/triggers.yaml` (4 disabled triggers), `create-triggers.mjs`,
+  and `ciWrappers.test.ts` parity tests.
+- **Guidance 3-Month Forecasting with Confidence Bands** SM-69 *(on
+  `shuddhi-moolam/dev`)*: damped Holt linear trend (`forecast.ts`) with
+  rolling-origin backtest MAE/MAPE, 80% `sqrt(h)` confidence intervals,
+  single-material `GuidancePage` chart band overlay, and monthly card summary.
+- **Weekly scheduled guidance buy-window alerts** SM-70 *(on
+  `shuddhi-moolam/dev`; completes `SM-34`)*: per-user opt-in + validated email +
+  dip threshold (`userSettings` / `SettingsPage`), Monday cron
+  `guidanceAlert${suffix}` verifying premium entitlement, SM-61 quarterly &
+  next-month seasonal buy signals, and strict non-prod email pinning to
+  `crnarendran@gmail.com`.
+- **Mobile drawer & MultiSelect alignment** SM-71 *(on
+  `shuddhi-moolam/dev`)*: viewport-safe `multiSelectLayoutClasses` (`align`,
+  `fullWidth`, `mobileFullWidth`) fixing left-edge popover clipping in the
+  mobile drawer (`ContextSwitcher`) and report toolbars (`SeasonalPage`,
+  `SpreadsPage`), `FileMonitor` mobile filter popover (`left-0 sm:right-0`) +
+  wrapping search bar, and `GuidancePage` mobile KPI spacing.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

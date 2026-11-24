@@ -194,19 +194,27 @@ export function SeasonalPage(
   return (
     <div className="flex flex-col gap-6">
       <ReportIntro help={REPORT_HELP['seasonal']} />
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <div className="flex items-center gap-3">
-          <span className={`px-2 py-1 rounded text-xs font-medium ${confTone}`}>
-            confidence: {confidence}
-          </span>
-          <MultiSelect
-            label="Commodities"
-            options={commodities.map((c) => ({ value: c.key, label: c.label }))}
-            selected={activeKeys}
-            onChange={setKeys}
-          />
+      <div
+        className="flex flex-wrap items-center gap-2 sm:justify-end
+          sm:gap-3"
+      >
+        <span className={`px-2 py-1 rounded text-xs font-medium ${confTone}`}>
+          confidence: {confidence}
+        </span>
+        <div className="ml-auto sm:ml-0 sm:order-last">
           <PrintButton />
         </div>
+        <MultiSelect
+          label="Commodities"
+          align="right"
+          mobileFullWidth
+          options={commodities.map((c) => ({
+            value: c.key,
+            label: c.label,
+          }))}
+          selected={activeKeys}
+          onChange={setKeys}
+        />
       </div>
 
       {activeKeys.length === 0 ? (

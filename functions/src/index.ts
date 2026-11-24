@@ -25,6 +25,7 @@ import {
 import { manualUpsert as _manualUpsert } from './admin/manualUpsert';
 import { getFirestore } from 'firebase-admin/firestore';
 import { latestMoMBreaches, breachSummary } from './reporting/alerts';
+import { guidanceAlert as _guidanceAlert } from './reporting/guidanceAlertsJob';
 import { sendAlert } from './utils/alert';
 import { PriceRecord } from './reporting/aggregate';
 
@@ -154,6 +155,7 @@ module.exports = {
   [`renewWatch${suffix}`]: _renewWatch,
   [`chatEndpoint${suffix}`]: _chatEndpoint,
   [`priceReviewAlert${suffix}`]: _priceReviewAlert,
+  [`guidanceAlert${suffix}`]: _guidanceAlert,
   [`reprocessPendingPdf${suffix}`]: _reprocessPendingPdf,
   [`syncPipelineRunsToBigQuery${suffix}`]: _syncPipelineRuns,
   [`syncHistoricalPricesToBigQuery${suffix}`]: _syncHistoricalPrices,

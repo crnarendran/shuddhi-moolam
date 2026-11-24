@@ -3,7 +3,7 @@ id: SM-34
 title: Guidance enhancements — forecasting, alerts, sharing (later)
 type: ticket
 points: 8
-status: backlog
+status: shipped
 depends_on: [SM-33]
 tags: [backlog, guidance, forecasting, alerts, sharing, later]
 ---
@@ -29,6 +29,4 @@ so v1 ships explainable and fast. Pick items up individually.
   impact on blended cost and recommendations.
 
 ## Notes
-Each of these is its own design + ticket when prioritised. Do not start before
-SM-33 is live and validated with real company data. Forecasting in particular
-needs an accuracy/validation plan before it drives purchasing advice.
+All epic deliverables have shipped via focused tickets: Sharing (`SM-39`–`SM-41`), Scenario / What-If simulator (`SM-67`), Short-horizon 3-month forecasting (`SM-69`), and Weekly scheduled guidance buy-window alerts (`SM-70`).

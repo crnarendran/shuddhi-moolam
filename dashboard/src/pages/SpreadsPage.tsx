@@ -160,18 +160,29 @@ export function SpreadsPage(
             ? `${labelOf(compare[0])} − ${refLabel}, monthly, mean ±1σ band`
             : `Spreads vs ${refLabel}, monthly`}
         </p>
-        <div className="flex items-center gap-2">
+        <div
+          className="flex flex-wrap items-center gap-2 min-w-0 w-full
+            sm:w-auto"
+        >
           <MultiSelect
             label="Compare"
-            options={commodities.map((c) => ({ value: c.key, label: c.label }))}
+            align="left"
+            mobileFullWidth
+            options={commodities.map((c) => ({
+              value: c.key,
+              label: c.label,
+            }))}
             selected={compare}
             onChange={setCompare}
           />
           <span className="text-zinc-400">vs</span>
-          <select value={reference}
+          <select
+            value={reference}
             onChange={(e) => setReference(e.target.value)}
             className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-300
-              dark:border-zinc-700 rounded-md py-2 px-2 text-sm">
+              dark:border-zinc-700 rounded-md py-2 px-2 text-sm max-w-full
+              min-w-0 flex-1 sm:flex-initial"
+          >
             {commodities.map((c) => (
               <option key={c.key} value={c.key}>{c.label}</option>
             ))}

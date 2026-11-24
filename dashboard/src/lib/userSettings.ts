@@ -30,6 +30,15 @@ export interface ViewState {
   guidance?: { companyId?: string; materialIds?: string[] };
 }
 
+/**
+ * Per-user scheduled weekly purchasing-guidance email preferences (SM-70).
+ */
+export interface GuidanceAlertPrefs {
+  enabled: boolean;
+  email?: string;
+  dipThresholdPct?: number;
+}
+
 export interface UserSettings {
   /** Cost-Impact consumption weights (commodityKey -> kg per unit). */
   costImpact?: { weights?: Record<string, number> };
@@ -52,6 +61,8 @@ export interface UserSettings {
    * keeps its own selections, so switching companies retains them.
    */
   viewState?: Record<string, ViewState>;
+  /** Weekly scheduled purchasing-guidance email alert preferences (SM-70). */
+  guidanceAlerts?: GuidanceAlertPrefs;
   /** Last write time (ms epoch), set on every update. */
   updatedAt?: number;
 }
@@ -89,6 +100,16 @@ export function mergeSettings(
       next[ctx] = nextCtx;
     });
     merged.viewState = next;
+  }
+  if (patch.guidanceAlerts) {
+    const nextAlerts: GuidanceAlertPrefs = {
+      ...current.guidanceAlerts,
+      ...patch.guidanceAlerts,
+    };
+    (Object.keys(nextAlerts) as (keyof GuidanceAlertPrefs)[]).forEach((k) => {
+      if (nextAlerts[k] === undefined) delete nextAlerts[k];
+    });
+    merged.guidanceAlerts = nextAlerts;
   }
   // Firestore rejects writes containing `undefined` field values, so drop
   // any key that ended up undefined (e.g. costImpact on a first-time write).

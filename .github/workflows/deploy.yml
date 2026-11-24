@@ -9,80 +9,20 @@ on:
 
 jobs:
   deploy:
+    if: vars.CI_PROVIDER != 'cloudbuild'
     runs-on: ubuntu-latest
     steps:
-      - name: Check for Firebase Service Account Secret
-        id: check_secret
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}
-        run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
-            echo "Missing FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM secret. Skipping deployment."
-            echo "has_secret=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_secret=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout code
-        if: steps.check_secret.outputs.has_secret == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        if: steps.check_secret.outputs.has_secret == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: 'functions/package-lock.json'
 
-      - name: Install dependencies
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./functions
-        run: npm install
-
-      - name: Run linter
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./functions
-        run: npm run lint
-
-      - name: Build
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./functions
-        run: |
-          sed -i "s/process.env.APP_ENV || 'dev'/('${{ github.ref_name }}' as string)/g" src/index.ts src/config.ts
-          npm run build
-
-      - name: Test
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./functions
-        run: npm test
-
-      - name: Build Dashboard
-        if: steps.check_secret.outputs.has_secret == 'true'
-        working-directory: ./dashboard
-        run: |
-          npm ci
-          npm run build -- --mode ${{ github.ref_name }}
-
-      - name: Deploy to Firebase
-        if: steps.check_secret.outputs.has_secret == 'true'
-        run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}' > sa.json
-          export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/sa.json
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            SUFFIX=""
-            HOSTING="hosting:sai-shuddhi-moolam"
-          elif [ "${{ github.ref_name }}" = "staging" ]; then
-            SUFFIX="_staging"
-            HOSTING="hosting:sai-shuddhi-moolam-staging"
-          else
-            SUFFIX="_dev"
-            HOSTING="hosting:sai-shuddhi-moolam-dev"
-          fi
-          
-          FUNCS="functions:driveWebhook${SUFFIX},functions:processPendingPdf${SUFFIX},functions:helloWorld${SUFFIX},functions:registerWatch${SUFFIX},functions:renewWatch${SUFFIX},functions:chatEndpoint${SUFFIX},functions:priceReviewAlert${SUFFIX},functions:clearTabs${SUFFIX},functions:createInvitation${SUFFIX},functions:acceptInvitation${SUFFIX},functions:resendInvitation${SUFFIX},functions:revokeInvitation${SUFFIX},functions:setUserPlan${SUFFIX},functions:listUserPlans${SUFFIX},functions:seedEnvData${SUFFIX},functions:probeExtraction${SUFFIX},functions:reprocessPendingPdf${SUFFIX},functions:backfillSheetFromHistory${SUFFIX},functions:manualUpsert${SUFFIX}"
-          
-          npx firebase-tools deploy --only ${FUNCS},firestore,${HOSTING} --project sai-shuddhi-moolam --force
-          
-          rm sa.json
-
+      - name: Deploy via neutral runner
+        env:
+          FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SAI_SHUDDHI_MOOLAM }}
+        run: node scripts/ci/run.mjs deploy "${{ github.ref_name }}"

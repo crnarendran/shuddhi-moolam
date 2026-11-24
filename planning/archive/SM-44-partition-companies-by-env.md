@@ -1,6 +1,6 @@
 ---
 title: Partition companies and materials by environment
-status: todo
+status: shipped
 points: 3
 ---
 
