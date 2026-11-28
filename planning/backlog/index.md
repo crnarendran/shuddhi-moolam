@@ -143,6 +143,11 @@ the full ticket + implementation notes. Do **not** re-plan these.
   mobile drawer (`ContextSwitcher`) and report toolbars (`SeasonalPage`,
   `SpreadsPage`), `FileMonitor` mobile filter popover (`left-0 sm:right-0`) +
   wrapping search bar, and `GuidancePage` mobile KPI spacing.
+- **Self-contained unit tests & `verify:local`** SM-72 *(on
+  `shuddhi-moolam/dev`)*: mocked `../firebase` in
+  `dashboard/src/lib/analytics.test.ts` so `vitest` passes with zero `.env`
+  files, and added root `"verify:local"` (`npm --prefix functions test &&
+  npm --prefix dashboard test`) failing non-zero if either suite fails.
 
 **Backfill (SM-15 historical):** handled by regular manual ingestion — see
 `planning/archive/SM-15-historical-backfill.md`.

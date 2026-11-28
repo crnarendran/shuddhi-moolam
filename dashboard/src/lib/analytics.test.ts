@@ -9,6 +9,8 @@ import {
   setAnalyticsInstanceForTesting,
 } from './analytics';
 
+vi.mock('../firebase', () => ({ app: {} }));
+
 vi.mock('firebase/analytics', () => ({
   getAnalytics: vi.fn(() => ({ app: {} })),
   isSupported: vi.fn(async () => true),

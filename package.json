@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Docs-sync tooling for the Shuddhi-Moolam repo (PDF-to-Sheets extraction pipeline).",
   "scripts": {
-    "sync:docs": "tsx scripts/syncDocs.ts"
+    "sync:docs": "tsx scripts/syncDocs.ts",
+    "verify:local": "npm --prefix functions test && npm --prefix dashboard test"
   },
   "dependencies": {
     "firebase-admin": "^14.2.0",
